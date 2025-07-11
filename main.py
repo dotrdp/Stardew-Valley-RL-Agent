@@ -1,4 +1,5 @@
 import requests
+import subprocess
 
 
 class helper:
@@ -10,25 +11,24 @@ class helper:
         if self.active:
             return self.exec_method(**kwargs)
         else:
-            raise Exception("NOT POSSIBLE")
+            raise Exception("not possible")
 
 
 class exec_method:
     def __init__(self, method):
         self.method = method
 
-    def __call__(self, *kwargs):
+    def __call__(self, **kwargs):
         if self.method == "tty":
-            return requests.get(*kwargs)
+            return requests.get(**kwargs)
         elif self.method == "ssh+tty":
-            pass
+            subprocess.run(["ssh" "rdiaz@mini.lan" f"{self.API_wrap(**kwargs)}"])
         elif self.method == "docker":
-            pass
-
-    def API_wrap(**kwargs):
+            subprocess.run(["docker", "exec", "-it", "stardewvalley", f"{self.API_wrap(**kwargs)}"]) # NOT TESTED 
+    def API_wrap(**kwargs) -> str:
         exec = kwargs.pop("Command")
         port = kwargs.pop("Port", "8080")
-        res = f"curl -X POST http://localhost:{port}/api/execute -H" + " \"Content-Type: application/json\" -d '{\"target\":"+ f" \"translation\","+ \"method\": \"Get\", \"parameters\": [\"menu.title\"]}'"
+
 class DOCS:
     def __init__(self):
         self.helper = [
