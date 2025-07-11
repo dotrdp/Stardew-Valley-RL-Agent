@@ -1,5 +1,4 @@
-"""
-To use the StardewModdingAPI, create a class of it and tell it which method will it use to execute the commands.
+""" To use the StardewModdingAPI, create a class of it and tell it which method will it use to execute the commands.
 simple snippet,. bro
     from API import StardewModdingAPI
     stardewapi = StardewModdingAPI(method="tty") # or "ssh+tty" or "docker" 
@@ -11,19 +10,26 @@ you can see all functions available by:
 also you can see the documentation of each function by:
     print(stardewapi.gamecontenthelper) # for example
 
+
+
+FOR DOCKER YOULL NEED TO GIVE IT THE NAME OF THE DOCKER IMAGE
+    stardewapi = StardewModdingAPI(method="docker", docker_image_name="menacing racer") #idk man the docker images name are funny
+
+for the rest it works like any other method
 """
 
 import subprocess
 class template:
-    def __init__(self, exec_method, provided_docs, port="8080"):
+    def __init__(self, exec_method, provided_docs, target, port="8080"):
         self.active = True
         self.exec_method = exec_method
         self.docs = provided_docs
         self.port = port
+        self.target = target
 
-    def __call__(self, target, function, args=None):
+    def __call__(self, function, args=None):
         if self.active:
-            return self.exec_method(port=self.port, target=target, function=function, args=args)
+            return self.exec_method(port=self.port, target=self.target, function=function, args=args)
         else:
             raise Exception("not possible")
     def __str__(self) -> str:
@@ -38,12 +44,12 @@ class exec_method:
         if self.method == "tty":
             return subprocess.run(list(self.API_wrap(**kwargs).split()))
         elif self.method == "ssh+tty":
-            return subprocess.run(["ssh" "rdiaz@mini.lan" f"{self.API_wrap(**kwargs)}"])
+            return subprocess.run(["ssh", "rdiaz@mini.lan", f"{self.API_wrap(**kwargs)}"])
         elif self.method == "docker":
             if self.docker_image_name is None:
                 raise ValueError("Docker image name must be provided for docker execution method.")
             return subprocess.run(["docker", "exec", "-it", f"{self.docker_image_name}", f"{self.API_wrap(**kwargs)}"]) # NOT TESTED 
-    def API_wrap(**kwargs) -> str:
+    def API_wrap(self, **kwargs) -> str:
         port = kwargs.pop("port", "8080")
         target = kwargs.pop("target") 
         function = kwargs.pop("function")
@@ -53,7 +59,7 @@ class exec_method:
         else:
             parameters = ", ".join([f'"{param}"' for param in parameters]) # type: ignore
         res = f"curl -X POST http://localhost:{port}/api/execute -H \"Content-Type: application/json\" -d" 
-        func = " '{\n"+"\"target\": "+f"\"{target}\",\n"+"\"method\": "+f"\"{function}\",\n"+"\"parameters\": "+f"[{parameters}]\n"+"}'"
+        func = " '{\n"+"\"Target\": "+f"\"{target}\",\n"+"\"Method\": "+f"\"{function}\",\n"+"\"Parameters\": "+f"[{parameters}]\n"+"}'"
         return res + func
 
 
@@ -179,7 +185,7 @@ class StardewModdingAPI:
         self.docs = DOCS()
         self.port = port
         for target in self.docs.__dict__.keys():
-            setattr(self, target, template(self.method, getattr(self.docs, target)))
+            setattr(self, target, template(self.method, getattr(self.docs, target), target))
     def __str__(self) -> str:
         return "\n".join([f"{key}:\n{value}" for key, value in self.docs.__dict__.items() if isinstance(value, list)]) + "\n" + str(self.method)
 
