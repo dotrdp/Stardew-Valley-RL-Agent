@@ -19,6 +19,8 @@ for the rest it works like any other method
 """
 
 import subprocess
+import json
+
 class template:
     def __init__(self, exec_method, provided_docs, target, port="8080"):
         self.active = True
@@ -42,13 +44,13 @@ class exec_method:
 
     def __call__(self, **kwargs):
         if self.method == "tty":
-            return subprocess.run(list(self.API_wrap(**kwargs).split()))
+            return self.subprocess_wrap(subprocess.check_output(list(self.API_wrap(**kwargs).split())))
         elif self.method == "ssh+tty":
-            return subprocess.run(["ssh", "rdiaz@mini.lan", f"{self.API_wrap(**kwargs)}"])
+            return self.subprocess_wrap(subprocess.check_output(["ssh", "rdiaz@mini.lan", f"{self.API_wrap(**kwargs)}"]))
         elif self.method == "docker":
             if self.docker_image_name is None:
                 raise ValueError("Docker image name must be provided for docker execution method.")
-            return subprocess.run(["docker", "exec", "-it", f"{self.docker_image_name}", f"{self.API_wrap(**kwargs)}"]) # NOT TESTED 
+            return self.subprocess_wrap(subprocess.check_output(["docker", "exec", "-it", f"{self.docker_image_name}", f"{self.API_wrap(**kwargs)}"])) # NOT TESTED 
     def API_wrap(self, **kwargs) -> str:
         port = kwargs.pop("port", "8080")
         target = kwargs.pop("target") 
@@ -61,6 +63,9 @@ class exec_method:
         res = f"curl -X POST http://localhost:{port}/api/execute -H \"Content-Type: application/json\" -d" 
         func = " '{\n"+"\"Target\": "+f"\"{target}\",\n"+"\"Method\": "+f"\"{function}\",\n"+"\"Parameters\": "+f"[{parameters}]\n"+"}'"
         return res + func
+    def subprocess_wrap(self, bytes_output: bytes) -> dict:
+        readable_output = bytes_output.decode("utf-8")
+        return dict(json.loads(readable_output))
 
 
 class DOCS:
