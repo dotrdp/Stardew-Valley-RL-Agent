@@ -5,6 +5,7 @@ class request():
         self.params = args
 
 ####################################################################################################
+# Note this initializes an api instance with the default port therefore it cant do multiple instances
 
 METHOD = "ssh+tty"
 ALIASES = {
