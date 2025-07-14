@@ -89,5 +89,3 @@ class player():
 
 game_environment = environment(StardewModdingAPI(method=METHOD))
 player_agent = player(game_environment)
-print(player_agent.inventory.selected(use=True))
-print(player_agent.environment.game_instance.map())
