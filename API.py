@@ -21,6 +21,13 @@ for the rest it works like any other method
 import subprocess
 import json
 import docker
+import msgpack
+import base64
+
+def read_msgpack_base64(raw_base64_data: str):
+    binary_data = base64.b64decode(raw_base64_data)
+    unpacked_data = msgpack.unpackb(binary_data, raw=False)
+    return unpacked_data
 
 class template:
     def __init__(self, exec_method, provided_docs, target, port="8080"):
@@ -47,7 +54,7 @@ class exec_method:
             try:
                 self.docker_client = docker.from_env()
                 self.docker_container = self.docker_client.containers.get(docker_image_name)
-            except docker.errors.NotFound:
+            except docker.errors.NotFound: # type: ignore 
                 raise ValueError(f"Docker container '{docker_image_name}' not found")
             except Exception as e:
                 raise ValueError(f"Failed to connect to Docker: {e}")
@@ -234,8 +241,27 @@ class StardewModdingAPI:
                 raise RuntimeError(f"Docker execution failed: {e}")
         else:
             raise ValueError("Create an API instance first") 
+
+
+    def map(self):
+        met = self.method.method
+        res = f"curl http://localhost:{self.port}/api/map"
+        if met == "tty":
+            return self.method.subprocess_wrap(subprocess.check_output(res.split()))
+        elif met == "ssh+tty":
+            return self.method.subprocess_wrap(subprocess.check_output(self.method.ssh_wrapper+res.split()))
+        elif met == "docker":
+            try:
+                result = self.method.docker_container.exec_run(res, tty=True)
+                if result.exit_code != 0:
+                    raise RuntimeError(f"Docker command failed with exit code {result.exit_code}: {result.output.decode('utf-8')}")
+                return self.method.subprocess_wrap(result.output)
+            except Exception as e:
+                raise RuntimeError(f"Docker execution failed: {e}")
+        else:
+            raise ValueError("Create an API instance first") 
+
             
 
-a = StardewModdingAPI(method="ssh+tty", port="8080")
 
 

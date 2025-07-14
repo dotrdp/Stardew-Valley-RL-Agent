@@ -1,3 +1,4 @@
+from API import StardewModdingAPI
 
 def check_wanted_conditions_in_env(wanted, environment):
     for prop in wanted[:]:
@@ -46,3 +47,4 @@ class environment():
         res["IsWorldReady"] = self.game_instance.reflection(function="getproperty", args=["Context", "IsWorldReady"])["Result"]
         return res
         
+env = environment(StardewModdingAPI(method="ssh+tty"))
