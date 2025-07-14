@@ -20,6 +20,7 @@ for the rest it works like any other method
 
 import subprocess
 import json
+import docker
 
 class template:
     def __init__(self, exec_method, provided_docs, target, port="8080"):
@@ -42,7 +43,14 @@ class exec_method:
         self.method = method
         self.docker_image_name = docker_image_name
         self.ssh_wrapper = ["ssh", "rdiaz@mini.lan"]
-        self.docker_wrapper = ["docker", "exec", "-it"]
+        if method == "docker" and docker_image_name:
+            try:
+                self.docker_client = docker.from_env()
+                self.docker_container = self.docker_client.containers.get(docker_image_name)
+            except docker.errors.NotFound:
+                raise ValueError(f"Docker container '{docker_image_name}' not found")
+            except Exception as e:
+                raise ValueError(f"Failed to connect to Docker: {e}")
 
     def __call__(self, **kwargs):
         if self.method == "tty":
@@ -52,7 +60,14 @@ class exec_method:
         elif self.method == "docker":
             if self.docker_image_name is None:
                 raise ValueError("Docker image name must be provided for docker execution method.")
-            return self.subprocess_wrap(subprocess.check_output(self.docker_wrapper + [f"{self.docker_image_name}", f"{self.API_wrap(wrap_escaping=False, **kwargs)}"])) # NOT TESTED 
+            try:
+                command = self.API_wrap(wrap_escaping=False, **kwargs)
+                result = self.docker_container.exec_run(command, tty=True)
+                if result.exit_code != 0:
+                    raise RuntimeError(f"Docker command failed with exit code {result.exit_code}: {result.output.decode('utf-8')}")
+                return self.subprocess_wrap(result.output)
+            except Exception as e:
+                raise RuntimeError(f"Docker execution failed: {e}") 
     def API_wrap(self, **kwargs) -> str:
         port = kwargs.pop("port", "8080")
         target = kwargs.pop("target") 
@@ -62,7 +77,7 @@ class exec_method:
         if parameters == "none":
             parameters = ""
         else:
-            parameters = ", ".join([f'"{param}"' for param in parameters]) # type: ignore
+            parameters = ", ".join([rf'"{param}"' for param in parameters]) # type: ignore
         res = f"curl -X POST http://localhost:{port}/api/execute -H \"Content-Type: application/json\" -d" 
         func = " '{\n"+"\"Target\": "+f"\"{target}\",\n"+"\"Method\": "+f"\"{function}\",\n"+"\"Parameters\": "+f"[{parameters}]\n"+"}'"
         if wrap_escaping != True:
@@ -204,13 +219,21 @@ class StardewModdingAPI:
         res = f"curl -X POST http://localhost:{self.port}/api/keyboard/hold -H \"Content-Type: application/json\" -d" 
         if met == "tty":
             command = res + " '{\n"+"\"Key\": "+f"\"{key}\",\n"+"\"DurationMs\": "+f"{durationMS},\n"+"}'"
+            return self.method.subprocess_wrap(subprocess.check_output(command.split()))
         elif met == "ssh+tty":
             command = self.method.ssh_wrapper + (res + " '{\n"+"\"Key\": "+f"\"{key}\",\n"+"\"DurationMs\": "+f"{durationMS}\n"+"}'").split()
+            return self.method.subprocess_wrap(subprocess.check_output(command))
         elif met == "docker":
-            command = self.method.docker_wrapper + (res + " '{\n"+"\"Key\": "+f"\"{key}\",\n"+"\"DurationMs\": "+f"{durationMS},\n"+"}'").replace("\"", '"').split()
-        if command is None:
-            raise ValueError("Create an API instance first")
-        return self.method.subprocess_wrap(subprocess.check_output(command)) # type: ignore 
+            try:
+                command = res + " '{\n"+"\"Key\": "+f"\"{key}\",\n"+"\"DurationMs\": "+f"{durationMS}\n"+"}'"
+                result = self.method.docker_container.exec_run(command, tty=True)
+                if result.exit_code != 0:
+                    raise RuntimeError(f"Docker command failed with exit code {result.exit_code}: {result.output.decode('utf-8')}")
+                return self.method.subprocess_wrap(result.output)
+            except Exception as e:
+                raise RuntimeError(f"Docker execution failed: {e}")
+        else:
+            raise ValueError("Create an API instance first") 
             
 
 a = StardewModdingAPI(method="ssh+tty", port="8080")

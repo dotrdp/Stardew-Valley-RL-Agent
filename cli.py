@@ -7,7 +7,7 @@ class request():
 ####################################################################################################
 # Note this initializes an api instance with the default port therefore it cant do multiple instances
 
-METHOD = "ssh+tty"
+METHOD = "docker"
 ALIASES = {
     "isplayerfree": request("reflection", "GetProperty", ["Context", "IsPlayerFree"]),
     "hold": "custom_stuff",
@@ -22,7 +22,7 @@ parser.add_argument('function', type=str, help='API method to call')
 parser.add_argument('target', nargs='?', help='Target resource or object')
 parser.add_argument('params', nargs='*', help='Additional parameters as key=value', default=[])
 
-api = StardewModdingAPI(method=METHOD)
+api = StardewModdingAPI(method=METHOD, docker_image_name="sdvd-server")
 
 a = (parser.parse_args())
 if a.function == "hold":
