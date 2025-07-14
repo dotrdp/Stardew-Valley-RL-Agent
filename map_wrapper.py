@@ -1,7 +1,7 @@
 from API import StardewModdingAPI
 
 defaults = {
-    "wall": "🧱",
+    "wall": "▐",
     "wood": "🪵",
     "rock": "🪨",
     "tree": "🌲",
@@ -9,8 +9,8 @@ defaults = {
     "grass": "🌿",
     "water": "💧",
     "path": "👣",
-    "normal": " ",
-    "floor": "█",
+    "normal": " ,",
+    "floor": "a",
 }
 
 class Tile():
@@ -59,12 +59,8 @@ class grid():
         output = ""
         map = self.map
         buildings, back = map["Layers"]["Buildings"]["Tiles"], map["Layers"]["Back"]["Tiles"]
-        print(map["Layers"]["Front"]["Tiles"])
         MaxIndex = len(back)
         current = 0
-        final_dict = {
-
-        }
         for tiled in back:
             x, y = tiled["X"], tiled["Y"]
             type = "normal"

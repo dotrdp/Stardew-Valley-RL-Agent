@@ -80,7 +80,9 @@ class player():
 
     @property
     def position(self):
-        return self.gp(["player", "Position"])
+        res = self.wrap_result(self.r(function="getproperty", args=["game1", "player"]))
+        print(res)
+        return res["Tile"]
     
     @property
     def inventory(self):
@@ -89,3 +91,5 @@ class player():
 
 game_environment = environment(StardewModdingAPI(method=METHOD))
 player_agent = player(game_environment)
+print(player_agent.position)
+
