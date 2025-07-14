@@ -10,6 +10,7 @@ class request():
 METHOD = "ssh+tty"
 ALIASES = {
     "isplayerfree": request("reflection", "GetProperty", ["Context", "IsPlayerFree"]),
+    "hold": "custom_stuff",
 }
 
 ####################################################################################################
@@ -21,12 +22,19 @@ parser.add_argument('function', type=str, help='API method to call')
 parser.add_argument('target', nargs='?', help='Target resource or object')
 parser.add_argument('params', nargs='*', help='Additional parameters as key=value', default=[])
 
-a = (parser.parse_args())
-for alias in ALIASES:
-    if a.function == alias:
-        a = ALIASES[alias]
-        
 api = StardewModdingAPI(method=METHOD)
+
+a = (parser.parse_args())
+if a.function == "hold":
+    result = api.hold_key(str(a.target), int(a.params[0]))
+    for k,v in result.items():
+        print(f"{k}: {v}")
+    raise SystemExit(0)
+    
+if a.function in ALIASES:
+    a = ALIASES[a.function]
+
+
 show = ", ".join([f'"{param}"' for param in a.params]) # type: ignore
 print(f"Calling \"{a.function}\" with method/function \"{a.target}\" with params [{show}]")
 result = (api.__getattribute__(a.function)(function=a.target, args=[v for v in a.params]))

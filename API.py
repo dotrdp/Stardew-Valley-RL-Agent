@@ -41,20 +41,23 @@ class exec_method:
     def __init__(self, method, docker_image_name = None):
         self.method = method
         self.docker_image_name = docker_image_name
+        self.ssh_wrapper = ["ssh", "rdiaz@mini.lan"]
+        self.docker_wrapper = ["docker", "exec", "-it"]
 
     def __call__(self, **kwargs):
         if self.method == "tty":
             return self.subprocess_wrap(subprocess.check_output(list(self.API_wrap(**kwargs).split())))
         elif self.method == "ssh+tty":
-            return self.subprocess_wrap(subprocess.check_output(["ssh", "rdiaz@mini.lan", f"{self.API_wrap(**kwargs)}"]))
+            return self.subprocess_wrap(subprocess.check_output(self.ssh_wrapper + [self.API_wrap(**kwargs)]))
         elif self.method == "docker":
             if self.docker_image_name is None:
                 raise ValueError("Docker image name must be provided for docker execution method.")
-            return self.subprocess_wrap(subprocess.check_output(["docker", "exec", "-it", f"{self.docker_image_name}", f"{self.API_wrap(**kwargs)}"])) # NOT TESTED 
+            return self.subprocess_wrap(subprocess.check_output(self.docker_wrapper + [f"{self.docker_image_name}", f"{self.API_wrap(wrap_escaping=False, **kwargs)}"])) # NOT TESTED 
     def API_wrap(self, **kwargs) -> str:
         port = kwargs.pop("port", "8080")
         target = kwargs.pop("target") 
         function = kwargs.pop("function")
+        wrap_escaping = kwargs.pop("wrap_escaping", True)
         parameters = kwargs.pop("args", "none")
         if parameters == "none":
             parameters = ""
@@ -62,6 +65,8 @@ class exec_method:
             parameters = ", ".join([f'"{param}"' for param in parameters]) # type: ignore
         res = f"curl -X POST http://localhost:{port}/api/execute -H \"Content-Type: application/json\" -d" 
         func = " '{\n"+"\"Target\": "+f"\"{target}\",\n"+"\"Method\": "+f"\"{function}\",\n"+"\"Parameters\": "+f"[{parameters}]\n"+"}'"
+        if wrap_escaping != True:
+            return res + func.replace('\"', '"')
         return res + func
     def subprocess_wrap(self, bytes_output: bytes) -> dict:
         readable_output = bytes_output.decode("utf-8")
@@ -193,4 +198,21 @@ class StardewModdingAPI:
             setattr(self, target, template(self.method, getattr(self.docs, target), target))
     def __str__(self) -> str:
         return "\n".join([f"{key}:\n{value}" for key, value in self.docs.__dict__.items() if isinstance(value, list)]) + "\n" + str(self.method)
+    def hold_key(self, key: str, durationMS = 1000):
+        met = self.method.method
+        command = None
+        res = f"curl -X POST http://localhost:{self.port}/api/keyboard/hold -H \"Content-Type: application/json\" -d" 
+        if met == "tty":
+            command = res + " '{\n"+"\"Key\": "+f"\"{key}\",\n"+"\"DurationMs\": "+f"{durationMS},\n"+"}'"
+        elif met == "ssh+tty":
+            command = self.method.ssh_wrapper + (res + " '{\n"+"\"Key\": "+f"\"{key}\",\n"+"\"DurationMs\": "+f"{durationMS}\n"+"}'").split()
+        elif met == "docker":
+            command = self.method.docker_wrapper + (res + " '{\n"+"\"Key\": "+f"\"{key}\",\n"+"\"DurationMs\": "+f"{durationMS},\n"+"}'").replace("\"", '"').split()
+        if command is None:
+            raise ValueError("Create an API instance first")
+        return self.method.subprocess_wrap(subprocess.check_output(command)) # type: ignore 
+            
+
+a = StardewModdingAPI(method="ssh+tty", port="8080")
+
 
