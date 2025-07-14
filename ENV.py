@@ -1,5 +1,14 @@
 from API import StardewModdingAPI
 
+def check_wanted_conditions_in_env(wanted, environment):
+    for prop in wanted[:]:
+        if environment[prop] != False:
+            wanted.remove(prop)
+    if len(wanted) == 0:
+        return [True]
+    else:
+        return [False, wanted]
+
 class normal_movement():
     def __init__(self, stardew_modding_api):
         self.game_instance = stardew_modding_api
@@ -15,7 +24,8 @@ class normal_movement():
             return [False, wanted]
 
     def __call__(self, action):
-        print("can move ok")
+        key, ms = action
+        return self.game_instance.hold_key(key, ms)
         
 class environment():
     def __init__(self, stardew_modding_api):

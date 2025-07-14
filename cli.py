@@ -7,7 +7,7 @@ class request():
 ####################################################################################################
 # Note this initializes an api instance with the default port therefore it cant do multiple instances
 
-METHOD = "docker"
+METHOD = "ssh+tty"
 ALIASES = {
     "isplayerfree": request("reflection", "GetProperty", ["Context", "IsPlayerFree"]),
     "hold": "custom_stuff",
