@@ -65,16 +65,16 @@ For further reference please read a decompiled version of the game(they're somet
 # NOTE
 Binary MSGPACKS over base 64 are also given in the callback
 ```
-███████╗████████╗ █████╗ ██████╗ ██████╗ ███████╗██╗    ██╗    ██╗   ██╗ █████╗ ██╗     ██╗     ███████╗██╗   ██╗    ██████╗ ██████╗  ██████╗    ██████╗ ██████╗  ██████╗ ██╗  ██╗██╗   ██╗
-██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██╔══██╗██╔════╝██║    ██║    ██║   ██║██╔══██╗██║     ██║     ██╔════╝╚██╗ ██╔╝    ██╔══██╗██╔══██╗██╔════╝    ██╔══██╗██╔══██╗██╔═══██╗╚██╗██╔╝╚██╗ ██╔╝
-███████╗   ██║   ███████║██████╔╝██║  ██║█████╗  ██║ █╗ ██║    ██║   ██║███████║██║     ██║     █████╗   ╚████╔╝     ██████╔╝██████╔╝██║         ██████╔╝██████╔╝██║   ██║ ╚███╔╝  ╚████╔╝ 
-╚════██║   ██║   ██╔══██║██╔══██╗██║  ██║██╔══╝  ██║███╗██║    ╚██╗ ██╔╝██╔══██║██║     ██║     ██╔══╝    ╚██╔╝      ██╔══██╗██╔═══╝ ██║         ██╔═══╝ ██╔══██╗██║   ██║ ██╔██╗   ╚██╔╝  
-███████║   ██║   ██║  ██║██║  ██║██████╔╝███████╗╚███╔███╔╝     ╚████╔╝ ██║  ██║███████╗███████╗███████╗   ██║       ██║  ██║██║     ╚██████╗    ██║     ██║  ██║╚██████╔╝██╔╝ ██╗   ██║   
-╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝ ╚══╝╚══╝       ╚═══╝  ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝   ╚═╝       ╚═╝  ╚═╝╚═╝      ╚═════╝    ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝   
+██████╗ ██████╗  ██████╗    ██████╗ ██████╗  ██████╗ ██╗  ██╗██╗   ██╗
+██╔══██╗██╔══██╗██╔════╝    ██╔══██╗██╔══██╗██╔═══██╗╚██╗██╔╝╚██╗ ██╔╝
+██████╔╝██████╔╝██║         ██████╔╝██████╔╝██║   ██║ ╚███╔╝  ╚████╔╝ 
+██╔══██╗██╔═══╝ ██║         ██╔═══╝ ██╔══██╗██║   ██║ ██╔██╗   ╚██╔╝  
+██║  ██║██║     ╚██████╗    ██║     ██║  ██║╚██████╔╝██╔╝ ██╗   ██║   
+╚═╝  ╚═╝╚═╝      ╚═════╝    ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝   
 ```
-# Installation
+### Installation
 Required mods available in the releases tab for this repo.
-Docker
+# Docker
 - git clone https://github.com/dotrdp/sv-GUI-less-server
 - cd sv-GUI-less-server
 - (open the .env.example, configure it, and rename it to .env)
@@ -83,12 +83,12 @@ Docker
 - open the docker desktop app, go into the container, click the 3 dots. Then delete junimoserver mod and upload the unzipped modfolder provided in these paths:
 - data/mods, data/StardewValley/Mods.
 - reload the container!, the API should automatically detect it.
-TTY
+# TTY
 - install the game
 - install SMAPI
 - upload the unzipped modfolder provided in your StardewValley/Mods dir, it will exist after installing SMAPI, for more info refer to SMAPI installation guide. https://smapi.io
 - ready to go!
-SSH + TTY
+# SSH + TTY
 - set up a basic ssh server on the server machine (sshd for windows, open-ssh for MacOS and Linux, note macos already has it out of the box).
 - generate RSA/ed_2519 keys on the machine running the API(you can use your existing keys if you have already generated keys before).
 - set up the client(machine running the API) to use a ssh-agent to provide the keys on the ssh connection
