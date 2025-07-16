@@ -11,6 +11,8 @@ METHOD = "ssh+tty"
 ALIASES = {
     "isplayerfree": request("reflection", "GetProperty", ["Context", "IsPlayerFree"]),
     "hold": "custom_stuff",
+    "clear_dialog": request("reflection", "invokemethod", ["game1", "exitActiveMenu"]),
+    "tp": "custom_stuff",
 }
 
 ####################################################################################################
@@ -28,6 +30,14 @@ a = (parser.parse_args())
 if a.function == "hold":
     result = api.hold_key(str(a.target), int(a.params[0]))
     for k,v in result.items():
+        print(f"{k}: {v}")
+    raise SystemExit(0)
+if a.function == "tp":
+    place = a.target
+    x = a.params[0] 
+    y = a.params[1]
+    res = api.reflection("invokemethod", args=["game1", "warpFarmer", place,str(x), str(y), "true"]) # type: ignore
+    for k,v in res.items():
         print(f"{k}: {v}")
     raise SystemExit(0)
     

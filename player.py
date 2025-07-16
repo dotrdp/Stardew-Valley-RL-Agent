@@ -91,10 +91,12 @@ class player():
 
     def normal_action(self, key, durationms):
         return self.environment.world_action([key, durationms])
+
+    def close_dialogue(self):
+        return self.environment.game_instance.reflection(function="invokemethod", args=["game1", "exitActiveMenu"])
     
 
 
 game_environment = environment(StardewModdingAPI(method=METHOD))
 player_agent = player(game_environment)
-print(player_agent.position)
 

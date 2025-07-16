@@ -29,6 +29,7 @@ defaults = {
 "debugmarker":   "",
     "cbuilding": "",
     "mail":      "󰛮",
+    "f":         "·",
 }
 defaults["Building"] = Fore.MAGENTA + defaults["Building"] + Fore.RESET
 defaults["cbuilding"] = Fore.LIGHTCYAN_EX + defaults["cbuilding"] + Fore.RESET
@@ -60,6 +61,7 @@ known_properties = {
     "Buildable": ["Buildable"],
     "NF": ["NoFurniture"],
     "NFNS": ["NoFurniture", "NoSpawn"],
+    "f": ["FloorID"],
 }
 
 class building():
@@ -268,5 +270,3 @@ class Map():
 
 api = StardewModdingAPI(method="ssh+tty")
 a = Map(api)
-print(a.grid)
-print(read_msgpack_base64(api.reflection(function="getproperty", args=["player", "Tile"])["Base64_binary"])) # type: ignore
