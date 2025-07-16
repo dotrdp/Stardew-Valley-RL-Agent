@@ -16,7 +16,7 @@ ALIASES = {
 ####################################################################################################
 import argparse
 
-from API import StardewModdingAPI
+from API import StardewModdingAPI, read_msgpack_base64
 parser = argparse.ArgumentParser(description='cli to call methods on the spot')
 parser.add_argument('function', type=str, help='API method to call')
 parser.add_argument('target', nargs='?', help='Target resource or object')
@@ -40,4 +40,7 @@ print(f"Calling \"{a.function}\" with method/function \"{a.target}\" with params
 result = (api.__getattribute__(a.function)(function=a.target, args=[v for v in a.params]))
 for k,v in result.items():
     print(f"{k}: {v}")
+    if k == "Base64_binary":
+        print(f"Decoded: {read_msgpack_base64(v)}")
+
 

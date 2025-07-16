@@ -1,17 +1,16 @@
-from API import StardewModdingAPI
+from API import StardewModdingAPI, read_msgpack_base64
+from colorama import Fore
 
 defaults = {
-    "wall": "▐",
-    "wood": "🪵",
-    "rock": "🪨",
-    "tree": "🌲",
-    "npc": "🧑‍🦯",
-    "grass": "🌿",
-    "water": "💧",
-    "path": "👣",
-    "normal": " ,",
-    "floor": "a",
+    "building":  "󰆦",
+    "normal":    "·",
+    "player":    "",
+    "Chest":     "󰜦",
 }
+defaults["building"] = Fore.MAGENTA + defaults["building"] + Fore.RESET
+defaults["Chest"] = Fore.BLUE + defaults["Chest"] + Fore.RESET
+defaults["player"] = Fore.GREEN + defaults["player"] + Fore.RESET
+
 
 class Tile():
     def __init__(self, x, y, type):
@@ -22,26 +21,36 @@ class Tile():
         self.defaults = defaults
 
     def __str__(self): #type: ignore
-        if self.type == "building":
-            return self.defaults["wall"]
-        elif self.type == "tree":
-            return self.defaults["tree"]
-        elif self.type == "rock":
-            return self.defaults["rock"]
-        elif self.type == "npc":
-            return self.defaults["npc"]
-        elif self.type == "grass":
-            return self.defaults["grass"]
-        elif self.type == "water":
-            return self.defaults["water"]
-        elif self.type == "path":
-            return self.defaults["path"]
-        return self.defaults["normal"]
+        if self.type in self.defaults:
+            return self.defaults[self.type]
+        print(f"Unknown tile type: {self.type}")
+        return "?"
+
 
 class grid():
     def __init__(self, api):
         self.api = api
         self.defaults = defaults
+        self.readmsgpack = read_msgpack_base64
+
+    def get_data(self):
+        map = self.map
+        buildings, back = map["Layers"]["Buildings"]["Tiles"], map["Layers"]["Back"]["Tiles"]
+        objects = map["Objects"]
+        number_of_x = back[-1]["X"]
+        number_of_y = back[-1]["Y"]
+        result = [[Tile(x, y, "normal") for y in range(number_of_y+1)] for x in range(number_of_x+1)]
+        player = self.readmsgpack(self.api.reflection(function="getproperty", args=["player", "Tile"])["Base64_binary"])
+        player_x, player_y = int(player["_Field_X"]), int(player["_Field_Y"])
+        result[player_x][player_y] = Tile(player_x, player_y, "player")
+        for tile in buildings:
+            x, y = tile["X"], tile["Y"]
+            result[x][y] = Tile(x, y, "building")
+        for object in objects:
+            x,y = object["Position"]["X"], object["Position"]["Y"]
+            result[x][y] = Tile(x, y, object["Type"])
+        return result
+        
 
     @property
     def map(self):
@@ -56,25 +65,13 @@ class grid():
         self.map
     
     def __str__(self):
-        output = ""
-        map = self.map
-        buildings, back = map["Layers"]["Buildings"]["Tiles"], map["Layers"]["Back"]["Tiles"]
-        MaxIndex = len(back)
-        current = 0
-        for tiled in back:
-            x, y = tiled["X"], tiled["Y"]
-            type = "normal"
-            if tiled["TileSheet"] == "walls_and_floors":
-                type = "floor"
-            for maybe in buildings:
-                if maybe["X"] == x and maybe["Y"] == y:
-                    type = "building"
-            output += Tile(x, y, type).__str__()
-                    
-            current += 1
-            if current % map["MapSize"]["Height"] == 0:
-                output += "\n"
-        return output
+        data = self.get_data()
+        result = ""
+        for row in data:
+            for tile in row:
+                result += str(tile)
+            result += "\n"
+        return result
 
 
 class Map():

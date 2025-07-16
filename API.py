@@ -49,6 +49,7 @@ class exec_method:
     def __init__(self, method, docker_image_name = None):
         self.method = method
         self.docker_image_name = docker_image_name
+        
         self.ssh_wrapper = ["ssh", "rdiaz@mini.lan"]
         if method == "docker" and docker_image_name:
             try:

@@ -80,9 +80,9 @@ class player():
 
     @property
     def position(self):
-        res = self.wrap_result(self.r(function="getproperty", args=["game1", "player"]))
+        res = self.wrap_result(self.r(function="getproperty", args=["player", "Tile"]))
         print(res)
-        return res["Tile"]
+        return (res["_Field_X"], res["_Field_Y"])
     
     @property
     def inventory(self):
