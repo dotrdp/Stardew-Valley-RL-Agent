@@ -89,6 +89,11 @@ class player():
         collection_items = self.wrap_result(self.r(function="getproperty", args=["player", "Items"]))["_Collection_Items"]
         return inventory(collection_items, self.environment)
 
+    def normal_action(self, key, durationms):
+        return self.environment.world_action([key, durationms])
+    
+
+
 game_environment = environment(StardewModdingAPI(method=METHOD))
 player_agent = player(game_environment)
 print(player_agent.position)
