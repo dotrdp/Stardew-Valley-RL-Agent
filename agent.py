@@ -5,10 +5,17 @@ from API import StardewModdingAPI
 
 # [NOTE] set your method here
 METHOD = "ssh+tty"
+LOG_LEVEL = "DEBUG"
+# [DEBUG]: 0
+# [INFO]: 1
+# [WARNING]: 2
+# [ERROR]: 3
+# [FATAL]: 4 ;[NOTE] to call fatal set the string to "CRITICAL"
 
-game_environment = environment(StardewModdingAPI(method=METHOD))
+game_environment = environment(StardewModdingAPI(method=METHOD, loglevel=LOG_LEVEL), loglevel=LOG_LEVEL)
 player_agent = player(game_environment)
 print(game_environment.map.grid)
+player_agent.normal_action("a", 1000)
 
 class RewardSystem:
     def __init__(self, env: environment):

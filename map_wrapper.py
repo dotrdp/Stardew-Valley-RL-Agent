@@ -226,6 +226,13 @@ class grid():
         #    x, y = warp["TargetX"], warp["TargetY"]
         #    result[x][y] = Tile(x, y, "Warp")
 
+        count = 0
+        for row in result:
+            for tile in row:
+                count += 1
+        self.api.logger.log("Generated map data from API", "DEBUG")
+        self.api.logger.log(f"Grid size: {len(result)}x{len(result[0])} ({count} tiles)", "INFO")
+                
         return result
     
         

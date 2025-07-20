@@ -87,7 +87,7 @@ class exec_method:
             parameters = ""
         else:
             parameters = ", ".join([rf'"{param}"' for param in parameters]) # type: ignore
-        res = f"curl -X POST http://localhost:{port}/api/execute -H \"Content-Type: application/json\" -d" 
+        res = f"curl -s -X POST http://localhost:{port}/api/execute -H \"Content-Type: application/json\" -d" 
         func = " '{\n"+"\"Target\": "+f"\"{target}\",\n"+"\"Method\": "+f"\"{function}\",\n"+"\"Parameters\": "+f"[{parameters}]\n"+"}'"
         if wrap_escaping != True:
             return res + func.replace('\"', '"')
