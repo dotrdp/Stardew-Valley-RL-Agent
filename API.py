@@ -23,6 +23,7 @@ import json
 import docker
 import msgpack
 import base64
+from logger import Logger
 
 def read_msgpack_base64(raw_base64_data: str):
     binary_data = base64.b64decode(raw_base64_data)
@@ -213,17 +214,20 @@ class DOCS:
         ]
 
 class StardewModdingAPI:
-    def __init__(self, method: str = "tty", docker_image_name = None, port: str = "8080"):
+    def __init__(self, method: str = "tty", docker_image_name = None, port: str = "8080", loglevel: str = "CRITICAL"):
         self.method = exec_method(method, docker_image_name)
         self.docs = DOCS()
         self.port = port
+        self.logger = Logger(loglevel)
         for target in self.docs.__dict__.keys():
             setattr(self, target, template(self.method, getattr(self.docs, target), target))
+        self.logger.log(f"StardewModdingAPI initialized with method: {self.method.method} on port: {self.port}", "DEBUG")
     def __str__(self) -> str:
         return "\n".join([f"{key}:\n{value}" for key, value in self.docs.__dict__.items() if isinstance(value, list)]) + "\n" + str(self.method)
     def hold_key(self, key: str, durationMS = 1000):
         met = self.method.method
         command = None
+        self.logger.log(f"Holding key: {key} for {durationMS}ms using method: {met}", "DEBUG")
         res = f"curl -X POST http://localhost:{self.port}/api/keyboard/hold -H \"Content-Type: application/json\" -d" 
         if met == "tty":
             command = res + " '{\n"+"\"Key\": "+f"\"{key}\",\n"+"\"DurationMs\": "+f"{durationMS},\n"+"}'"
@@ -245,6 +249,7 @@ class StardewModdingAPI:
 
 
     def map(self):
+        self.logger.log("map fetching, which is very heavy and computer intensive\nConsider caching or sumt idk", "WARNING")
         met = self.method.method
         res = f"curl http://localhost:{self.port}/api/map"
         if met == "tty":

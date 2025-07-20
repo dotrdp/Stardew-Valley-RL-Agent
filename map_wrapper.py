@@ -1,4 +1,4 @@
-from API import StardewModdingAPI, read_msgpack_base64
+from API import read_msgpack_base64
 from colorama import Fore
 
 defaults = {
@@ -30,6 +30,7 @@ defaults = {
     "cbuilding": "",
     "mail":      "󰛮",
     "f":         "·",
+  "NFF":         "·",
 }
 defaults["Building"] = Fore.MAGENTA + defaults["Building"] + Fore.RESET
 defaults["cbuilding"] = Fore.LIGHTCYAN_EX + defaults["cbuilding"] + Fore.RESET
@@ -62,6 +63,7 @@ known_properties = {
     "NF": ["NoFurniture"],
     "NFNS": ["NoFurniture", "NoSpawn"],
     "f": ["FloorID"],
+    "NFF": ["NoFurniture", "FloorID"],
 }
 
 class building():
@@ -237,8 +239,6 @@ class grid():
         return {"x": self.map["MapSize"]["Width"], 
                 "y": self.map["MapSize"]["Height"]}
    
-    def tile(self, pos, type="normal"):
-        self.map
     
     def __str__(self):
         data = self.get_data()
@@ -268,5 +268,3 @@ class Map():
     def map_data(self):
         return self.api.map()["MapData"]
 
-api = StardewModdingAPI(method="ssh+tty")
-a = Map(api)

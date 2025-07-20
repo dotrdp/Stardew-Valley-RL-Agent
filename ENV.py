@@ -1,3 +1,6 @@
+from map_wrapper import Map
+from logger import Logger
+
 
 def check_wanted_conditions_in_env(wanted, environment):
     for prop in wanted[:]:
@@ -26,9 +29,11 @@ class world_action():
         return self.game_instance.hold_key(key, ms)
         
 class environment():
-    def __init__(self, stardew_modding_api):
+    def __init__(self, stardew_modding_api, loglevel: str = "FATAL"):
         self.game_instance = stardew_modding_api 
         self.world_env = world_action(self.game_instance)
+        self.map = Map(self.game_instance)
+        self.logger = Logger(self.game_instance)
 
     def world_action(self, action):
         res = self.world_env.isAvailable(self.envstate())

@@ -97,6 +97,3 @@ class player():
     
 
 
-game_environment = environment(StardewModdingAPI(method=METHOD))
-player_agent = player(game_environment)
-
