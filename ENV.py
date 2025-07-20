@@ -21,7 +21,7 @@ class world_action():
         if res != None:
             return self.check_wanted_conditions_in_env(self.wanted_conditions, res)
         else:
-            print("The environment state is non existent.")
+            self.game_instance.logger.log("Environment state is None", "CRITICAL")
             return [False, self.wanted_conditions]
         
     def __call__(self, action):
@@ -37,8 +37,9 @@ class environment():
         self.logger.log("Environment initialized", "INFO")
 
     def world_action(self, action):
-        res = self.world_env.isAvailable(self.envstate())
+        self.logger.log(f"trying to perform action{action} on world action environment", "DEBUG")
         self.logger.log("Checking if the world action is available", "INFO")
+        res = self.world_env.isAvailable(self.envstate())
         if res[0] == True: 
              self.logger.log("World action is available, executing action", "INFO")
              return self.world_env(action)
@@ -53,5 +54,6 @@ class environment():
         res["IsPlayerFree"] = self.game_instance.reflection(function="getproperty", args=["Context", "IsPlayerFree"])["Result"]
         res["CanPlayerMove"] = self.game_instance.reflection(function="getproperty", args=["Context", "CanPlayerMove"])["Result"]
         res["IsWorldReady"] = self.game_instance.reflection(function="getproperty", args=["Context", "IsWorldReady"])["Result"]
+        self.logger.log(f"Environment state: {res}", "DEBUG")
         return res
         

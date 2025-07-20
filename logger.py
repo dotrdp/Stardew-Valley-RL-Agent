@@ -11,9 +11,9 @@ class LogLevel:
         if level == cls.DEBUG:
             return Fore.GREEN+"[DEBUG]"
         elif level == cls.INFO:
-            return Fore.LIGHTYELLOW_EX+"[INFO]"
+            return Fore.YELLOW+"[INFO]"
         elif level == cls.WARNING:
-            return Fore.YELLOW+"[WARNING]"
+            return Fore.RED+"[WARNING]"
         elif level == cls.ERROR:
             return Fore.LIGHTRED_EX+"[ERROR]"
         elif level == cls.CRITICAL:
@@ -40,5 +40,5 @@ class Logger:
         self.level = LogLevel.get_value(level)
     def log(self, message, level):
         if LogLevel.get_value(level) >= self.level:
-            print(f"{LogLevel.to_string(LogLevel.get_value(level))}: {message}")
+            print(f"{LogLevel.to_string(LogLevel.get_value(level))}: {message}"+Fore.RESET)
 

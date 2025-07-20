@@ -32,6 +32,27 @@ defaults = {
     "f":         "·",
   "NFF":         "·",
 }
+
+logic = {
+        "cbuilding": {"collision": True, "blocks_crops": True,},
+        "Building": {"collision": True, "blocks_crops": True,},
+        "Stone": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Pickaxe"},
+        "Weeds": {"collision": True, "blocks_crops": True,"breakable": True, "tool": "Scythe"},
+        "Tree": {"collision": True, "blocks_crops": True,"breakable": True, "tool": "Axe"},
+        "Twig": {"collision": True, "blocks_crops": True,"breakable": True, "tool": "Axe"},
+        "Seed Spot": {"collision": True, "blocks_crops": True,"breakable": True, "tool": "Hoe"},
+        "Chest": {"collision": True},
+        "door": {"collision": True, "collisionwarp": True},
+        "shipbin": {"collision": True, "sellplace": True, "blocks_crops": True,},
+        "PetBowl": {"collision": True, "blocks_crops": True,},
+        "notbuild": {"collision": True, "blocks_crops": True, },
+        "NFNS": {"collision": True, "blocks_crops": True, },
+        "Stone Owl": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Pickaxe"},
+        "Grass": {"blocks_crops": True, "breakable": True, "tool": "Scythe"},
+        "Artifact Spot": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Hoe"},
+        "mail": {"collision": True, "blocks_crops": True, },
+    }
+
 defaults["Building"] = Fore.MAGENTA + defaults["Building"] + Fore.RESET
 defaults["cbuilding"] = Fore.LIGHTCYAN_EX + defaults["cbuilding"] + Fore.RESET
 defaults["Chest"] = Fore.BLUE + defaults["Chest"] + Fore.RESET
@@ -131,6 +152,10 @@ buildings = {
         
 # 󰆚 cow
 
+def Infer_logic(type):
+    if type in logic:
+        return logic[type]
+    return {} 
 class Tile():
     def __init__(self, x, y, type):
         self.x = x
@@ -138,6 +163,14 @@ class Tile():
         self.properties = {}
         self.type = type
         self.defaults = defaults
+        logic = Infer_logic(type)
+        self.collision = logic.pop("collision", False)
+        self.blocks_crops = logic.pop("blocks_crops", False)
+        self.breakable = logic.pop("breakable", False)
+        self.tool = logic.pop("tool", None)
+        self.collisionwarp = logic.pop("collisionwarp", False)
+        self.sellplace = logic.pop("sellplace", False)
+
         
 
     def __str__(self): 
@@ -165,7 +198,7 @@ class grid():
         for property in self.known_properties:
             if self.known_properties[property] == list(keys):
                 return property
-        print(f"Unknown property : {keys}")
+        self.api.logger.log(f"Unknown property: {keys}", "WARNING")
         return "something"
 
     def get_data(self):
@@ -210,7 +243,7 @@ class grid():
             
 
             build_type = build["Type"]
-            print(build)
+            self.api.logger.log(f"Building {building_target} at {x},{y} ({build_type})", "DEBUG")
             if build_type == "ShippingBin":
                 build_type = "shipbin"
 
@@ -226,12 +259,8 @@ class grid():
         #    x, y = warp["TargetX"], warp["TargetY"]
         #    result[x][y] = Tile(x, y, "Warp")
 
-        count = 0
-        for row in result:
-            for tile in row:
-                count += 1
         self.api.logger.log("Generated map data from API", "DEBUG")
-        self.api.logger.log(f"Grid size: {len(result)}x{len(result[0])} ({count} tiles)", "INFO")
+        self.api.logger.log(f"Grid size: {len(result)}x{len(result[0])} ({str(len(result)*len(result[0]))} tiles)", "INFO")
                 
         return result
     

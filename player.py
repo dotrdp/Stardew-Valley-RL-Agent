@@ -113,13 +113,10 @@ class player():
         return inventory(collection_items, self.environment)
 
     def normal_action(self, key, durationms):
-        self.logger.log(f"Performing normal action: {key} for {durationms}ms", "DEBUG")
         return self.environment.world_action([key, durationms])
 
     def close_dialogue(self):
         self.logger.log("Closing dialogue", "INFO")
         self.logger.log("Invoking exitActiveMenu\nIt requires some special movement sometimes", "WARNING")
         return self.environment.game_instance.reflection(function="invokemethod", args=["game1", "exitActiveMenu"])
-    
-
 
