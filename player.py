@@ -1,6 +1,7 @@
 from API import StardewModdingAPI, read_msgpack_base64
 from ENV import environment
 from logger import Logger
+import networkx as nx
 
 METHOD = "ssh+tty"
 class key:
@@ -59,12 +60,13 @@ class inventory():
             return self.items[0]
 
 class player():
-    def __init__(self, environment: environment, loglevel: str = "CRITICAL"):
+    def __init__(self, environment: environment):
         self.environment = environment
         self.r = self.environment.game_instance.__getattribute__("reflection") # USEFUL API FOR READING GAME DATA
         self.read_msgpack_base64 = read_msgpack_base64
         self.MaxItems = 12
-        self.logger = Logger(loglevel)
+        self.logger = self.environment.logger
+        self.walk1 = 189.3939501549 # given that the player moves at a speed of 5.2799997tiles/second, therefore 189.3939501549ms per tile
         self.logger.log("Player instance created", "INFO")
         
 
@@ -101,22 +103,74 @@ class player():
         return self.wrap_result(self.r(function="getproperty", args=["player", "currentLocation"]))["NameOrUniqueName"]
 
     @property
-    def position(self):
+    def position(self) -> tuple:
+        self.logger.log("Requesting player position", "DEBUG")
         res = self.wrap_result(self.r(function="getproperty", args=["player", "Tile"]))
-        self.logger.log(f"Player position requested: {res['_Field_X']}, {res['_Field_Y']}", "DEBUG")
-        self.logger.log("player.position res" + str(res), "DEBUG")
+        self.logger.log(f"Player position: {res['_Field_X']}, {res['_Field_Y']}", "INFO")
         return (res["_Field_X"], res["_Field_Y"])
     
     @property
-    def inventory(self):
+    def inventory(self) -> inventory:
         collection_items = self.wrap_result(self.r(function="getproperty", args=["player", "Items"]))["_Collection_Items"]
         return inventory(collection_items, self.environment)
 
     def normal_action(self, key, durationms):
         return self.environment.world_action([key, durationms])
 
+    def walk_to(self, x, y):
+        self.logger.log(f"Walking to position ({x}, {y})", "INFO")
+        xi, yi = self.position
+        xi, yi = int(xi), int(yi)
+        collision_graph = self.environment.get_collision_graph()
+        self.logger.log("getting shortest path", "DEBUG")
+        path = nx.shortest_path(collision_graph, source=(xi, yi), target=(x, y))
+        self.logger.log(f"Shortest path found: {path}", "INFO")
+        path = self.optimize_path(path)
+        self.logger.log(f"Optimized path: {path}", "INFO")
+        self.logger.log("Following path", "DEBUG")
+        for point in path:
+            self.logger.log(f"Walking to point {point}", "DEBUG")
+            self.logger.log(f"Current position: ({xi}, {yi})", "DEBUG")
+            x, y = point
+            if (x, y) == (xi, yi):
+                continue
+            distance = ((x - xi) ** 2 + (y - yi) ** 2) ** 0.5
+            duration = int(distance * self.walk1)
+            key = None
+            if x > xi:
+                key = "d"
+            elif x < xi:
+                key = "a"
+            elif y > yi:
+                key = "s"
+            elif y < yi:
+                key = "w"
+            self.normal_action(key, duration)
+            xi, yi = x, y
+            
+            
+
+    def optimize_path(self, path: list):
+        self.logger.log("Optimizing path", "DEBUG")
+        if not path:
+            self.logger.log("Path is empty, returning empty path", "CRITICAL")
+            return []
+        optimized_path = []
+        prev = path[0]
+        prev_direction = (path[1][0] - prev[0], path[1][1] - prev[1]) 
+        for pos in path[1:]:
+            direction = (pos[0] - prev[0], pos[1] - prev[1])
+            if prev_direction is None or direction != prev_direction:
+                optimized_path.append(pos)
+                prev_direction = direction
+            prev = pos
+        if optimized_path[-1] != path[-1]:
+            optimized_path.append(path[-1])
+        return optimized_path
+                
+
+
     def close_dialogue(self):
         self.logger.log("Closing dialogue", "INFO")
         self.logger.log("Invoking exitActiveMenu\nIt requires some special movement sometimes", "WARNING")
         return self.environment.game_instance.reflection(function="invokemethod", args=["game1", "exitActiveMenu"])
-

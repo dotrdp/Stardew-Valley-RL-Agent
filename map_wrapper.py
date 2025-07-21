@@ -269,7 +269,7 @@ class Map():
         transposed_data = list(zip(*data))  
         # transposed_data = data
         result = ""
-        for row in transposed_data:
+        for row in data:
             for tile in row:
                 result += str(tile)
             result += "\n"

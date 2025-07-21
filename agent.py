@@ -2,7 +2,6 @@ import torch
 from ENV import environment
 from player import player 
 from API import StardewModdingAPI
-from map_wrapper import Map
 import networkx as nx
 
 # [NOTE] set your method here
@@ -16,13 +15,14 @@ LOG_LEVEL = "DEBUG"
 
 api = StardewModdingAPI(method=METHOD, loglevel=LOG_LEVEL)
 game_environment = environment(api, loglevel=LOG_LEVEL)
-map = Map(api)
-data = map.get_data()
 player_agent = player(game_environment)
-player_agent.normal_action("a", 1000)
-print(map)
+print(game_environment.map)
 graph = game_environment.get_collision_graph()
-print(nx.shortest_path(graph, source=player.position, target=(0, 0)))
+x, y = player_agent.position
+x, y = int(x), int(y)
+path = nx.shortest_path(graph, source=(x, y), target=(25, 10))
+print(f"Shortest path from player({str(x)},{str(y)}) to target (8, 5):")
+player_agent.walk_to(25, 10)
 # nx.write_graphml(game_environment.get_collision_graph(), "/home/rd/code/PythonStardewAPI/a.graphml")
 
 
@@ -43,6 +43,7 @@ class RewardSystem:
             self.env.logger.log("RewardSystem: cached state is None, instantiating a new Map class\nPLEASE DON'T LET IT TO DO THIS, CACHE THE MAP AS MUCH AS POSSIBLE", "WARNING")
             self.cached_state = Map(api)
         self.env.logger.log("RewardSystem: using the current map as a state", "DEBUG")
+
         
 
 
