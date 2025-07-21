@@ -1,6 +1,7 @@
 from API import read_msgpack_base64
 from colorama import Fore
 
+
 defaults = {
     "Building":  "󰆦",
     "normal":    "·",
@@ -33,25 +34,31 @@ defaults = {
   "NFF":         "·",
 }
 
-logic = {
-        "cbuilding": {"collision": True, "blocks_crops": True,},
-        "Building": {"collision": True, "blocks_crops": True,},
+def get_logic(type):
+    lgc = {
+        "cbuilding": {"collision": True, "blocks_crops": True},
+        "Building": {"collision": True, "blocks_crops": True},
         "Stone": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Pickaxe"},
-        "Weeds": {"collision": True, "blocks_crops": True,"breakable": True, "tool": "Scythe"},
-        "Tree": {"collision": True, "blocks_crops": True,"breakable": True, "tool": "Axe"},
-        "Twig": {"collision": True, "blocks_crops": True,"breakable": True, "tool": "Axe"},
-        "Seed Spot": {"collision": True, "blocks_crops": True,"breakable": True, "tool": "Hoe"},
+        "Weeds": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Scythe"},
+        "Tree": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Axe"},
+        "Twig": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Axe"},
+        "Seed Spot": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Hoe"},
         "Chest": {"collision": True},
         "door": {"collision": True, "collisionwarp": True},
-        "shipbin": {"collision": True, "sellplace": True, "blocks_crops": True,},
-        "PetBowl": {"collision": True, "blocks_crops": True,},
-        "notbuild": {"collision": True, "blocks_crops": True, },
-        "NFNS": {"collision": True, "blocks_crops": True, },
+        "shipbin": {"collision": True, "sellplace": True, "blocks_crops": True},
+        "PetBowl": {"collision": True, "blocks_crops": True},
+        "notbuild": {"collision": True, "blocks_crops": True},
+        "NFNS": {"collision": True, "blocks_crops": True},
         "Stone Owl": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Pickaxe"},
         "Grass": {"blocks_crops": True, "breakable": True, "tool": "Scythe"},
         "Artifact Spot": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Hoe"},
-        "mail": {"collision": True, "blocks_crops": True, },
-    }
+        "mail": {"collision": True, "blocks_crops": True},
+        }
+    if type in lgc:
+        return lgc[type]
+    else:
+        return {}
+    
 
 defaults["Building"] = Fore.MAGENTA + defaults["Building"] + Fore.RESET
 defaults["cbuilding"] = Fore.LIGHTCYAN_EX + defaults["cbuilding"] + Fore.RESET
@@ -152,26 +159,13 @@ buildings = {
         
 # 󰆚 cow
 
-def Infer_logic(type):
-    if type in logic:
-        return logic[type]
-    return {} 
 class Tile():
     def __init__(self, x, y, type):
         self.x = x
         self.y = y
-        self.properties = {}
         self.type = type
         self.defaults = defaults
-        logic = Infer_logic(type)
-        self.collision = logic.pop("collision", False)
-        self.blocks_crops = logic.pop("blocks_crops", False)
-        self.breakable = logic.pop("breakable", False)
-        self.tool = logic.pop("tool", None)
-        self.collisionwarp = logic.pop("collisionwarp", False)
-        self.sellplace = logic.pop("sellplace", False)
-
-        
+        self.properties = get_logic(type)
 
     def __str__(self): 
         if self.type in self.defaults:
@@ -180,7 +174,7 @@ class Tile():
         return "?"
 
 
-class grid():
+class Map():
     def __init__(self, api):
         self.api = api
         self.defaults = defaults
@@ -270,12 +264,6 @@ class grid():
     def map(self):
         return self.api.map()["MapData"]
 
-    @property
-    def size(self):
-        return {"x": self.map["MapSize"]["Width"], 
-                "y": self.map["MapSize"]["Height"]}
-   
-    
     def __str__(self):
         data = self.get_data()
         transposed_data = list(zip(*data))  
@@ -287,20 +275,4 @@ class grid():
             result += "\n"
         return result
 
-
-class Map():
-    def __init__(self, api):
-        self.api = api
-    
-    @property
-    def grid(self):
-        return grid(self.api)
-    
-    @property
-    def size(self):
-        return self.map_data["MapSize"]
-
-    @property
-    def map_data(self):
-        return self.api.map()["MapData"]
 

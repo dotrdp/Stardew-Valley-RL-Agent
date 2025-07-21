@@ -1,5 +1,6 @@
 from map_wrapper import Map
 from logger import Logger
+import networkx as nx
 
 
 def check_wanted_conditions_in_env(wanted, environment):
@@ -33,19 +34,21 @@ class environment():
         self.game_instance = stardew_modding_api 
         self.world_env = world_action(self.game_instance)
         self.map = Map(self.game_instance)
+        self.spatial_state = self.map.get_data()
         self.logger = Logger(loglevel)
         self.logger.log("Environment initialized", "INFO")
 
     def world_action(self, action):
         self.logger.log(f"trying to perform action{action} on world action environment", "DEBUG")
         self.logger.log("Checking if the world action is available", "INFO")
-        res = self.world_env.isAvailable(self.envstate())
+        res = self.world_env.isAvailable(self.envstate)
         if res[0] == True: 
              self.logger.log("World action is available, executing action", "INFO")
              return self.world_env(action)
         elif res[0] == False:
             self.logger.log(f"World action is not available, missing conditions: {res[1]}", "WARNING")
             return res
+    @property
     def envstate(self) -> dict:
         res = {
             "IsPlayerFree": False,
@@ -56,4 +59,28 @@ class environment():
         res["IsWorldReady"] = self.game_instance.reflection(function="getproperty", args=["Context", "IsWorldReady"])["Result"]
         self.logger.log(f"Environment state: {res}", "DEBUG")
         return res
-        
+    def update_spatial_state(self):
+        self.logger.log("Updating spatial state", "DEBUG")
+        self.spatial_state = self.map.get_data()
+        self.logger.log("Spatial state updated", "DEBUG")
+    def get_collision_graph(self):
+        graph = nx.Graph()
+        for x in range(len(self.spatial_state)):
+            for y in range(len(self.spatial_state[x])):
+                tile = (x, y)
+                if "collision" in self.spatial_state[x][y].properties:
+                    pass
+                neighbors = []
+                if x+1 <= len(self.spatial_state) - 1:
+                    neighbors.append((x+1, y))
+                if x-1 >= 0:
+                    neighbors.append((x-1, y))
+                if y+1 <= len(self.spatial_state[x]) - 1:
+                    neighbors.append((x, y+1))
+                if y-1 >= 0:
+                    neighbors.append((x, y-1))
+                for neighbor in neighbors:
+                    if "collision" not in self.spatial_state[neighbor[0]][neighbor[1]].properties:
+                        graph.add_edge(tile, neighbor, weight=1)
+        self.logger.log("Walkable graph created", "DEBUG")
+        return graph

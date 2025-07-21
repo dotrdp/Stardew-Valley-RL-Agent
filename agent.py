@@ -3,6 +3,7 @@ from ENV import environment
 from player import player 
 from API import StardewModdingAPI
 from map_wrapper import Map
+import networkx as nx
 
 # [NOTE] set your method here
 METHOD = "ssh+tty"
@@ -15,8 +16,17 @@ LOG_LEVEL = "DEBUG"
 
 api = StardewModdingAPI(method=METHOD, loglevel=LOG_LEVEL)
 game_environment = environment(api, loglevel=LOG_LEVEL)
+map = Map(api)
+data = map.get_data()
 player_agent = player(game_environment)
 player_agent.normal_action("a", 1000)
+print(map)
+graph = game_environment.get_collision_graph()
+print(nx.shortest_path(graph, source=player.position, target=(0, 0)))
+# nx.write_graphml(game_environment.get_collision_graph(), "/home/rd/code/PythonStardewAPI/a.graphml")
+
+
+
 
 class RewardSystem:
     def __init__(self, env: environment, map = None):
