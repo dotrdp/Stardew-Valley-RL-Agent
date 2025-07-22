@@ -107,6 +107,7 @@ Required mods available in the releases tab for this repo.
 An api for interaction with the http proxy is provided, along with an environment class, player class, map class, allowing for a seamless integration with python. You instantiate the API telling it where and how to communicate with the http proxy.
 currently TTY(http proxy in local host), ssh+tty(http proxy in a ssh server, note you must have keys or use sshpass in the API ssh_wrap declaration), and docker(http proxy inside a docker container). For the docker container we forked a popular stardew valley server solution. Note it also provides a x11 VNC server 8090 to serve a display with nginx.
 Note, binary messagepacks over base 64 are also returned on the api.
+Furthermore utilities like pathfinder are added. Besides networkx integration for a much broader and useful world model
 
 git clone https://github.com/dotrdp/Stardew-Valley-RL-Agent/
 cd Stardew-Valley-RL-Agent
