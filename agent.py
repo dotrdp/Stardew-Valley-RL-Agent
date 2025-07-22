@@ -20,10 +20,12 @@ print(game_environment.map)
 graph = game_environment.get_collision_graph()
 x, y = player_agent.position
 x, y = int(x), int(y)
-path = nx.shortest_path(graph, source=(x, y), target=(25, 10))
-print(f"Shortest path from player({str(x)},{str(y)}) to target (8, 5):")
-player_agent.walk_to(25, 10)
+path = nx.shortest_path(graph, source=(x, y), target=(28, 16))
+game_environment.draw_path(path)
+print(f"Shortest path from player({str(x)},{str(y)}) to target (3, 11):")
+player_agent.walk_to(28, 16)
 # nx.write_graphml(game_environment.get_collision_graph(), "/home/rd/code/PythonStardewAPI/a.graphml")
+# 64 15 Farm, is the default position at map
 
 
 
@@ -41,7 +43,6 @@ class RewardSystem:
             self.env.logger.log("RewardSystem: requires a new map to draw a reward\notherwise it will try to use it's previous cached state as a state", "WARNING")
             self.env.logger.log("RewardSystem: previous state is None", "CRITICAL")
             self.env.logger.log("RewardSystem: cached state is None, instantiating a new Map class\nPLEASE DON'T LET IT TO DO THIS, CACHE THE MAP AS MUCH AS POSSIBLE", "WARNING")
-            self.cached_state = Map(api)
         self.env.logger.log("RewardSystem: using the current map as a state", "DEBUG")
 
         

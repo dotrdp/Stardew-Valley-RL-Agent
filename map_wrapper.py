@@ -211,12 +211,6 @@ class Map():
                 object_type = object["Type"]
                 result[x][y] = Tile(x, y, object_type)
                 
-        for object in objects:
-            x,y = object["Position"]["X"], object["Position"]["Y"]
-            object_type = object["Name"]
-            if object["MinutesUntilReady"] == 1 and object_type == "Weeds":
-                object_type = "Tree"
-            result[x][y] = Tile(x, y, object_type)
         for prop in tileprops["Back"]:
             x, y = prop.split(",")
             value = tileprops["Back"][prop]
@@ -252,6 +246,12 @@ class Map():
         #for warp in warps:
         #    x, y = warp["TargetX"], warp["TargetY"]
         #    result[x][y] = Tile(x, y, "Warp")
+        for object in objects:
+            x,y = object["Position"]["X"], object["Position"]["Y"]
+            object_type = object["Name"]
+            if object["MinutesUntilReady"] == 1 and object_type == "Weeds":
+                object_type = "Tree"
+            result[x][y] = Tile(x, y, object_type)
 
         self.api.logger.log("Generated map data from API", "DEBUG")
         self.api.logger.log(f"Grid size: {len(result)}x{len(result[0])} ({str(len(result)*len(result[0]))} tiles)", "INFO")
@@ -269,7 +269,7 @@ class Map():
         transposed_data = list(zip(*data))  
         # transposed_data = data
         result = ""
-        for row in data:
+        for row in transposed_data:
             for tile in row:
                 result += str(tile)
             result += "\n"

@@ -1,4 +1,4 @@
-from map_wrapper import Map
+from map_wrapper import Map, Tile
 from logger import Logger
 import networkx as nx
 
@@ -69,7 +69,7 @@ class environment():
             for y in range(len(self.spatial_state[x])):
                 tile = (x, y)
                 if "collision" in self.spatial_state[x][y].properties:
-                    pass
+                    continue
                 neighbors = []
                 if x+1 <= len(self.spatial_state) - 1:
                     neighbors.append((x+1, y))
@@ -81,6 +81,32 @@ class environment():
                     neighbors.append((x, y-1))
                 for neighbor in neighbors:
                     if "collision" not in self.spatial_state[neighbor[0]][neighbor[1]].properties:
+                        
                         graph.add_edge(tile, neighbor, weight=1)
         self.logger.log("Walkable graph created", "DEBUG")
         return graph
+    def draw_path(self, path):
+        self.logger.log("Drawing path on the map", "DEBUG")
+        copy = self.spatial_state.copy()
+        for point in path:
+            x, y = point
+            type = copy[x][y].type
+            if type != "normal":
+                if type == "player":
+                    continue
+                self.logger.log(f"Tile at {point} is not normal, might have collision", "WARNING")
+                self.logger.log(f"Tile type: {copy[x][y].type}", "DEBUG")
+            copy[x][y].type = "debugmarker"
+        res = ""
+        copy = list(zip(*copy))  # Transpose the matrix for easier printing
+        for x in range(len(copy)):
+            for y in range(len(copy[x])):
+                tile = copy[x][y]
+                res += str(tile)
+            res += "\n"
+        
+        print(res)
+        return res
+                
+
+        

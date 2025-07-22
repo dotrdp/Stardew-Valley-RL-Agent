@@ -1,17 +1,9 @@
-from API import StardewModdingAPI, read_msgpack_base64
+from API import read_msgpack_base64
 from ENV import environment
-from logger import Logger
 import networkx as nx
+import time
 
 METHOD = "ssh+tty"
-class key:
-    w = "w"
-    a = "a"
-    s = "s"
-    d = "d"
-    c = "c"
-    x = "x"
-    e = "e"
 
 class Item():
     def __init__(self,environment, type, name, id, slot):
@@ -66,9 +58,14 @@ class player():
         self.read_msgpack_base64 = read_msgpack_base64
         self.MaxItems = 12
         self.logger = self.environment.logger
-        self.walk1 = 189.3939501549 # given that the player moves at a speed of 5.2799997tiles/second, therefore 189.3939501549ms per tile
+        self.path = None
         self.logger.log("Player instance created", "INFO")
-        
+        self.antithesis = {
+            "a": "d",
+            "d": "a",
+            "w": "s",
+            "s": "w"
+        }
 
     def wrap_result(self, result: dict):
         if result["Success"]:
@@ -91,6 +88,15 @@ class player():
     def health(self):
         self.logger.log("Requesting player health", "DEBUG")
         return self.wrap_result(self.r(function="getfield", args=["player", "health"]))
+
+    @property
+    def speed(self):
+        self.logger.log("Requesting player speed", "DEBUG")
+        return self.wrap_result(self.r(function="getproperty", args=["player", "speed"]))
+
+    def walk1(self, speed):
+        return int(1000 / speed)
+        
 
     @property
     def money(self):
@@ -128,25 +134,40 @@ class player():
         path = self.optimize_path(path)
         self.logger.log(f"Optimized path: {path}", "INFO")
         self.logger.log("Following path", "DEBUG")
+        self.path = path
+        expected = None
         for point in path:
             self.logger.log(f"Walking to point {point}", "DEBUG")
+            player = self.environment.game_instance.reflection(function="getproperty", args=["game1", "player"])["Result"]["Properties"]
+            xi, yi = (str(player["Tile"]).replace("Vector2: ", "").replace("}", "").replace("{X:","").replace("Y","").replace(":", "").split(" "))  # "Vector2: {X: 1 Y: 1]"
+            xi, yi = int(xi), int(yi)
             self.logger.log(f"Current position: ({xi}, {yi})", "DEBUG")
-            x, y = point
-            if (x, y) == (xi, yi):
+            if expected is not None and expected != (xi, yi):
+                self.walk_to(x, y)
+                break
+            speed = player["speed"]
+            walk1 = self.walk1(speed)
+            xp, yp = point
+            if (xp, yp) == (xi, yi):
                 continue
-            distance = ((x - xi) ** 2 + (y - yi) ** 2) ** 0.5
-            duration = int(distance * self.walk1)
+            distance = ((xp - xi) ** 2 + (yp - yi) ** 2) ** 0.5
+            duration = int(distance * walk1)
             key = None
-            if x > xi:
+            if xp > xi:
                 key = "d"
-            elif x < xi:
+            elif xp < xi:
                 key = "a"
-            elif y > yi:
+            elif yp > yi:
                 key = "s"
-            elif y < yi:
+            elif yp < yi:
                 key = "w"
             self.normal_action(key, duration)
-            xi, yi = x, y
+            time.sleep(duration / 1000)  # Convert milliseconds to seconds
+            expected = (xp, yp)
+        xi, yi = self.position
+        if (xi, yi) != (x, y):
+            self.walk_to(x, y)
+        self.path = None
             
             
 
@@ -156,18 +177,18 @@ class player():
             self.logger.log("Path is empty, returning empty path", "CRITICAL")
             return []
         optimized_path = []
-        prev = path[0]
-        prev_direction = (path[1][0] - prev[0], path[1][1] - prev[1]) 
-        for pos in path[1:]:
-            direction = (pos[0] - prev[0], pos[1] - prev[1])
-            if prev_direction is None or direction != prev_direction:
-                optimized_path.append(pos)
-                prev_direction = direction
-            prev = pos
-        if optimized_path[-1] != path[-1]:
+        next_point = None
+        previous_slope = (path[0][1] - path[1][1]) / (path[0][0] - path[1][0]) if path[0][0] != path[1][0] else float('inf')
+        for point in path:
+            next_point = path[path.index(point) + 1] if path.index(point) + 1 < len(path) else point
+            slope = (point[1] - next_point[1]) / (point[0] - next_point[0]) if point[0] != next_point[0] else float('inf')
+            if slope != previous_slope:
+                optimized_path.append(point)
+                previous_slope = slope
+        if path[-1] not in optimized_path:
             optimized_path.append(path[-1])
         return optimized_path
-                
+
 
 
     def close_dialogue(self):
