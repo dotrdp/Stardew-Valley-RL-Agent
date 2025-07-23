@@ -32,6 +32,7 @@ defaults = {
     "mail":      "󰛮",
     "f":         "·",
   "NFF":         "·",
+"debug_red":     "✕",
 }
 
 def get_logic(type):
@@ -40,7 +41,7 @@ def get_logic(type):
         "Building": {"collision": True, "blocks_crops": True},
         "Stone": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Pickaxe"},
         "Weeds": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Scythe"},
-        "Tree": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Axe"},
+        "Tree": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Axe", "health": 10},
         "Twig": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Axe"},
         "Seed Spot": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Hoe"},
         "Chest": {"collision": True},
@@ -53,6 +54,7 @@ def get_logic(type):
         "Grass": {"blocks_crops": True, "breakable": True, "tool": "Scythe"},
         "Artifact Spot": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Hoe"},
         "mail": {"collision": True, "blocks_crops": True},
+
         }
     if type in lgc:
         return lgc[type]
@@ -78,6 +80,7 @@ defaults["notbuild"] = Fore.BLACK + defaults["notbuild"] + Fore.RESET
 defaults["Stone Owl"] = Fore.RED + defaults["Stone Owl"] + Fore.RESET
 defaults["Artifact Spot"] = Fore.RED + defaults["Artifact Spot"] + Fore.RESET
 defaults["debugmarker"] = Fore.RED + defaults["debugmarker"] + Fore.RESET
+defaults["debug_red"] = Fore.RED + defaults["debug_red"] + Fore.RESET
 
 
 
@@ -164,6 +167,7 @@ class Tile():
         self.x = x
         self.y = y
         self.type = type
+        self.tilesheet = None
         self.defaults = defaults
         self.properties = get_logic(type)
 
@@ -205,12 +209,18 @@ class Map():
         number_of_y = back[-1]["Y"]
         result = [[Tile(x, y, "normal") for y in range(number_of_y+1)] for x in range(number_of_x+1)]
         player = self.readmsgpack(self.api.reflection(function="getproperty", args=["player", "Tile"])["Base64_binary"])
-        if "TerrainFeatures" in map:
-            for object in map["TerrainFeatures"]:
-                x, y = object["Position"]["X"], object["Position"]["Y"]
-                object_type = object["Type"]
-                result[x][y] = Tile(x, y, object_type)
-                
+        tilesheets = {}
+        for chunk in map["TileSheets"]:
+           for data in chunk["Properties"]:
+               if data.startswith("@TileIndex@"):
+                   split = data.replace("@TileIndex@", "")
+                   id, label = split.split("@")
+                   value = chunk["Properties"][data]
+                   id = str(id)
+                   if id not in tilesheets:
+                     tilesheets[id] = {} 
+                   tilesheets[id][label] = value
+              
         for prop in tileprops["Back"]:
             x, y = prop.split(",")
             value = tileprops["Back"][prop]
@@ -229,20 +239,25 @@ class Map():
             building = building(x, y)
             result = building.building.inject(result) # type: ignore
             
+            for tile in back:
+                id = tile["TileIndex"]
+                x, y = tile["X"], tile["Y"]
+                id = str(id)
+                if id in list(tilesheets.keys()):
+                    result[x][y].tilesheet = tilesheets[id]
+                    if "Diggable" in tilesheets[id] and "Type" in tilesheets[id]:
+                        result[x][y].type = "Tree"
+                    print(f"Tile {x},{y} has tilesheet: {tilesheets[id]}")
 
             build_type = build["Type"]
             self.api.logger.log(f"Building {building_target} at {x},{y} ({build_type})", "DEBUG")
             if build_type == "ShippingBin":
                 build_type = "shipbin"
 
-
-
         for tile in buildings:
             x, y = tile["X"], tile["Y"]
             result[x][y] = Tile(x, y, "Building")
  
-        player_x, player_y = int(player["_Field_X"]), int(player["_Field_Y"])
-        result[player_x][player_y] = Tile(player_x, player_y, "player")
         #for warp in warps:
         #    x, y = warp["TargetX"], warp["TargetY"]
         #    result[x][y] = Tile(x, y, "Warp")
@@ -252,6 +267,15 @@ class Map():
             if object["MinutesUntilReady"] == 1 and object_type == "Weeds":
                 object_type = "Tree"
             result[x][y] = Tile(x, y, object_type)
+        if "TerrainFeatures" in map:
+            for object in map["TerrainFeatures"]:
+                x, y = object["Position"]["X"], object["Position"]["Y"]
+                object_type = object["Type"]
+                result[x][y] = Tile(x, y, object_type)
+        player_x, player_y = int(player["_Field_X"]), int(player["_Field_Y"])
+        result[player_x][player_y] = Tile(player_x, player_y, "player")
+
+
 
         self.api.logger.log("Generated map data from API", "DEBUG")
         self.api.logger.log(f"Grid size: {len(result)}x{len(result[0])} ({str(len(result)*len(result[0]))} tiles)", "INFO")

@@ -20,10 +20,11 @@ print(game_environment.map)
 graph = game_environment.get_collision_graph()
 x, y = player_agent.position
 x, y = int(x), int(y)
-path = nx.shortest_path(graph, source=(x, y), target=(28, 16))
-game_environment.draw_path(path)
+egraph = game_environment.get_energy_graph()
+p = nx.dijkstra_path(egraph, source=(x, y), target=(64, 50), weight='weight')
+game_environment.draw_path(p)
 print(f"Shortest path from player({str(x)},{str(y)}) to target (3, 11):")
-player_agent.walk_to(28, 16)
+player_agent.follow_energy_path(p)
 # nx.write_graphml(game_environment.get_collision_graph(), "/home/rd/code/PythonStardewAPI/a.graphml")
 # 64 15 Farm, is the default position at map
 

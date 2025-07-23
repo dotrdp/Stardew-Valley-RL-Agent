@@ -13,12 +13,14 @@ ALIASES = {
     "hold": "custom_stuff",
     "clear_dialog": request("reflection", "invokemethod", ["game1", "exitActiveMenu"]),
     "tp": "custom_stuff",
+    "map": "custom_stuff",
 }
 
 ####################################################################################################
 import argparse
 
 from API import StardewModdingAPI, read_msgpack_base64
+from map_wrapper import Map
 parser = argparse.ArgumentParser(description='cli to call methods on the spot')
 parser.add_argument('function', type=str, help='API method to call')
 parser.add_argument('target', nargs='?', help='Target resource or object')
@@ -40,6 +42,10 @@ if a.function == "tp":
     for k,v in res.items():
         print(f"{k}: {v}")
     raise SystemExit(0)
+if a.function == "map":
+    map = Map(api)
+    a = api.map()
+    print(map)
     
 if a.function in ALIASES:
     a = ALIASES[a.function]

@@ -85,17 +85,43 @@ class environment():
                         graph.add_edge(tile, neighbor, weight=1)
         self.logger.log("Walkable graph created", "DEBUG")
         return graph
+
+    def get_energy_graph(self):
+        graph = nx.Graph()
+        for x in range(len(self.spatial_state)):
+            for y in range(len(self.spatial_state[x])):
+                tile = (x, y)
+                if "collision" in self.spatial_state[x][y].properties:
+                    continue
+                neighbors = []
+                if x+1 <= len(self.spatial_state) - 1:
+                    neighbors.append((x+1, y))
+                if x-1 >= 0:
+                    neighbors.append((x-1, y))
+                if y+1 <= len(self.spatial_state[x]) - 1:
+                    neighbors.append((x, y+1))
+                if y-1 >= 0:
+                    neighbors.append((x, y-1))
+                for neighbor in neighbors:
+                    if "tool" in self.spatial_state[x][y].properties and "collision" in self.spatial_state[neighbor[0]][neighbor[1]].properties:
+                        graph.add_edge(tile, neighbor, weight=1)
+                    if "collision" not in self.spatial_state[neighbor[0]][neighbor[1]].properties:
+                        graph.add_edge(tile, neighbor, weight=2)
+        self.logger.log("Energy graph created", "DEBUG")
+        return graph
+
     def draw_path(self, path):
         self.logger.log("Drawing path on the map", "DEBUG")
         copy = self.spatial_state.copy()
         for point in path:
             x, y = point
             type = copy[x][y].type
-            if type != "normal":
-                if type == "player":
+            if type == "player":
+                continue
+            if "tool" in copy[x][y].properties:
+                if "collision" in copy[x][y].properties:
+                    copy[x][y].type = "debug_red"
                     continue
-                self.logger.log(f"Tile at {point} is not normal, might have collision", "WARNING")
-                self.logger.log(f"Tile type: {copy[x][y].type}", "DEBUG")
             copy[x][y].type = "debugmarker"
         res = ""
         copy = list(zip(*copy))  # Transpose the matrix for easier printing

@@ -26,7 +26,7 @@ class inventory():
         self.items = []
         self.slots = list(range(12))
         self.environment = environment
-        self.environment.logger.log("INSTANTIATING INV, refer to inv.selected instead\nunless strictly changing tool", "WARNING")
+        self.environment.logger.log("INSTANTIATING INV, note that you can save Item instances since those act as pointers", "WARNING")
         for item in collection_items:
             slot = self.slots.pop(0)
             self.slots = self.slots[0:]
@@ -37,8 +37,6 @@ class inventory():
             type, id = item["ToString"].split(".")[1], item["ToString"].split(".")[-1]
             self.items.append(Item(self.environment, type, name, id, slot))
         self.environment.logger.log(("\n"+", ".join(str(item) for item in self.items)), "INFO")
-        if self.items[-1] != Item(self.environment, "Empty", "Empty", "Empty", self.items[-1].slot):
-            self.environment.logger.log("quick inventory is full", "WARNING")
     def __str__(self):
         return ", ".join(str(item) for item in self.items)
 
@@ -127,9 +125,16 @@ class player():
         self.logger.log(f"Walking to position ({x}, {y})", "INFO")
         xi, yi = self.position
         xi, yi = int(xi), int(yi)
+        if (xi, yi) == (x, y):
+            self.logger.log(f"Already at target position ({x}, {y})", "DEBUG")
+            return
         collision_graph = self.environment.get_collision_graph()
         self.logger.log("getting shortest path", "DEBUG")
-        path = nx.shortest_path(collision_graph, source=(xi, yi), target=(x, y))
+        if ((x-xi) ** 2 + (y-yi) ** 2) ** 0.5 == 1:
+            self.logger.log("Target is close enough, walking directly", "DEBUG")
+            path = [(x, y)]
+        else:
+            path = nx.shortest_path(collision_graph, source=(xi, yi), target=(x, y))
         self.logger.log(f"Shortest path found: {path}", "INFO")
         path = self.optimize_path(path)
         self.logger.log(f"Optimized path: {path}", "INFO")
@@ -138,7 +143,7 @@ class player():
         expected = None
         for point in path:
             self.logger.log(f"Walking to point {point}", "DEBUG")
-            player = self.environment.game_instance.reflection(function="getproperty", args=["game1", "player"])["Result"]["Properties"]
+            player = self.r(function="getproperty", args=["game1", "player"])["Result"]["Properties"]
             xi, yi = (str(player["Tile"]).replace("Vector2: ", "").replace("}", "").replace("{X:","").replace("Y","").replace(":", "").split(" "))  # "Vector2: {X: 1 Y: 1]"
             xi, yi = int(xi), int(yi)
             self.logger.log(f"Current position: ({xi}, {yi})", "DEBUG")
@@ -176,6 +181,10 @@ class player():
         if not path:
             self.logger.log("Path is empty, returning empty path", "CRITICAL")
             return []
+        print(len(path))
+        if len(path) <= 1:
+            self.logger.log("Path has less than 2 points, returning original path", "CRITICAL")
+            return path
         optimized_path = []
         next_point = None
         previous_slope = (path[0][1] - path[1][1]) / (path[0][0] - path[1][0]) if path[0][0] != path[1][0] else float('inf')
@@ -188,7 +197,66 @@ class player():
         if path[-1] not in optimized_path:
             optimized_path.append(path[-1])
         return optimized_path
+    def face_direction(self, key: str):
+        dirs = {
+            "w": 0,
+            "d": 1,
+            "s": 2,
+            "a": 3
+        }
+        if key not in dirs:
+            self.logger.log(f"Invalid direction: {key}", "ERROR")
+        self.r(function="invokemethod", args=["player", "faceDirection", dirs[key]])
 
+    def follow_energy_path(self, path: list):
+        current_target = None
+        tools = {
+            "Pickaxe": None,
+            "Axe": None,
+            "Scythe": None
+
+        }
+        self.logger.log("Following energy path", "DEBUG")
+        for item in self.inventory.items:
+            if item.name in tools:
+                tools[item.name] = item
+            elif item.name == "MeleeWeapon":
+                tools["Scythe"] = item
+        for point in path:
+            x, y = point
+            point_properties = self.environment.spatial_state[x][y].properties
+            if "tool" in point_properties:
+                tool = point_properties["tool"]
+                current_target = path[path.index(point) - 1]
+                self.walk_to(current_target[0], current_target[1])
+                key = "error"
+                if x > current_target[0]:
+                    key = "d"
+                elif x < current_target[0]:
+                    key = "a"
+                elif y > current_target[1]:
+                    key = "s"
+                elif y < current_target[1]:
+                    key = "w"
+                self.face_direction(key)
+                if tool in tools and tools[tool] is not None:
+                    self.logger.log(f"Using tool {tools[tool].name} on point {point}", "DEBUG") # type: ignore
+                    if "health" in point_properties:
+                        health = point_properties["health"]
+                        for i in range(health):
+                            self.logger.log(f"Dealing damage to point {point} ({i+1}/{health})", "DEBUG")
+                            tools[tool](use=True) # type: ignore
+                    else:
+                        tools[tool](use=True) # type: ignore
+                    self.environment.update_spatial_state()
+                    print(self.environment.map)
+                    time.sleep(0.1)
+                else:
+                    self.logger.log(f"No tool found for {tool}, skipping", "WARNING")
+
+                
+                
+        
 
 
     def close_dialogue(self):
