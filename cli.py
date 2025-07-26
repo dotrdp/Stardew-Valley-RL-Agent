@@ -44,6 +44,7 @@ if a.function == "tp":
     raise SystemExit(0)
 if a.function == "map":
     map = Map(api)
+    
     a = api.map()
     print(map)
     

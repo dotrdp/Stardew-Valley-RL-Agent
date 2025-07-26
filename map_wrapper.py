@@ -33,12 +33,14 @@ defaults = {
     "f":         "·",
   "NFF":         "·",
 "debug_red":     "✕",
+    "Water":     "",
 }
 
 def get_logic(type):
-    lgc = {
+   lgc = {
         "cbuilding": {"collision": True, "blocks_crops": True},
         "Building": {"collision": True, "blocks_crops": True},
+        "Water": {"collision": True, "blocks_crops": True},
         "Stone": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Pickaxe"},
         "Weeds": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Scythe"},
         "Tree": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Axe", "health": 10},
@@ -56,9 +58,9 @@ def get_logic(type):
         "mail": {"collision": True, "blocks_crops": True},
 
         }
-    if type in lgc:
-        return lgc[type]
-    else:
+   if type in lgc:
+       return lgc[type]
+   else:
         return {}
     
 
@@ -81,6 +83,7 @@ defaults["Stone Owl"] = Fore.RED + defaults["Stone Owl"] + Fore.RESET
 defaults["Artifact Spot"] = Fore.RED + defaults["Artifact Spot"] + Fore.RESET
 defaults["debugmarker"] = Fore.RED + defaults["debugmarker"] + Fore.RESET
 defaults["debug_red"] = Fore.RED + defaults["debug_red"] + Fore.RESET
+defaults["Water"] = Fore.BLUE + defaults["Water"] + Fore.RESET
 
 
 
@@ -210,7 +213,9 @@ class Map():
         result = [[Tile(x, y, "normal") for y in range(number_of_y+1)] for x in range(number_of_x+1)]
         player = self.readmsgpack(self.api.reflection(function="getproperty", args=["player", "Tile"])["Base64_binary"])
         tilesheets = {}
+
         for chunk in map["TileSheets"]:
+           print(chunk["ImageSource"])
            for data in chunk["Properties"]:
                if data.startswith("@TileIndex@"):
                    split = data.replace("@TileIndex@", "")
@@ -231,6 +236,7 @@ class Map():
             else:
                 prop_type = self.properties_logic(value.keys())
             result[int(x)][int(y)] = Tile(int(x), int(y), prop_type)
+
         for build in other_buildings:
             x, y = build["Position"].split(",")
             x, y = int(x), int(y)
@@ -238,17 +244,6 @@ class Map():
             building = self.get_building(building_target)
             building = building(x, y)
             result = building.building.inject(result) # type: ignore
-            
-            for tile in back:
-                id = tile["TileIndex"]
-                x, y = tile["X"], tile["Y"]
-                id = str(id)
-                if id in list(tilesheets.keys()):
-                    result[x][y].tilesheet = tilesheets[id]
-                    if "Diggable" in tilesheets[id] and "Type" in tilesheets[id]:
-                        result[x][y].type = "Tree"
-                    print(f"Tile {x},{y} has tilesheet: {tilesheets[id]}")
-
             build_type = build["Type"]
             self.api.logger.log(f"Building {building_target} at {x},{y} ({build_type})", "DEBUG")
             if build_type == "ShippingBin":
@@ -267,14 +262,37 @@ class Map():
             if object["MinutesUntilReady"] == 1 and object_type == "Weeds":
                 object_type = "Tree"
             result[x][y] = Tile(x, y, object_type)
+
         if "TerrainFeatures" in map:
             for object in map["TerrainFeatures"]:
                 x, y = object["Position"]["X"], object["Position"]["Y"]
                 object_type = object["Type"]
                 result[x][y] = Tile(x, y, object_type)
+
+        for label in list(map["Layers"].keys()):
+            layer = map["Layers"][label]["Tiles"]
+            for tile in layer:
+                # if tile["TileSheet"] != "untitled tile sheet":
+                #     if tile["TileSheet"] != "Paths":
+                #         print(f"TileSheet: {tile['TileSheet']}")
+                if tile["Properties"] != {}:
+                    if "Order" in tile["Properties"]:
+                        x, y = tile["X"], tile["Y"]
+                        if result[x][y].type == "normal":
+                            result[x][y].type = "something"
+                        
+                id = tile["TileIndex"]
+                x, y = tile["X"], tile["Y"]
+                id = str(id)
+                if id in list(tilesheets.keys()):
+                    result[x][y].tilesheet = tilesheets[id]
+                    if "Water" in tilesheets[id]:
+                        result[x][y].type = "Water"
+                else:
+                    pass # There are a bunch of unknown tilesheets which I don't know what could they be. They're just everywhere.
+                        
         player_x, player_y = int(player["_Field_X"]), int(player["_Field_Y"])
         result[player_x][player_y] = Tile(player_x, player_y, "player")
-
 
 
         self.api.logger.log("Generated map data from API", "DEBUG")
