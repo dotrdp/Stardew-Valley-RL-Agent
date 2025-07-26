@@ -8,12 +8,14 @@ class request():
 # Note this initializes an api instance with the default port therefore it cant do multiple instances
 
 METHOD = "ssh+tty"
+LOGLEVEL = "DEBUG"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
 ALIASES = {
     "isplayerfree": request("reflection", "GetProperty", ["Context", "IsPlayerFree"]),
     "hold": "custom_stuff",
     "clear_dialog": request("reflection", "invokemethod", ["game1", "exitActiveMenu"]),
     "tp": "custom_stuff",
     "map": "custom_stuff",
+    "skip": "custom_stuff",
 }
 
 ####################################################################################################
@@ -26,7 +28,7 @@ parser.add_argument('function', type=str, help='API method to call')
 parser.add_argument('target', nargs='?', help='Target resource or object')
 parser.add_argument('params', nargs='*', help='Additional parameters as key=value', default=[])
 
-api = StardewModdingAPI(method=METHOD, docker_image_name="sdvd-server")
+api = StardewModdingAPI(method=METHOD, docker_image_name="sdvd-server", loglevel=LOGLEVEL)
 
 a = (parser.parse_args())
 if a.function == "hold":
@@ -44,9 +46,12 @@ if a.function == "tp":
     raise SystemExit(0)
 if a.function == "map":
     map = Map(api)
-    
-    a = api.map()
     print(map)
+if a.function == "skip":
+    value = True if a.target == "true" else False
+    res = api.skip_events(value) # type: ignore
+    print(res)
+
     
 if a.function in ALIASES:
     a = ALIASES[a.function]

@@ -267,7 +267,46 @@ class StardewModdingAPI:
         else:
             raise ValueError("Create an API instance first") 
 
-            
+    def skip_events(self, skip: bool = True):
+        met = self.method.method
+        command = None
+        self.logger.log(f"skipping events with status {skip} using method: {met}", "DEBUG")
+        strskip = "enable" if skip else "disable"
 
+        res = (
+            f"curl -X POST http://localhost:{self.port}/api/keyboard/autoskip "
+            '-H "Content-Type: application/json" '
+            "-d '{"
+            f"\"Action\": \"{strskip}\", "
+            "\"Events\": true, "
+            "\"Dialogues\": true, "
+            "\"Speed\": 10"
+            "}'"
+        )
+        if strskip == "disable":
+            res = (
+                f"curl -X POST http://localhost:{self.port}/api/keyboard/autoskip "
+                '-H "Content-Type: application/json" '
+                "-d '{"
+                f"\"Action\": \"{strskip}\""
+                "}'"
+            )
+        if met == "tty":
+            command = res
+            return self.method.subprocess_wrap(subprocess.check_output(command.split()))
+        elif met == "ssh+tty":
+            command = self.method.ssh_wrapper + (res).split()
+            return self.method.subprocess_wrap(subprocess.check_output(command))
+        elif met == "docker":
+            try:
+                command = res
+                result = self.method.docker_container.exec_run(command, tty=True)
+                if result.exit_code != 0:
+                    raise RuntimeError(f"Docker command failed with exit code {result.exit_code}: {result.output.decode('utf-8')}")
+                return self.method.subprocess_wrap(result.output)
+            except Exception as e:
+                raise RuntimeError(f"Docker execution failed: {e}")
+        else:
+            raise ValueError("Create an API instance first") 
 
-
+    

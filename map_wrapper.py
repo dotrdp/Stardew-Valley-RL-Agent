@@ -56,7 +56,6 @@ def get_logic(type):
         "Grass": {"blocks_crops": True, "breakable": True, "tool": "Scythe"},
         "Artifact Spot": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Hoe"},
         "mail": {"collision": True, "blocks_crops": True},
-
         }
    if type in lgc:
        return lgc[type]
@@ -215,7 +214,6 @@ class Map():
         tilesheets = {}
 
         for chunk in map["TileSheets"]:
-           print(chunk["ImageSource"])
            for data in chunk["Properties"]:
                if data.startswith("@TileIndex@"):
                    split = data.replace("@TileIndex@", "")

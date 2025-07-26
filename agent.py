@@ -21,6 +21,7 @@ graph = game_environment.get_collision_graph()
 x, y = player_agent.position
 x, y = int(x), int(y)
 egraph = game_environment.get_energy_graph()
+nx.write_graphml(egraph, "./a.graphml")
 p = nx.dijkstra_path(egraph, source=(x, y), target=(64, 50), weight='weight')
 game_environment.draw_path(p)
 print(f"Shortest path from player({str(x)},{str(y)}) to target (3, 11):")

@@ -88,28 +88,38 @@ class environment():
 
     def get_energy_graph(self):
         graph = nx.Graph()
-        for x in range(len(self.spatial_state)):
-            for y in range(len(self.spatial_state[x])):
+        rows = len(self.spatial_state) - 1 
+        for x in range(rows):
+            cols = len(self.spatial_state[x]) - 1
+            for y in range(cols):
                 tile = (x, y)
-                if "collision" in self.spatial_state[x][y].properties:
+
+                props = self.spatial_state[x][y].properties
+
+                if "collision" in props and "tool" not in props:
                     continue
-                neighbors = []
-                if x+1 <= len(self.spatial_state) - 1:
-                    neighbors.append((x+1, y))
-                if x-1 >= 0:
-                    neighbors.append((x-1, y))
-                if y+1 <= len(self.spatial_state[x]) - 1:
-                    neighbors.append((x, y+1))
-                if y-1 >= 0:
-                    neighbors.append((x, y-1))
-                for neighbor in neighbors:
-                    if "tool" in self.spatial_state[x][y].properties and "collision" in self.spatial_state[neighbor[0]][neighbor[1]].properties:
+                graph.add_node(tile)
+                neighbor_positions = [
+                    (min(x+1, len(self.spatial_state)), y),
+                    (x, min(y+1, cols)),
+                    (max(x-1, 0), y),
+                    (x, max(y-1, 0))
+                ]
+                for nx_pos, ny_pos in neighbor_positions:
+                    neighbor_props = getattr(self.spatial_state[nx_pos][ny_pos], "properties", [])
+                    neighbor = (nx_pos, ny_pos)
+                    if "collision" in neighbor_props:
+                        if "tool" in props:
+                            graph.add_edge(tile, neighbor, weight=2)
+                    else:
                         graph.add_edge(tile, neighbor, weight=1)
-                    if "collision" not in self.spatial_state[neighbor[0]][neighbor[1]].properties:
-                        graph.add_edge(tile, neighbor, weight=2)
-        self.logger.log("Energy graph created", "DEBUG")
+            # Ensure graph is connected
+        if nx.is_connected(graph):
+            self.logger.log("Energy graph is connected", "DEBUG")
+        self.logger.log("Energy graph created and connected", "DEBUG")
         return graph
 
+    
     def draw_path(self, path):
         self.logger.log("Drawing path on the map", "DEBUG")
         copy = self.spatial_state.copy()
