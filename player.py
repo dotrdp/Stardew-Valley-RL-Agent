@@ -57,14 +57,8 @@ class player():
         self.MaxItems = 12
         self.logger = self.environment.logger
         self.path = None
+        self.nconvs = 0
         self.logger.log("Player instance created", "INFO")
-        self.antithesis = {
-            "a": "d",
-            "d": "a",
-            "w": "s",
-            "s": "w"
-        }
-
     def wrap_result(self, result: dict):
         if result["Success"]:
             return self.read_msgpack_base64(result["Base64_binary"])
@@ -118,10 +112,27 @@ class player():
         collection_items = self.wrap_result(self.r(function="getproperty", args=["player", "Items"]))["_Collection_Items"]
         return inventory(collection_items, self.environment)
 
+    @property
+    def can_move(self):
+        self.logger.log("Checking if player can move", "DEBUG")
+        envstate = self.environment.envstate # returns a dict with environment properties
+        res = self.environment.world_env.isAvailable(envstate) # returns a list [bool, missing_properties_if_any]  
+        if res[0]:
+            self.logger.log("Player can move", "DEBUG")
+            return True
+        else:
+            self.logger.log(f"Player cannot move, missing properties: {res[1]}", "WARNING")
+            return False
+
     def normal_action(self, key, durationms):
         return self.environment.world_action([key, durationms])
 
+    def cutscenes_quickfix(self):
+        self.environment.game_instance.skip_events(False)
+        self.environment.game_instance.skip_events(True)
+
     def walk_to(self, x, y):
+        self.cutscenes_quickfix()
         self.logger.log(f"Walking to position ({x}, {y})", "INFO")
         xi, yi = self.position
         xi, yi = int(xi), int(yi)
@@ -148,6 +159,20 @@ class player():
             xi, yi = int(xi), int(yi)
             self.logger.log(f"Current position: ({xi}, {yi})", "DEBUG")
             if expected is not None and expected != (xi, yi):
+                self.nconvs += 1
+                self.logger.log(f"Position mismatch: expected {expected}, got ({xi}, {yi})", "WARNING")
+                if self.nconvs > 5:
+                    self.logger.log("Too many consecutive position mismatches, modifying spatial state", "DEBUG")
+                    gp = self.environment.get_collision_graph()
+                    pt = nx.shortest_path(gp, source=(xi, yi), target=(x, y))
+                    pont = pt[1]
+                    if len(pt) < 2:
+                        pont = pt[0]
+                    xd, yd = pont
+                    self.environment.draw_learned_tile(xd, yd, "Building")
+                    self.convs = 0
+                    self.walk_to(x, y)
+                    break
                 self.walk_to(x, y)
                 break
             speed = player["speed"]
@@ -167,13 +192,18 @@ class player():
             elif yp < yi:
                 key = "w"
             self.normal_action(key, duration)
-            time.sleep(duration / 1000)  # Convert milliseconds to seconds
             expected = (xp, yp)
+            interval = duration/4
+            for _ in range(4):
+                xi, yi = self.position
+                if (xi, yi) == expected:    
+                    break
+                time.sleep(interval / 1000)  # Convert milliseconds to seconds
+            continue
         xi, yi = self.position
         if (xi, yi) != (x, y):
             self.walk_to(x, y)
         self.path = None
-            
             
 
     def optimize_path(self, path: list):
@@ -181,9 +211,8 @@ class player():
         if not path:
             self.logger.log("Path is empty, returning empty path", "CRITICAL")
             return []
-        print(len(path))
         if len(path) <= 1:
-            self.logger.log("Path has less than 2 points, returning original path", "CRITICAL")
+            self.logger.log("Path has less than 2 points, returning original path", "DEBUG")
             return path
         optimized_path = []
         next_point = None
@@ -249,7 +278,7 @@ class player():
                     else:
                         tools[tool](use=True) # type: ignore
                     self.environment.update_spatial_state()
-                    print(self.environment.map)
+                    self.logger.log(f"\n{self.environment.draw_path(path[path.index(point):])}", "DEBUG")
                     time.sleep(0.1)
                 else:
                     self.logger.log(f"No tool found for {tool}, skipping", "WARNING")

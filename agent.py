@@ -22,7 +22,17 @@ x, y = player_agent.position
 x, y = int(x), int(y)
 egraph = game_environment.get_energy_graph()
 nx.write_graphml(egraph, "./a.graphml")
-p = nx.dijkstra_path(egraph, source=(x, y), target=(64, 50), weight='weight')
+connected_components = list(nx.connected_components(egraph))[0]
+max_distance = 0
+furthest_point = None
+for point in connected_components:
+    distance = nx.shortest_path_length(egraph, source=(x, y), target=point, weight='weight')
+    if distance > max_distance:
+        max_distance = distance
+        furthest_point = point
+xt, yt = furthest_point #type: ignore
+print(f"Furthest point from player({str(x)},{str(y)}) is ({str(xt)},{str(yt)}) with distance {max_distance}")
+p = nx.dijkstra_path(egraph, source=(x, y), target=(xt, yt), weight='weight')
 game_environment.draw_path(p)
 print(f"Shortest path from player({str(x)},{str(y)}) to target (3, 11):")
 player_agent.follow_energy_path(p)

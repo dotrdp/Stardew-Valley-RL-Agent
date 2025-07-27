@@ -18,7 +18,7 @@ class world_action():
         self.wanted_conditions = ["IsPlayerFree", "CanPlayerMove", "IsWorldReady"]
         self.check_wanted_conditions_in_env = check_wanted_conditions_in_env
 
-    def isAvailable(self, res):
+    def isAvailable(self, res) -> list:
         if res != None:
             return self.check_wanted_conditions_in_env(self.wanted_conditions, res)
         else:
@@ -35,6 +35,7 @@ class environment():
         self.world_env = world_action(self.game_instance)
         self.map = Map(self.game_instance)
         self.spatial_state = self.map.get_data()
+        self.learned_spatial_features = {}
         self.logger = Logger(loglevel)
         self.logger.log("Environment initialized", "INFO")
 
@@ -62,6 +63,10 @@ class environment():
     def update_spatial_state(self):
         self.logger.log("Updating spatial state", "DEBUG")
         self.spatial_state = self.map.get_data()
+        if self.learned_spatial_features != {}:
+            for i, v in self.learned_spatial_features.items():
+                x, y = i
+                self.spatial_state[x][y] = v
         self.logger.log("Spatial state updated", "DEBUG")
     def get_collision_graph(self):
         graph = nx.Graph()
@@ -110,6 +115,9 @@ class environment():
                     neighbor = (nx_pos, ny_pos)
                     if "collision" in neighbor_props:
                         if "tool" in props:
+                            if "health" in props:
+                                graph.add_edge(tile, neighbor, weight=props["health"])
+                                continue
                             graph.add_edge(tile, neighbor, weight=2)
                     else:
                         graph.add_edge(tile, neighbor, weight=1)
@@ -140,9 +148,9 @@ class environment():
                 tile = copy[x][y]
                 res += str(tile)
             res += "\n"
-        
-        print(res)
         return res
-                
 
-        
+    def draw_learned_tile(self, x, y, type):
+        self.logger.log(f"Drawing tile at ({x}, {y}) with type {type}", "DEBUG")
+        self.spatial_state[x][y] = Tile(x, y, type) 
+        self.learned_spatial_features[(x, y)] = Tile(x, y, type) 
