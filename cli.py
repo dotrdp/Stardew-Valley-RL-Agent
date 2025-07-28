@@ -7,7 +7,7 @@ class request():
 ####################################################################################################
 # Note this initializes an api instance with the default port therefore it cant do multiple instances
 
-METHOD = "ssh+tty"
+METHOD = "docker"
 LOGLEVEL = "DEBUG"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
 ALIASES = {
     "isplayerfree": request("reflection", "GetProperty", ["Context", "IsPlayerFree"]),

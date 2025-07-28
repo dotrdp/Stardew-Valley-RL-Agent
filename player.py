@@ -208,11 +208,15 @@ class player():
 
             expected = (xp, yp)
             interval = duration/4
+            cachedx, cachedy = None, None
             for _ in range(4):
                 xi, yi = self.position
+                cachedx, cachedy = xi, yi
                 if (xi, yi) == expected:    
                     break
                 time.sleep(interval / 1000)  # Convert milliseconds to seconds
+                if (cachedx, cachedy) == (xi, yi):
+                    break # player is not moving, therefore no point in waiting
             continue
         xi, yi = self.position
         if (xi, yi) != (x, y):

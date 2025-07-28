@@ -2,4 +2,4 @@
 .envrc
 default.nix
 a.graphml
-__pycache__
+__pycache__/

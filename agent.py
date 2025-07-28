@@ -33,8 +33,7 @@ for point in connected_components:
 xt, yt = furthest_point #type: ignore
 print(f"Furthest point from player({str(x)},{str(y)}) is ({str(xt)},{str(yt)}) with distance {max_distance}")
 p = nx.dijkstra_path(egraph, source=(x, y), target=(xt, yt), weight='weight')
-game_environment.draw_path(p)
-print(f"Shortest path from player({str(x)},{str(y)}) to target (3, 11):")
+game_environment.print_path(p)
 player_agent.follow_energy_path(p)
 # nx.write_graphml(game_environment.get_collision_graph(), "/home/rd/code/PythonStardewAPI/a.graphml")
 # 64 15 Farm, is the default position at map
