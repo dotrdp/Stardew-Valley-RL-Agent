@@ -45,10 +45,9 @@ class environment():
         res = self.world_env.isAvailable(self.envstate)
         if res[0] == True: 
              self.logger.log("World action is available, executing action", "INFO")
-             return self.world_env(action)
         elif res[0] == False:
             self.logger.log(f"World action is not available, missing conditions: {res[1]}", "WARNING")
-            return res
+        return res
     @property
     def envstate(self) -> dict:
         res = {
