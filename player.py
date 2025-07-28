@@ -58,6 +58,7 @@ class player():
         self.logger = self.environment.logger
         self.path = None
         self.nconvs = 0
+        self.failed_convs = 0
         self.logger.log("Player instance created", "INFO")
     def wrap_result(self, result: dict):
         if result["Success"]:
@@ -130,6 +131,7 @@ class player():
     def cutscenes_quickfix(self):
         self.environment.game_instance.skip_events(False)
         self.environment.game_instance.skip_events(True)
+        self.environment.game_instance.reflection(function="invokemethod", args=["game1", "exitActiveMenu"])
 
     def walk_to(self, x, y):
         self.cutscenes_quickfix()
@@ -171,9 +173,11 @@ class player():
                     xd, yd = pont
                     self.environment.draw_learned_tile(xd, yd, "Building")
                     self.convs = 0
-                    self.walk_to(x, y)
+                    if not self.walk_to(x, y):
+                        return False
                     break
-                self.walk_to(x, y)
+                if not self.walk_to(x, y):
+                    return False
                 break
             speed = player["speed"]
             walk1 = self.walk1(speed)
@@ -191,7 +195,15 @@ class player():
                 key = "s"
             elif yp < yi:
                 key = "w"
-            self.normal_action(key, duration)
+            action: list = self.normal_action(key, duration) # type: ignore
+            if action[0] == False:
+                self.failed_convs += 1
+                if self.failed_convs > 4:
+                    self.failed_convs = 0
+                    self.nconvs = 0
+                    self.logger.log("spatial state is not modifiable\n probably in a cutscene or stuck somewhere", "CRITICAL")
+                    return False 
+
             expected = (xp, yp)
             interval = duration/4
             for _ in range(4):
@@ -202,7 +214,9 @@ class player():
             continue
         xi, yi = self.position
         if (xi, yi) != (x, y):
-            self.walk_to(x, y)
+            if not self.walk_to(x, y):
+                return False
+
         self.path = None
             
 
@@ -257,7 +271,8 @@ class player():
             if "tool" in point_properties:
                 tool = point_properties["tool"]
                 current_target = path[path.index(point) - 1]
-                self.walk_to(current_target[0], current_target[1])
+                if not self.walk_to(current_target[0], current_target[1]):
+                    return False
                 key = "error"
                 if x > current_target[0]:
                     key = "d"

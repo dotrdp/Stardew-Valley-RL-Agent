@@ -291,15 +291,26 @@ class StardewModdingAPI:
                 f"\"Action\": \"{strskip}\""
                 "}'"
             )
+        res2 = (
+                        f"curl -X POST http://localhost:{self.port}/api/keyboard/skip "
+                        '-H "Content-Type: application/json" '
+                        "-d '{"
+                        "\"Type\": \"event\""
+                        "}'"
+                    )
+
         if met == "tty":
             command = res
+            self.method.subprocess_wrap(subprocess.check_output(res2.split()))
             return self.method.subprocess_wrap(subprocess.check_output(command.split()))
         elif met == "ssh+tty":
             command = self.method.ssh_wrapper + (res).split()
+            self.method.subprocess_wrap(subprocess.check_output(self.method.ssh_wrapper + res2.split()))
             return self.method.subprocess_wrap(subprocess.check_output(command))
         elif met == "docker":
             try:
                 command = res
+                self.method.docker_container.exec_run(res2, tty=True)
                 result = self.method.docker_container.exec_run(command, tty=True)
                 if result.exit_code != 0:
                     raise RuntimeError(f"Docker command failed with exit code {result.exit_code}: {result.output.decode('utf-8')}")
