@@ -173,10 +173,12 @@ class player():
                     xd, yd = pont
                     self.environment.draw_learned_tile(xd, yd, "Building")
                     self.convs = 0
-                    if not self.walk_to(x, y):
+                    r = self.walk_to(x, y)
+                    if not r:
                         return False
                     break
-                if not self.walk_to(x, y):
+                r = self.walk_to(x, y)
+                if not r:
                     return False
                 break
             speed = player["speed"]
@@ -214,7 +216,8 @@ class player():
             continue
         xi, yi = self.position
         if (xi, yi) != (x, y):
-            if not self.walk_to(x, y):
+            r = self.walk_to(x, y)
+            if not r:
                 return False
 
         self.path = None
@@ -271,8 +274,7 @@ class player():
             if "tool" in point_properties:
                 tool = point_properties["tool"]
                 current_target = path[path.index(point) - 1]
-                if not self.walk_to(current_target[0], current_target[1]):
-                    return False
+                r = self.walk_to(current_target[0], current_target[1])
                 key = "error"
                 if x > current_target[0]:
                     key = "d"
@@ -293,7 +295,8 @@ class player():
                     else:
                         tools[tool](use=True) # type: ignore
                     self.environment.update_spatial_state()
-                    self.logger.log(f"\n{self.environment.draw_path(path[path.index(point):])}", "DEBUG")
+                    if self.logger.level == 0: # DEBUG level is 0, sorry for the magic numbers
+                        self.environment.print_path(path[path.index(point):]) # this calls print, therefore it couldnt be blocked otherwise
                     time.sleep(0.1)
                 else:
                     self.logger.log(f"No tool found for {tool}, skipping", "WARNING")

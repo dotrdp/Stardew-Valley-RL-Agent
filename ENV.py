@@ -44,7 +44,8 @@ class environment():
         self.logger.log("Checking if the world action is available", "INFO")
         res = self.world_env.isAvailable(self.envstate)
         if res[0] == True: 
-             self.logger.log("World action is available, executing action", "INFO")
+            self.logger.log("World action is available, executing action", "INFO")
+            self.world_env(action)
         elif res[0] == False:
             self.logger.log(f"World action is not available, missing conditions: {res[1]}", "WARNING")
         return res
@@ -127,7 +128,7 @@ class environment():
         return graph
 
     
-    def draw_path(self, path):
+    def print_path(self, path):
         self.logger.log("Drawing path on the map", "DEBUG")
         copy = self.spatial_state.copy()
         for point in path:
@@ -147,7 +148,7 @@ class environment():
                 tile = copy[x][y]
                 res += str(tile)
             res += "\n"
-        return res
+        print(res)
 
     def draw_learned_tile(self, x, y, type):
         self.logger.log(f"Drawing tile at ({x}, {y}) with type {type}", "DEBUG")
