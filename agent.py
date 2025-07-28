@@ -1,11 +1,11 @@
-import torch
+# import torch
 from ENV import environment
-from player import player 
+from player import player
 from API import StardewModdingAPI
 import networkx as nx
 
 # [NOTE] set your method here
-METHOD = "ssh+tty"
+METHOD = "docker"
 LOG_LEVEL = "DEBUG"
 # [DEBUG]: 0
 # [INFO]: 1
@@ -40,28 +40,25 @@ player_agent.follow_energy_path(p)
 # 64 15 Farm, is the default position at map
 
 
-
-
 class RewardSystem:
-    def __init__(self, env: environment, map = None):
+    def __init__(self, env: environment, map=None):
         self.env = env
-        self.cached_state = map 
+        self.cached_state = map
 
     def get_reward(self, state, action, map=None):
         if map != None:
             self.cached_state = map
-            self.env.logger.log("RewardSystem: setting provided map as state", "DEBUG")
+            self.env.logger.log(
+                "RewardSystem: setting provided map as state", "DEBUG")
         if self.cached_state == None:
-            self.env.logger.log("RewardSystem: requires a new map to draw a reward\notherwise it will try to use it's previous cached state as a state", "WARNING")
-            self.env.logger.log("RewardSystem: previous state is None", "CRITICAL")
-            self.env.logger.log("RewardSystem: cached state is None, instantiating a new Map class\nPLEASE DON'T LET IT TO DO THIS, CACHE THE MAP AS MUCH AS POSSIBLE", "WARNING")
-        self.env.logger.log("RewardSystem: using the current map as a state", "DEBUG")
-
-        
-
-
-
-        
+            self.env.logger.log(
+                "RewardSystem: requires a new map to draw a reward\notherwise it will try to use it's previous cached state as a state", "WARNING")
+            self.env.logger.log(
+                "RewardSystem: previous state is None", "CRITICAL")
+            self.env.logger.log(
+                "RewardSystem: cached state is None, instantiating a new Map class\nPLEASE DON'T LET IT TO DO THIS, CACHE THE MAP AS MUCH AS POSSIBLE", "WARNING")
+        self.env.logger.log(
+            "RewardSystem: using the current map as a state", "DEBUG")
 
 
 class Agent:
@@ -74,6 +71,3 @@ class Agent:
         pass
 
         # Get the action from the player
-
-
-

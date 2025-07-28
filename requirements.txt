@@ -1,0 +1,20 @@
+# Stardew Valley RL Agent Dependencies
+
+# Core libraries for the project
+keyboard
+networkx
+colorama
+msgpack
+docker
+
+# Optional dependencies (commented out because torch is commented in agent.py)
+# torch>=2.0.0
+# numpy>=1.21.0
+
+# Standard library modules (no installation required)
+# - subprocess (built-in)
+# - json (built-in)
+# - base64 (built-in)
+# - time (built-in)
+# - argparse (built-in)
+
