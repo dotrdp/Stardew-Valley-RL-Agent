@@ -201,12 +201,13 @@ class player():
                     return
 
             expected = (xp, yp)
-            interval = duration/4
+            interval = duration/8
             cachedx, cachedy = None, None
-            for _ in range(4):
+            for _ in range(8):
                 xi, yi = self.position
                 cachedx, cachedy = xi, yi
                 if (xi, yi) == expected:    
+                    self.logger.log(f"Reached point {expected}", "DEBUG")
                     break
                 time.sleep(interval / 1000)  # Convert milliseconds to seconds
                 if (cachedx, cachedy) == (xi, yi):
