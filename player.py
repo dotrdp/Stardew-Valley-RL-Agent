@@ -423,7 +423,7 @@ class player():
                 current_target = path[path.index(point) - 1] 
                 # utils
 
-                self.walk_to(current_target) # last walkable point in theory
+                self.walk_to(current_target, allow_breaking=True) # last walkable point in theory
 
                 # edge case
                 if "health" in point_properties:
@@ -432,7 +432,10 @@ class player():
                     for i in range(health):
                         self.logger.log(f"Dealing damage to point {point} ({i+1}/{health})", "DEBUG")
                         tools[tool](use=True) # type: ignore
-                        time.sleep(0.1)
+                        self.environment.update_spatial_state()
+                        x, y = point
+                        if not "collision" in self.environment.spatial_state[x][y].properties:
+                            break
                     self.environment.update_spatial_state()
                     if self.logger.level == 0:
                         self.environment.print_path(path[path.index(point):])
