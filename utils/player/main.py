@@ -354,7 +354,7 @@ class player():
 
 
     @retry(tries=attempts["follow_energy_path"])
-    async def follow_energy_path(self, path: list):
+    def follow_energy_path(self, path: list):
 
         self.moving = True
         # tool pointers
