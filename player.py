@@ -55,8 +55,10 @@ class player():
         self.MaxItems = 12
         self.logger = self.environment.logger
         self.path = None
+        self.expected = None
         self.nconvs = 0
         self.failed_convs = 0
+        self.cutscenes_quickfix()
         self.logger.log("Player instance created", "INFO")
     def wrap_result(self, result: dict):
         if result["Success"]:
@@ -151,16 +153,15 @@ class player():
         self.logger.log(f"Optimized path: {path}", "INFO")
         self.logger.log("Following path", "DEBUG")
         self.path = path
-        expected = None
         for point in path:
             self.logger.log(f"Walking to point {point}", "DEBUG")
             player = self.r(function="getproperty", args=["game1", "player"])["Result"]["Properties"]
             xi, yi = (str(player["Tile"]).replace("Vector2: ", "").replace("}", "").replace("{X:","").replace("Y","").replace(":", "").split(" "))  # "Vector2: {X: 1 Y: 1]"
             xi, yi = int(xi), int(yi)
             self.logger.log(f"Current position: ({xi}, {yi})", "DEBUG")
-            if expected != (xi, yi):
+            if self.expected != None and self.expected != (xi, yi):
                 self.nconvs += 1
-                self.logger.log(f"Position mismatch: expected {expected}, got ({xi}, {yi})", "WARNING")
+                self.logger.log(f"Position mismatch: self.expected {self.expected}, got ({xi}, {yi})", "WARNING")
                 if self.nconvs > 5:
                     self.logger.log("Too many consecutive position mismatches, modifying spatial state", "DEBUG")
                     gp = self.environment.get_energy_graph()
@@ -199,15 +200,15 @@ class player():
                     self.logger.log("spatial state is not modifiable\n probably in a cutscene or stuck somewhere", "CRITICAL")
                     return
 
-            expected = (xp, yp)
-            self.logger.log(f"set expected to {expected}", "DEBUG")
+            self.expected = (xp, yp)
+            self.logger.log(f"set expected to {self.expected}", "DEBUG")
             interval = duration/8
             cachedx, cachedy = None, None
             for _ in range(8):
                 xi, yi = self.position
                 cachedx, cachedy = xi, yi
-                if (xi, yi) == expected:    
-                    self.logger.log(f"Reached point {expected}", "DEBUG")
+                if (xi, yi) == self.expected:    
+                    self.logger.log(f"Reached point {self.expected}", "DEBUG")
                     break
                 time.sleep(interval / 1000)  # Convert milliseconds to seconds
                 if (cachedx, cachedy) == (xi, yi):
