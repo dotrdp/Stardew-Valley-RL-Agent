@@ -8,7 +8,8 @@ import asyncio
 attempts = {
             "api_call": 4, # number of attempts to interact with the environment or game instance
             "walk_to": 3, # number of attempts to walk_to a position
-            "follow_energy_path": 2 # number of attempts to follow an energy path
+            "follow_energy_path": 2, # number of attempts to follow an energy path
+            "assume_wall": 3 # number of attempts to assume that the player is running into a wall
         } # reducing these yields faster actions, but may lead to errors
 
 class Item():
@@ -232,12 +233,13 @@ class player():
             self.logger.log(f"Position {target_position} is NOT reachable by walking", "DEBUG")
             return False
 
-    def wait_until_pos_or_not_moving(self, target_position: tuple[int, int]) -> bool:
+    def wait_until_pos_or_not_moving(self, target_position: tuple[int, int]) -> bool | str:
         '''
         Waits until the player reaches the target position or stops moving
         Returns True if the player reached the target position, False if the player stopped moving
         '''
         previous_position = self.position
+        recurrence = 0
         while True:
             current_position = self.position
             if current_position == target_position:
@@ -245,12 +247,18 @@ class player():
                 return True
             if current_position == previous_position:
                 self.logger.log(f"Player stopped moving at position {current_position}", "WARNING")
+                if recurrence <= 2:
+                    self.logger.log(f"Player is almost certainly running into a wall", "DEBUG")
+                    recurrence += 1
+                    return "wall"
                 return False
             previous_position = current_position
+            recurrence += 1
             time.sleep(0.05)
 
     @retry(tries=attempts["walk_to"])
     def walk_to(self, target_position: tuple[int, int], allow_breaking: bool = False) -> Exception | None:
+        self.likely_running_into_wall = 0
 
         # edge cases
         self.cutscenes_quickfix()
@@ -285,13 +293,28 @@ class player():
 
             asyncio.run(self.single_step(current_target)) # this will raise an exception if the environment is not available, including retries
             success = self.wait_until_pos_or_not_moving(current_target)  # wait until the player reaches the target position
+            self.likely_running_into_wall = self.likely_running_into_wall + 1 if success == "wall" else self.likely_running_into_wall # wall detection
 
+            # retry walking to the target position if it failed
             for _ in range(self.attempts["walk_to"]):
                 asyncio.run(self.single_step(current_target))  # try to walk to the target position again
                 success = self.wait_until_pos_or_not_moving(current_target)
                 if success:
+                    self.likely_running_into_wall = self.likely_running_into_wall + 1 if success == "wall" else self.likely_running_into_wall # wall detection
                     break
+            # retry walking to the target position if it failed
+
             if self.position != current_target:
+
+                # edge case for running into a wall
+                if self.likely_running_into_wall >= self.attempts["assume_wall"]:
+                    self.likely_running_into_wall = 0
+                    point_x, point_y = current_target
+                    self.environment.draw_learned_tile(point_x, point_y, "Building") 
+                    self.walk_to(target_position, allow_breaking)
+                    return
+                # edge case for running into a wall
+
                 self.logger.log(f"Failed to walk to target position {current_target}, current position is {self.position}", "ERROR")
                 raise Exception(f"Failed to walk to target position {current_target}, current position is {self.position}")
 
