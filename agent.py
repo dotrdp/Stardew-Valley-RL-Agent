@@ -3,17 +3,19 @@ from ENV import environment
 from player import player
 from API import StardewModdingAPI
 import networkx as nx
+from dotenv import dotenv_values
 
 # [NOTE] set your method here
-METHOD = "ssh+tty"
-LOG_LEVEL = "DEBUG"
+prefs = dotenv_values(".env")
+METHOD = prefs.get("method", "docker")
+LOG_LEVEL = prefs.get("debug_level", "ERROR")
 # [DEBUG]: 0
 # [INFO]: 1
 # [WARNING]: 2
 # [ERROR]: 3
 # [FATAL]: 4 ;[NOTE] to call fatal set the string to "CRITICAL"
 
-api = StardewModdingAPI(method=METHOD, loglevel=LOG_LEVEL)
+api = StardewModdingAPI()
 game_environment = environment(api, loglevel=LOG_LEVEL)
 player_agent = player(game_environment)
 print(game_environment.map)
