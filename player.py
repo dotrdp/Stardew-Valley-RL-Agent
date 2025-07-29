@@ -290,19 +290,20 @@ class player():
         except nx.NetworkXNoPath:
             try:
                 energy_graph = self.environment.get_energy_graph()
-                path = nx.shortest_path(energy_graph, current_position, target_position)
+                path = nx.dijkstra_path(energy_graph, current_position, target_position)
             except nx.NetworkXNoPath:
                 self.logger.log(f"Target position {target_position} is not reachable by walking or breaking", "ERROR")
                 raise Exception(f"Target position {target_position} is not reachable by walking or breaking")
             if allow_breaking: # back to breaking logs u go!
                 self.logger.log(f"Target position {target_position} is reachable by breaking, but not by walking, following energy path", "DEBUG")
-                self.follow_energy_path(path)
+                self.follow_energy_path(path) #type: ignore
+                return
             else:
                 self.logger.log(f"Target position {target_position} is not reachable by walking, but reachable by breaking, but allow_breaking is False", "ERROR")
                 return
         # edge cases
 
-        optimized_path = self.optimize_path(path)
+        optimized_path = self.optimize_path(path) #type: ignore
         # if len(optimized_path) >= 1:
         #     optimized_path = optimized_path[1:]  # remove the first point, since it is the current position
         # path logic 
@@ -314,7 +315,6 @@ class player():
 
             asyncio.run(self.single_step(current_target)) # this will raise an exception if the environment is not available, including retries
             success = self.wait_until_pos_or_not_moving(current_target)  # wait until the player reaches the target position
-            self.likely_running_into_wall = self.likely_running_into_wall + 1 if success == "wall" else self.likely_running_into_wall # wall detection
 
             # retry walking to the target position if it failed
             for _ in range(self.attempts["walk_to"]):
