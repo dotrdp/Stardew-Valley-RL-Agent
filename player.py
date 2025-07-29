@@ -3,6 +3,7 @@ from ENV import environment
 import networkx as nx
 import time
 from retry import retry
+import asyncio
 
 attempts = {
             "api_call": 4, # number of attempts to interact with the environment or game instance
@@ -185,7 +186,7 @@ class player():
             return ""
 
     @retry(tries=attempts["api_call"])
-    def single_step(self, target_position: tuple[int, int]) -> Exception | None: # will raise an exception if the environment is not available
+    async def single_step(self, target_position: tuple[int, int]) -> Exception | None: # will raise an exception if the environment is not available
         '''
         bound to fail often or frame-dependent, use walk_to instead to guarantee success
         [NOTE] Won't check if target position is reachable, it will just try to move there
@@ -231,15 +232,32 @@ class player():
             self.logger.log(f"Position {target_position} is NOT reachable by walking", "DEBUG")
             return False
 
+    def wait_until_pos_or_not_moving(self, target_position: tuple[int, int]) -> bool:
+        '''
+        Waits until the player reaches the target position or stops moving
+        Returns True if the player reached the target position, False if the player stopped moving
+        '''
+        previous_position = self.position
+        while True:
+            current_position = self.position
+            if current_position == target_position:
+                self.logger.log(f"Player reached target position {target_position}", "INFO")
+                return True
+            if current_position == previous_position:
+                self.logger.log(f"Player stopped moving at position {current_position}", "WARNING")
+                return False
+            previous_position = current_position
+            time.sleep(0.05)
+
     @retry(tries=attempts["walk_to"])
     def walk_to(self, target_position: tuple[int, int], allow_breaking: bool = False) -> Exception | None:
-        # handling quick escapes
+
+        # edge cases
         self.cutscenes_quickfix()
         current_position = self.position
         if current_position == target_position:
             self.logger.log(f"Already at target position {target_position}, no need to walk", "DEBUG")
             return
-        strictly_collision_graph = self.environment.get_collision_graph()
         if not self.check_if_reachable_by_walking(target_position):
             self.logger.log(f"Target position {target_position} is not reachable by walking, checking if reachable by breaking", "DEBUG")
             if not self.check_if_reachable_by_breaking(target_position):
@@ -252,32 +270,32 @@ class player():
             else:
                 self.logger.log(f"Target position {target_position} is not reachable by walking, but breaking is not allowed, raising exception", "ERROR")
                 raise Exception(f"Target position {target_position} is not reachable by walking and breaking is not allowed")
-        # finished handling edge cases
+        strictly_collision_graph = self.environment.get_collision_graph()
+        # edge cases
+
+        # path logic
         path = nx.shortest_path(strictly_collision_graph, current_position, target_position)
         optimized_path = self.optimize_path(path)
-        if len(optimized_path) >= 1:
-            optimized_path = optimized_path[1:]  # remove the first point, since it is the current position
-        for current_target in optimized_path:
-            try:
-                self.single_step(current_target)
-            except Exception:
-                pass
-            self.target_position = current_target  # update the target position to the current target
-            previous_position = self.position
-            while True:
-                current_position = self.position
-                time.sleep(0.05)
-                if current_position == previous_position:
-                    break # no longer moving
-                previous_position = current_position
-            if not current_position == current_target:
-                raise Exception(f"Failed to reach target position {current_target}, current position is {current_position}")
-        if self.position != target_position:
-            self.logger.log(f"Failed to reach target position {target_position}, current position is {self.position}", "ERROR")
-            raise Exception(f"Failed to reach target position {target_position}, current position is {self.position}")
-        else:
-            return None  # successfully reached the target position
+        # if len(optimized_path) >= 1:
+        #     optimized_path = optimized_path[1:]  # remove the first point, since it is the current position
+        # path logic 
 
+        for current_target in optimized_path:
+            self.logger.log(f"current target position: {current_target}", "INFO")
+
+            asyncio.run(self.single_step(current_target)) # this will raise an exception if the environment is not available, including retries
+            success = self.wait_until_pos_or_not_moving(current_target)  # wait until the player reaches the target position
+
+            for _ in range(self.attempts["walk_to"]):
+                asyncio.run(self.single_step(current_target))  # try to walk to the target position again
+                success = self.wait_until_pos_or_not_moving(current_target)
+                if success:
+                    break
+            if self.position != current_target:
+                self.logger.log(f"Failed to walk to target position {current_target}, current position is {self.position}", "ERROR")
+                raise Exception(f"Failed to walk to target position {current_target}, current position is {self.position}")
+
+                       
     def optimize_path(self, path: list[tuple]) -> list[tuple]:
         '''
         Guarantees that the path only counts turns, therefore
@@ -292,7 +310,7 @@ class player():
             return path
         optimized_path = []
         next_point = None
-        previous_slope = (path[0][1] - path[1][1]) / (path[0][0] - path[1][0]) if path[0][0] != path[1][0] else float('inf')
+        previous_slope = (path[0][1] - path[1][1]) / (path[0][0] - path[1][0]) if path[0][0] != path[1][0] else float('inf')  # kinda like the derivative
         for point in path:
             next_point = path[path.index(point) + 1] if path.index(point) + 1 < len(path) else point
             slope = (point[1] - next_point[1]) / (point[0] - next_point[0]) if point[0] != next_point[0] else float('inf')
@@ -335,29 +353,36 @@ class player():
 
     @retry(tries=attempts["follow_energy_path"])
     def follow_energy_path(self, path: list):
-        current_target = None
-        tools = {
-            "Pickaxe": None,
-            "Axe": None,
-            "Scythe": None
 
-        }
+        # tool pointers
+        current_target = None
+        tools = {"Pickaxe": None, "Axe": None, "Scythe": None}
         self.logger.log("Following energy path", "DEBUG")
         for item in self.inventory.items:
             if item.name in tools:
                 tools[item.name] = item
             elif item.name == "MeleeWeapon":
                 tools["Scythe"] = item
-        # gathering neccesary tool pointers
+        # tool pointers
+
         for point in path:
             point_properties = self.environment.spatial_state[point[0]][point[1]].properties
             if "tool" in point_properties:
+
+                # edge case
                 if point_properties["tool"] not in tools:
                     self.logger.log(f"Tool {point_properties['tool']} not found in inventory, skipping point {point}", "WARNING")
                     continue
+                # edge case
+                
+                # utils
                 tool = point_properties["tool"]
-                current_target = path[path.index(point) - 1]
-                self.walk_to(current_target[0], current_target[1])
+                current_target = path[path.index(point) - 1] 
+                # utils
+
+                self.walk_to(current_target) # last walkable point in theory
+
+                # edge case
                 if "health" in point_properties:
                     health = point_properties["health"]
                     self.face_direction(point)
@@ -369,6 +394,8 @@ class player():
                     if self.logger.level == 0:
                         self.environment.print_path(path[path.index(point):])
                     continue
+                # edge case
+
                 self.break_next_tile(point, tools[tool]) # type: ignore
                 self.environment.update_spatial_state()
                 if self.logger.level == 0: # DEBUG level is 0, sorry for the magic numbers
