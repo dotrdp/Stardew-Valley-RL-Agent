@@ -1,7 +1,7 @@
 # import torch
-from ENV import environment
-from player import player
-from API import StardewModdingAPI
+from .utils.environment.main import environment
+from .utils.player.main import player
+from .utils.api.API import StardewModdingAPI
 import networkx as nx
 from dotenv import dotenv_values
 
