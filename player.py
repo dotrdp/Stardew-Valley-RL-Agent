@@ -224,11 +224,15 @@ class player():
         '''
         self.logger.log(f"Checking if position {target_position} is reachable by breaking", "DEBUG")
         energy_graph = self.environment.get_energy_graph()
-        if nx.has_path(energy_graph, self.position, target_position):
+        try:
+            res = nx.has_path(energy_graph, self.position, target_position)
+        except nx.NetworkXNoPath:
+            self.logger.log(f"Position {target_position} is NOT reachable by breaking", "DEBUG")
+            return False
+        if res:
             self.logger.log(f"Position {target_position} is reachable by breaking", "DEBUG")
             return True
         else:
-            self.logger.log(f"Position {target_position} is NOT reachable by breaking", "DEBUG")
             return False
     def check_if_reachable_by_walking(self, target_position: tuple[int, int]) -> bool:
         '''
@@ -237,11 +241,15 @@ class player():
         '''
         self.logger.log(f"Checking if position {target_position} is reachable by walking", "DEBUG")
         strictly_collision_graph = self.environment.get_collision_graph()
-        if nx.has_path(strictly_collision_graph, self.position, target_position):
+        try:
+            res = nx.has_path(strictly_collision_graph, self.position, target_position)
+        except nx.NetworkXNoPath:
+            self.logger.log(f"Position {target_position} is NOT reachable by walking", "DEBUG")
+            return False
+        if res:
             self.logger.log(f"Position {target_position} is reachable by walking", "DEBUG")
             return True
         else:
-            self.logger.log(f"Position {target_position} is NOT reachable by walking", "DEBUG")
             return False
 
     def wait_until_pos_or_not_moving(self, target_position: tuple[int, int]) -> bool:

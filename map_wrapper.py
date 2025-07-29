@@ -11,6 +11,8 @@ defaults = {
     "Weeds":     "󰹧",
     "Twig":      "󱐚",
     "Tree":      "",
+    "t5p":       "󰹩",
+    "t1p":       "",
     "door":      "󰠚",
     "NpcBarrier":"▫",
     "Bed":       "",
@@ -43,7 +45,9 @@ def get_logic(type):
         "Water": {"collision": True, "blocks_crops": True},
         "Stone": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Pickaxe"},
         "Weeds": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Scythe"},
-        "Tree": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Axe", "health": 10},
+        "Tree": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Axe", "health": 15},
+        "t5p": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Axe", "health": 5},
+        "t1p": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Axe", "health": 1},
         "Twig": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Axe"},
         "Seed Spot": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Hoe"},
         "Chest": {"collision": True},
@@ -72,6 +76,8 @@ defaults["normal"] = Fore.LIGHTBLACK_EX + defaults["normal"] + Fore.RESET
 defaults["something"] = Fore.LIGHTBLACK_EX + defaults["something"] + Fore.RESET
 defaults["Weeds"] = Fore.GREEN + defaults["Weeds"] + Fore.RESET
 defaults["Tree"] = Fore.GREEN + defaults["Tree"] + Fore.RESET
+defaults["t5p"] = Fore.GREEN + defaults["t5p"] + Fore.RESET
+defaults["t1p"] = Fore.GREEN + defaults["t1p"] + Fore.RESET
 defaults["Twig"] = Fore.LIGHTGREEN_EX + defaults["Twig"] + Fore.RESET
 defaults["Seed Spot"] = Fore.RED + defaults["Seed Spot"] + Fore.RESET
 defaults["Grass"] = Fore.LIGHTBLACK_EX + defaults["Grass"] + Fore.RESET
@@ -270,8 +276,15 @@ class Map():
 
         if "TerrainFeatures" in map:
             for object in map["TerrainFeatures"]:
+                print(object)
                 x, y = object["Position"]["X"], object["Position"]["Y"]
                 object_type = object["Type"]
+                if "Health" in object:
+                    health = object["Health"]
+                    if health==1:
+                        object_type = "t1p"
+                    elif health==5:
+                        object_type = "t5p"
                 result[x][y] = Tile(x, y, object_type)
 
         for label in list(map["Layers"].keys()):
