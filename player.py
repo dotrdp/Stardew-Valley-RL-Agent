@@ -239,9 +239,11 @@ class player():
         Returns True if the player reached the target position, False if the player stopped moving
         '''
         previous_position = self.position
+        previous_position = (int(previous_position[0]), int(previous_position[1]))
         recurrence = 0
         while True:
             current_position = self.position
+            current_position = (int(current_position[0]), int(current_position[1]))
             if current_position == target_position:
                 self.logger.log(f"Player reached target position {target_position}", "INFO")
                 return True
@@ -263,6 +265,7 @@ class player():
         # edge cases
         self.cutscenes_quickfix()
         current_position = self.position
+        current_position = (int(current_position[0]), int(current_position[1]))
         if current_position == target_position:
             self.logger.log(f"Already at target position {target_position}, no need to walk", "DEBUG")
             return
@@ -311,12 +314,16 @@ class player():
                     self.likely_running_into_wall = 0
                     point_x, point_y = current_target
                     self.environment.draw_learned_tile(point_x, point_y, "Building") 
-                    self.walk_to(target_position, allow_breaking)
+                    if self.logger.level == 0:  # DEBUG level is 0, sorry for the magic numbers
+                        self.environment.print_path(optimized_path)
+                    self.walk_to(target_position, allow_breaking=True)
                     return
                 # edge case for running into a wall
 
                 self.logger.log(f"Failed to walk to target position {current_target}, current position is {self.position}", "ERROR")
                 raise Exception(f"Failed to walk to target position {current_target}, current position is {self.position}")
+            else:
+                self.likely_running_into_wall = 0  # reset the wall detection counter
 
                        
     def optimize_path(self, path: list[tuple]) -> list[tuple]:
@@ -366,6 +373,7 @@ class player():
         Breaks an obstacle at the target position
         '''
         current_position = self.position
+        current_position = (int(current_position[0]), int(current_position[1]))
         assert target_position != current_position, "Target position cannot be the same as current position"
         distance = ((target_position[0] - current_position[0]) ** 2 + (target_position[1] - current_position[1]) ** 2) ** 0.5
         assert distance == 1, "Target position must be adjacent to current position"
