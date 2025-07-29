@@ -316,7 +316,9 @@ class player():
                     break
             # retry walking to the target position if it failed
 
-            if self.position != current_target:
+            position = self.position
+            position = (int(position[0]), int(position[1]))
+            if position != current_target:
 
                 # edge case for running into a wall
                 if self.likely_running_into_wall >= self.attempts["assume_wall"]:
@@ -330,8 +332,8 @@ class player():
                     continue
                 # edge case for running into a wall
 
-                self.logger.log(f"Failed to walk to target position {current_target}, current position is {self.position}", "ERROR")
-                raise Exception(f"Failed to walk to target position {current_target}, current position is {self.position}")
+                self.logger.log(f"Failed to walk to target position {current_target}, current position is {position}", "ERROR")
+                raise Exception(f"Failed to walk to target position {current_target}, current position is {position}")
             else:
                 self.likely_running_into_wall = 0  # reset the wall detection counter
 
