@@ -33,6 +33,7 @@ class player():
         self.MaxItems = 12 # there are ways to increase this, but we will stick with this for now
 
         self.logger = Logger(log_level_player) # logger for the player class 
+        self.log_level_player = log_level_player # log level for the player class, used in the logger
 
         self.cutscenes_quickfix() # ensure that it is not stuck in a cutscene, although this is not guaranteed to work in all cases
 
@@ -115,7 +116,7 @@ class player():
         so refer to pointer of items(the item class)
         '''
         collection_items = self.wrap_result(self.r(function="getproperty", args=["player", "Items"]))["_Collection_Items"]
-        return inventory(collection_items, self.environment, log_level_player)
+        return inventory(collection_items, self.environment, self.log_level_player)
 
     @property
     def can_move(self) -> bool:
