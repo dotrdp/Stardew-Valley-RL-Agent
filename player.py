@@ -170,9 +170,8 @@ class player():
                         pont = pt[0]
                     xd, yd = pont
                     self.environment.draw_learned_tile(xd, yd, "Building")
-                    self.convs = 0
+                    self.nconvs = 0
                     self.follow_energy_path(pt) # type: ignore
-                    break
                 self.walk_to(x, y)
                 break
             speed = player["speed"]
