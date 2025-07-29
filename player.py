@@ -155,6 +155,8 @@ class player():
         self.path = path
         for point in path:
             self.logger.log(f"Walking to point {point}", "DEBUG")
+
+        
             player = self.r(function="getproperty", args=["game1", "player"])["Result"]["Properties"]
             xi, yi = (str(player["Tile"]).replace("Vector2: ", "").replace("}", "").replace("{X:","").replace("Y","").replace(":", "").split(" "))  # "Vector2: {X: 1 Y: 1]"
             xi, yi = int(xi), int(yi)
@@ -168,16 +170,20 @@ class player():
                     if nx.has_path(gp, source=(xi, yi), target=(x, y)) == False:
                         gp = self.environment.get_energy_graph()# this will modify the spatial state
                         pt = nx.dijkstra_path(gp, source=(xi, yi), target=(x, y), weight="weight")
+                        self.follow_energy_path(pt) # type: ignore
                     else:
                         pt = nx.shortest_path(gp, source=(xi, yi), target=(x, y))
+                        self.walk_to(x, y) # type: ignore
                     pont = pt[1]
                     if len(pt) < 2:
                         pont = pt[0]
                     xd, yd = pont
                     self.environment.draw_learned_tile(xd, yd, "Building")
                     self.nconvs = 0
-                    self.follow_energy_path(pt) # type: ignore
+                    return
                 self.walk_to(x, y)
+                
+                
                 break
             speed = player["speed"]
             walk1 = self.walk1(speed)
