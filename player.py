@@ -164,8 +164,12 @@ class player():
                 self.logger.log(f"Position mismatch: self.expected {self.expected}, got ({xi}, {yi})", "WARNING")
                 if self.nconvs > 5:
                     self.logger.log("Too many consecutive position mismatches, modifying spatial state", "DEBUG")
-                    gp = self.environment.get_energy_graph()
-                    pt = nx.dijkstra_path(gp, source=(xi, yi), target=(x, y))
+                    gp = self.environment.get_collision_graph()
+                    if nx.has_path(gp, source=(xi, yi), target=(x, y)) == False:
+                        gp = self.environment.get_energy_graph()# this will modify the spatial state
+                        pt = nx.dijkstra_path(gp, source=(xi, yi), target=(x, y), weight="weight")
+                    else:
+                        pt = nx.shortest_path(gp, source=(xi, yi), target=(x, y))
                     pont = pt[1]
                     if len(pt) < 2:
                         pont = pt[0]
@@ -209,6 +213,7 @@ class player():
                 cachedx, cachedy = xi, yi
                 if (xi, yi) == self.expected:    
                     self.logger.log(f"Reached point {self.expected}", "DEBUG")
+                    self.nconvs = 0
                     break
                 time.sleep(interval / 1000)  # Convert milliseconds to seconds
                 if (cachedx, cachedy) == (xi, yi):
