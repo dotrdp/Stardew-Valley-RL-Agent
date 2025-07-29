@@ -309,7 +309,6 @@ class player():
                 asyncio.run(self.single_step(current_target))  # try to walk to the target position again
                 success = self.wait_until_pos_or_not_moving(current_target)
                 if success:
-                    self.likely_running_into_wall = self.likely_running_into_wall + 1 if success == "wall" else self.likely_running_into_wall # wall detection
                     break
             # retry walking to the target position if it failed
 
@@ -319,7 +318,7 @@ class player():
                 path = nx.shortest_path(strictly_collision_graph, self.position, current_target)
                 target_x, target_y = path[1]
                 self.environment.draw_learned_tile(target_x, target_y, "Building")  # mark the tile as a wall in the environment
-                return self.walk_to(target_position, allow_breaking=allow_breaking)
+                return self.walk_to(target_position, allow_breaking=True)
 
             if self.position != current_target:
                 self.logger.log(f"Failed to walk to target position {current_target}, current position is {self.position}", "ERROR")
