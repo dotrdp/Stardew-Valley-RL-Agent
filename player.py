@@ -327,6 +327,8 @@ class player():
                     self.logger.log(f"Assuming that the player is running into a wall at position {current_target}, breaking the wall", "WARNING")
                     self.walk_to(target_position, allow_breaking=True)  # retry walking to the target position, this is an edge case for running into a wall
                     continue
+                else:
+                    self.likely_running_into_wall += 1
                 # edge case for running into a wall
 
                 self.logger.log(f"Failed to walk to target position {current_target}, current position is {position}", "ERROR")
