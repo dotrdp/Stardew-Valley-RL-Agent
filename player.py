@@ -172,15 +172,16 @@ class player():
                         gp = self.environment.get_energy_graph()# this will modify the spatial state
                         pt = nx.dijkstra_path(gp, source=(xi, yi), target=(x, y), weight="weight")
                         self.follow_energy_path(pt) # type: ignore
-                    else:
-                        pt = nx.shortest_path(gp, source=(xi, yi), target=(x, y))
-                        self.walk_to(x, y) # type: ignore
+                        return
+                    pt = nx.shortest_path(gp, source=(xi, yi), target=(x, y))
                     pont = pt[1]
                     if len(pt) < 2:
                         pont = pt[0]
                     xd, yd = pont
+                    self.expected = (xd, yd)
                     self.environment.draw_learned_tile(xd, yd, "Building")
                     self.nconvs = 0
+                    self.walk_to(x, y) # type: ignore
                     return
                 self.walk_to(x, y)
                 
