@@ -131,7 +131,8 @@ class player():
     def cutscenes_quickfix(self):
         self.environment.game_instance.skip_events(False)
         self.environment.game_instance.skip_events(True)
-        self.environment.game_instance.reflection(function="invokemethod", args=["game1", "exitActiveMenu"])
+        self.r(function="invokemethod", args=["game1", "exitActiveMenu"])
+        self.logger.log("Cutscenes quickfix applied", "DEBUG")
 
     def walk_to(self, x, y):
         self.cutscenes_quickfix()
