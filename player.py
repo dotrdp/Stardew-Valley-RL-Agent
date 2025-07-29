@@ -3,8 +3,6 @@ from ENV import environment
 import networkx as nx
 import time
 
-METHOD = "ssh+tty"
-
 class Item():
     def __init__(self,environment, type, name, id, slot):
         self.type = type
@@ -173,13 +171,9 @@ class player():
                     xd, yd = pont
                     self.environment.draw_learned_tile(xd, yd, "Building")
                     self.convs = 0
-                    r = self.walk_to(x, y)
-                    if not r:
-                        return False
+                    self.walk_to(x, y)
                     break
-                r = self.walk_to(x, y)
-                if not r:
-                    return False
+                self.walk_to(x, y)
                 break
             speed = player["speed"]
             walk1 = self.walk1(speed)
@@ -204,7 +198,7 @@ class player():
                     self.failed_convs = 0
                     self.nconvs = 0
                     self.logger.log("spatial state is not modifiable\n probably in a cutscene or stuck somewhere", "CRITICAL")
-                    return False 
+                    return
 
             expected = (xp, yp)
             interval = duration/4
@@ -220,9 +214,7 @@ class player():
             continue
         xi, yi = self.position
         if (xi, yi) != (x, y):
-            r = self.walk_to(x, y)
-            if not r:
-                return False
+            self.walk_to(x, y)
 
         self.path = None
             
@@ -278,7 +270,7 @@ class player():
             if "tool" in point_properties:
                 tool = point_properties["tool"]
                 current_target = path[path.index(point) - 1]
-                r = self.walk_to(current_target[0], current_target[1])
+                self.walk_to(current_target[0], current_target[1])
                 key = "error"
                 if x > current_target[0]:
                     key = "d"
@@ -304,11 +296,6 @@ class player():
                     time.sleep(0.1)
                 else:
                     self.logger.log(f"No tool found for {tool}, skipping", "WARNING")
-
-                
-                
-        
-
 
     def close_dialogue(self):
         self.logger.log("Closing dialogue", "INFO")
