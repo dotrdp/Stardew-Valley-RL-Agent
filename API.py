@@ -30,8 +30,8 @@ from dotenv import dotenv_values
 prefs = dotenv_values(".env")
 DOCKER_IMAGE_NAME = prefs.get("DOCKER_IMAGE_NAME", "sdvd-server")
 method = prefs.get("method", "docker")
-ssh_host = prefs.get("ssh_host", "")
-ssh_user = prefs.get("ssh_user", "")
+ssh_host = prefs.get("ssh_host", ".")
+ssh_user = prefs.get("ssh_user", ".")
 ssh_port = prefs.get("ssh_port", "22")
 proxy_port = prefs.get("proxy_port", "8080")
 debug_level = prefs.get("debug_level", "ERROR")
@@ -69,7 +69,6 @@ class exec_method:
     def __init__(self, method, docker_image_name=DOCKER_IMAGE_NAME):
         self.method = method
         self.docker_image_name = docker_image_name
-
         self.ssh_wrapper = ["ssh", "-p", ssh_port, f"{ssh_user}@{ssh_host}"]
         if method == "docker" and docker_image_name:
             try:
