@@ -297,6 +297,8 @@ class player():
         # if len(optimized_path) >= 1:
         #     optimized_path = optimized_path[1:]  # remove the first point, since it is the current position
         # path logic 
+        if self.logger.level == 0:  # DEBUG level is 0, sorry for the magic numbers
+            self.environment.print_path(optimized_path)  # this calls print, therefore it couldnt be blocked otherwise
 
         for current_target in optimized_path:
             self.logger.log(f"current target position: {current_target}", "INFO")
