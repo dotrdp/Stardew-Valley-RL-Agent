@@ -163,15 +163,15 @@ class player():
                 self.logger.log(f"Position mismatch: expected {expected}, got ({xi}, {yi})", "WARNING")
                 if self.nconvs > 5:
                     self.logger.log("Too many consecutive position mismatches, modifying spatial state", "DEBUG")
-                    gp = self.environment.get_collision_graph()
-                    pt = nx.shortest_path(gp, source=(xi, yi), target=(x, y))
+                    gp = self.environment.get_energy_graph()
+                    pt = nx.dijkstra_path(gp, source=(xi, yi), target=(x, y))
                     pont = pt[1]
                     if len(pt) < 2:
                         pont = pt[0]
                     xd, yd = pont
                     self.environment.draw_learned_tile(xd, yd, "Building")
                     self.convs = 0
-                    self.walk_to(x, y)
+                    self.follow_energy_path(pt) # type: ignore
                     break
                 self.walk_to(x, y)
                 break
@@ -201,6 +201,7 @@ class player():
                     return
 
             expected = (xp, yp)
+            self.logger.log(f"set expected to {expected}", "DEBUG")
             interval = duration/8
             cachedx, cachedy = None, None
             for _ in range(8):
