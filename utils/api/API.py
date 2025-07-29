@@ -27,7 +27,7 @@ from .execute import exec_method
 from .utils import read_msgpack_base64, template # needed here because other modules import it from here, DO NOT REMOVE read_msgpack_base64
 
 prefs = dotenv_values(".env")
-docker_image_name = prefs.get("DOCKER_IMAGE_NAME", "sdvd-server")
+docker_image_name = prefs.get("docker_image_name", "sdvd-server")
 method = prefs.get("method", "docker")
 ssh_host = prefs.get("ssh_host", ".")
 ssh_user = prefs.get("ssh_user", ".")
@@ -41,7 +41,7 @@ if debug_level != "ERROR":
     debug_level_api = debug_level
 
 class StardewModdingAPI:
-    def __init__(self, method: str = method, docker_image_name=DOCKER_IMAGE_NAME, port: str = proxy_port, loglevel: str = debug_level_api): # type: ignore
+    def __init__(self, method: str = method, docker_image_name=docker_image_name, port: str = proxy_port, loglevel: str = debug_level_api): # type: ignore
         self.method = exec_method(method, docker_image_name, ssh_user, ssh_host, ssh_port)
         self.docs = DOCS()
         self.port = port
