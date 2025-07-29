@@ -20,6 +20,7 @@ defaults = {
     "Seed Spot": "",
     "NoS":       "✕",
     "Grass":     "󱔐",
+"GreenRainWeeds":     "󱔐",
     "bar":       "▫",
     "Buildable": "󰦻",
     "NF":        "󰆷",
@@ -54,6 +55,7 @@ def get_logic(type):
         "NFNS": {"collision": True, "blocks_crops": True},
         "Stone Owl": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Pickaxe"},
         "Grass": {"blocks_crops": True, "breakable": True, "tool": "Scythe"},
+        "GreenRaidWeeds": {"blocks_crops": True, "breakable": True, "tool": "Scythe"},
         "Artifact Spot": {"collision": True, "blocks_crops": True, "breakable": True, "tool": "Hoe"},
         "mail": {"collision": True, "blocks_crops": True},
         }
@@ -83,6 +85,7 @@ defaults["Artifact Spot"] = Fore.RED + defaults["Artifact Spot"] + Fore.RESET
 defaults["debugmarker"] = Fore.RED + defaults["debugmarker"] + Fore.RESET
 defaults["debug_red"] = Fore.RED + defaults["debug_red"] + Fore.RESET
 defaults["Water"] = Fore.BLUE + defaults["Water"] + Fore.RESET
+defaults["GreenRainWeeds"] = Fore.LIGHTCYAN_EX + defaults["GreenRainWeeds"] + Fore.RESET
 
 
 
@@ -166,6 +169,12 @@ buildings = {
 
 class Tile():
     def __init__(self, x, y, type):
+
+        # edge case
+        if type.find("GreenRainWeeds"):
+            type = "GreenRainWeeds"
+        # edge case
+
         self.x = x
         self.y = y
         self.type = type
