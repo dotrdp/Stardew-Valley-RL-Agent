@@ -284,23 +284,24 @@ class player():
         if current_position == target_position:
             self.logger.log(f"Already at target position {target_position}, no need to walk", "DEBUG")
             return
-        if not self.check_if_reachable_by_walking(target_position):
-            self.logger.log(f"Target position {target_position} is not reachable by walking, checking if reachable by breaking", "DEBUG")
-            if not self.check_if_reachable_by_breaking(target_position):
-                self.logger.log(f"Target position {target_position} is not reachable by breaking either, raising exception", "ERROR")
-                raise Exception(f"Target position {target_position} is not reachable by walking or breaking")
-            elif allow_breaking: # back to breaking logs u go!
+        try:
+            strictly_collision_graph = self.environment.get_collision_graph()
+            path = nx.shortest_path(strictly_collision_graph, current_position, target_position)
+        except nx.NetworkXNoPath:
+            try:
                 energy_graph = self.environment.get_energy_graph()
-                path_with_breaking = nx.shortest_path(energy_graph, current_position, target_position)
-                self.follow_energy_path(path_with_breaking)
+                path = nx.shortest_path(energy_graph, current_position, target_position)
+            except nx.NetworkXNoPath:
+                self.logger.log(f"Target position {target_position} is not reachable by walking or breaking", "ERROR")
+                raise Exception(f"Target position {target_position} is not reachable by walking or breaking")
+            if allow_breaking: # back to breaking logs u go!
+                self.logger.log(f"Target position {target_position} is reachable by breaking, but not by walking, following energy path", "DEBUG")
+                self.follow_energy_path(path)
             else:
-                self.logger.log(f"Target position {target_position} is not reachable by walking, but breaking is not allowed, raising exception", "ERROR")
-                raise Exception(f"Target position {target_position} is not reachable by walking and breaking is not allowed")
-        strictly_collision_graph = self.environment.get_collision_graph()
+                self.logger.log(f"Target position {target_position} is not reachable by walking, but reachable by breaking, but allow_breaking is False", "ERROR")
+                return
         # edge cases
 
-        # path logic
-        path = nx.shortest_path(strictly_collision_graph, current_position, target_position)
         optimized_path = self.optimize_path(path)
         # if len(optimized_path) >= 1:
         #     optimized_path = optimized_path[1:]  # remove the first point, since it is the current position

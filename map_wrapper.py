@@ -276,7 +276,6 @@ class Map():
 
         if "TerrainFeatures" in map:
             for object in map["TerrainFeatures"]:
-                print(object)
                 x, y = object["Position"]["X"], object["Position"]["Y"]
                 object_type = object["Type"]
                 if "Health" in object:
