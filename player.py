@@ -144,7 +144,7 @@ class player():
         self.logger.log("Requesting player position", "DEBUG")
         res = self.wrap_result(self.r(function="getproperty", args=["player", "Tile"]))
         self.logger.log(f"Player position: {res['_Field_X']}, {res['_Field_Y']}", "INFO")
-        return (float(res["_Field_X"]), float(res["_Field_Y"]))
+        return (int(res["_Field_X"]), int(res["_Field_Y"]))
     
     @property
     def inventory(self) -> inventory:
@@ -249,11 +249,9 @@ class player():
         Returns True if the player reached the target position, False if the player stopped moving
         '''
         previous_position = self.position
-        previous_position = (int(previous_position[0]), int(previous_position[1]))
         recurrence = 0
         while True:
             current_position = self.position
-            current_position = (int(current_position[0]), int(current_position[1]))
             if current_position == target_position:
                 self.logger.log(f"Player reached target position {target_position}", "INFO")
                 return True
@@ -274,7 +272,6 @@ class player():
         # edge cases
         self.cutscenes_quickfix()
         current_position = self.position
-        current_position = (int(current_position[0]), int(current_position[1]))
         if current_position == target_position:
             self.logger.log(f"Already at target position {target_position}, no need to walk", "DEBUG")
             return
@@ -317,7 +314,6 @@ class player():
             # retry walking to the target position if it failed
 
             position = self.position
-            position = (int(position[0]), int(position[1]))
             if position != current_target:
 
                 # edge case for running into a wall
@@ -385,7 +381,6 @@ class player():
         Breaks an obstacle at the target position
         '''
         current_position = self.position
-        current_position = (int(current_position[0]), int(current_position[1]))
         assert target_position != current_position, "Target position cannot be the same as current position"
         distance = ((target_position[0] - current_position[0]) ** 2 + (target_position[1] - current_position[1]) ** 2) ** 0.5
         assert distance == 1, "Target position must be adjacent to current position"
