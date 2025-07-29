@@ -143,7 +143,7 @@ class player():
         '''
         self.logger.log("Requesting player position", "DEBUG")
         res = self.wrap_result(self.r(function="getproperty", args=["player", "Tile"]))
-        self.logger.log(f"Player position: {res['_Field_X']}, {res['_Field_Y']}", "INFO")
+        self.logger.log(f"Player position: {int(res['_Field_X'])}, {int(res['_Field_Y'])}", "INFO")
         return (int(res["_Field_X"]), int(res["_Field_Y"]))
     
     @property
@@ -319,7 +319,8 @@ class player():
                 # edge case for running into a wall
                 if self.likely_running_into_wall >= self.attempts["assume_wall"]:
                     self.likely_running_into_wall = 0
-                    target_x, target_y = current_target
+                    path = nx.shortest_path(strictly_collision_graph, current_target, target_position)
+                    target_x, target_y = path[1]
                     self.environment.draw_learned_tile(target_x, target_y, "Building") 
                     if self.logger.level == 0:  # DEBUG level is 0, sorry for the magic numbers
                         self.environment.print_path(optimized_path)
