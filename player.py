@@ -158,7 +158,7 @@ class player():
             xi, yi = (str(player["Tile"]).replace("Vector2: ", "").replace("}", "").replace("{X:","").replace("Y","").replace(":", "").split(" "))  # "Vector2: {X: 1 Y: 1]"
             xi, yi = int(xi), int(yi)
             self.logger.log(f"Current position: ({xi}, {yi})", "DEBUG")
-            if expected is not None and expected != (xi, yi):
+            if expected != (xi, yi):
                 self.nconvs += 1
                 self.logger.log(f"Position mismatch: expected {expected}, got ({xi}, {yi})", "WARNING")
                 if self.nconvs > 5:
@@ -213,7 +213,6 @@ class player():
                 time.sleep(interval / 1000)  # Convert milliseconds to seconds
                 if (cachedx, cachedy) == (xi, yi):
                     break # player is not moving, therefore no point in waiting
-            continue
         xi, yi = self.position
         if (xi, yi) != (x, y):
             self.walk_to(x, y)
