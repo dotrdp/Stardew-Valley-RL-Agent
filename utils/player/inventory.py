@@ -23,16 +23,17 @@ class inventory():
         self.slots = list(range(12))
         self.environment = environment
         self.logger = Logger(loglevel)
+        self.lv = loglevel
         self.logger.log("INSTANTIATING INV, note that you can save Item instances since those act as pointers", "WARNING")
         for item in collection_items:
             slot = self.slots.pop(0)
             self.slots = self.slots[0:]
             if item == None:
-                self.items.append(Item(self.environment, "Empty", "Empty", "Empty", slot, self.logger.level))
+                self.items.append(Item(self.environment, "Empty", "Empty", "Empty", slot, self.lv))
                 continue
             name = item["Type"]
             type, id = item["ToString"].split(".")[1], item["ToString"].split(".")[-1]
-            self.items.append(Item(self.environment, type, name, id, slot, self.logger.level))
+            self.items.append(Item(self.environment, type, name, id, slot, self.lv))
         self.logger.log(("\n"+", ".join(str(item) for item in self.items)), "INFO")
     def __str__(self):
         return ", ".join(str(item) for item in self.items)
