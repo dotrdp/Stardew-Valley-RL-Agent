@@ -5,7 +5,7 @@ from API import StardewModdingAPI
 import networkx as nx
 
 # [NOTE] set your method here
-METHOD = "docker"
+METHOD = "ssh+tty"
 LOG_LEVEL = "DEBUG"
 # [DEBUG]: 0
 # [INFO]: 1

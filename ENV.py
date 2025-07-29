@@ -1,6 +1,13 @@
 from map_wrapper import Map, Tile
 from logger import Logger
 import networkx as nx
+from dotenv import dotenv_values
+
+prefs = dotenv_values(".env")
+loglevel = prefs.get("debug_level_environment", "ERROR")
+debug_level = prefs.get("debug_level", "ERROR")
+if debug_level != "ERROR":
+    loglevel = debug_level
 
 
 def check_wanted_conditions_in_env(wanted, environment):
@@ -30,7 +37,7 @@ class world_action():
         return self.game_instance.hold_key(key, ms)
         
 class environment():
-    def __init__(self, stardew_modding_api, loglevel = "CRITICAL"):
+    def __init__(self, stardew_modding_api, loglevel = loglevel):
         self.game_instance = stardew_modding_api 
         self.world_env = world_action(self.game_instance)
         self.map = Map(self.game_instance)

@@ -1,5 +1,6 @@
 .venv/
 .envrc
+.env
 default.nix
 a.graphml
 __pycache__/

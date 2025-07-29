@@ -24,11 +24,22 @@ import docker
 import msgpack
 import base64
 from logger import Logger
+from dotenv import dotenv_values 
 
 
-# Default Docker image name for StardewModdingAPI [Saber]
-DOCKER_IMAGE_NAME = "sdvd-server"
+prefs = dotenv_values(".env")
+DOCKER_IMAGE_NAME = prefs.get("DOCKER_IMAGE_NAME", "sdvd-server")
+method = prefs.get("method", "docker")
+ssh_host = prefs.get("ssh_host", "")
+ssh_user = prefs.get("ssh_user", "")
+ssh_port = prefs.get("ssh_port", "22")
+proxy_port = prefs.get("proxy_port", "8080")
+debug_level = prefs.get("debug_level", "ERROR")
+debug_level_api = prefs.get("debug_level_api", "ERROR")
 
+
+if debug_level != "ERROR":
+    debug_level_api = debug_level
 
 def read_msgpack_base64(raw_base64_data: str):
     binary_data = base64.b64decode(raw_base64_data)
@@ -59,7 +70,7 @@ class exec_method:
         self.method = method
         self.docker_image_name = docker_image_name
 
-        self.ssh_wrapper = ["ssh", "rdiaz@mini.lan"]
+        self.ssh_wrapper = ["ssh", "-p", ssh_port, f"{ssh_user}@{ssh_host}"]
         if method == "docker" and docker_image_name:
             try:
                 self.docker_client = docker.from_env()
@@ -232,7 +243,7 @@ class DOCS:
 
 
 class StardewModdingAPI:
-    def __init__(self, method: str = "tty", docker_image_name=DOCKER_IMAGE_NAME, port: str = "8080", loglevel: str = "CRITICAL"):
+    def __init__(self, method: str = method, docker_image_name=DOCKER_IMAGE_NAME, port: str = proxy_port, loglevel: str = debug_level_api): # type: ignore
         self.method = exec_method(method, docker_image_name)
         self.docs = DOCS()
         self.port = port

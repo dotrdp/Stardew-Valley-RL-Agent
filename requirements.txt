@@ -7,6 +7,7 @@ colorama
 msgpack
 docker
 retry
+python-dotenv
 
 # Optional dependencies (commented out because torch is commented in agent.py)
 # torch>=2.0.0

@@ -4,6 +4,14 @@ import networkx as nx
 import time
 from retry import retry
 import asyncio
+from dotenv import dotenv_values
+from logger import Logger
+
+prefs = dotenv_values(".env") 
+log_level_player = prefs.get("debug_level_player", "ERROR")
+debug_level = prefs.get("debug_level", "ERROR")
+if debug_level != "ERROR":
+    log_level_player = debug_level
 
 attempts = {
             "api_call": 4, # number of attempts to interact with the environment or game instance
@@ -18,14 +26,15 @@ class Item():
         self.name = name
         self.id = id
         self.slot = slot
+        self.logger = Logger(log_level_player)
         self.environment = environment
     def __str__(self):
         return f"{self.slot} {self.name} ({self.type} - id: {self.id})" 
     def __call__(self, use=False):
-        self.environment.logger.log(f"Selecting item {self.name} ({self.type}) in slot {self.slot}", "DEBUG")
+        self.logger.log(f"Selecting item {self.name} ({self.type}) in slot {self.slot}", "DEBUG")
         self.environment.game_instance.reflection(function="setproperty", args=["player", "CurrentToolIndex", self.slot])
         if use != False:
-            self.environment.logger.log(f"Using item {self.name} ({self.type})", "DEBUG")
+            self.logger.log(f"Using item {self.name} ({self.type})", "DEBUG")
             return self.environment.world_action(["c", 100])
 
 class inventory():
@@ -33,7 +42,8 @@ class inventory():
         self.items = []
         self.slots = list(range(12))
         self.environment = environment
-        self.environment.logger.log("INSTANTIATING INV, note that you can save Item instances since those act as pointers", "WARNING")
+        self.logger = Logger(log_level_player)
+        self.logger.log("INSTANTIATING INV, note that you can save Item instances since those act as pointers", "WARNING")
         for item in collection_items:
             slot = self.slots.pop(0)
             self.slots = self.slots[0:]
@@ -43,7 +53,7 @@ class inventory():
             name = item["Type"]
             type, id = item["ToString"].split(".")[1], item["ToString"].split(".")[-1]
             self.items.append(Item(self.environment, type, name, id, slot))
-        self.environment.logger.log(("\n"+", ".join(str(item) for item in self.items)), "INFO")
+        self.logger.log(("\n"+", ".join(str(item) for item in self.items)), "INFO")
     def __str__(self):
         return ", ".join(str(item) for item in self.items)
 
@@ -66,7 +76,7 @@ class player():
 
         self.MaxItems = 12 # there are ways to increase this, but we will stick with this for now
 
-        self.logger = self.environment.logger
+        self.logger = Logger(log_level_player) # logger for the player class 
 
         self.cutscenes_quickfix() # ensure that it is not stuck in a cutscene, although this is not guaranteed to work in all cases
 
@@ -251,7 +261,6 @@ class player():
                 self.logger.log(f"Player stopped moving at position {current_position}", "WARNING")
                 if recurrence <= 2:
                     self.logger.log(f"Player is almost certainly running into a wall", "DEBUG")
-                    recurrence += 1
                     return "wall"
                 return False
             previous_position = current_position
@@ -312,12 +321,13 @@ class player():
                 # edge case for running into a wall
                 if self.likely_running_into_wall >= self.attempts["assume_wall"]:
                     self.likely_running_into_wall = 0
-                    point_x, point_y = current_target
-                    self.environment.draw_learned_tile(point_x, point_y, "Building") 
+                    target_x, target_y = current_target
+                    self.environment.draw_learned_tile(target_x, target_y, "Building") 
                     if self.logger.level == 0:  # DEBUG level is 0, sorry for the magic numbers
                         self.environment.print_path(optimized_path)
-                    self.walk_to(target_position, allow_breaking=True)
-                    return
+                    self.logger.log(f"Assuming that the player is running into a wall at position {current_target}, breaking the wall", "WARNING")
+                    self.walk_to(target_position, allow_breaking=True)  # retry walking to the target position, this is an edge case for running into a wall
+                    continue
                 # edge case for running into a wall
 
                 self.logger.log(f"Failed to walk to target position {current_target}, current position is {self.position}", "ERROR")
