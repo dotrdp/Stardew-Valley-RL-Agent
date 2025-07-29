@@ -251,9 +251,10 @@ class player():
         '''
         previous_position = self.position
         recurrence = 0
+        self.target_position = target_position 
         while True:
             current_position = self.position
-            if current_position == target_position:
+            if current_position == self.target_position:
                 self.logger.log(f"Player reached target position {target_position}", "INFO")
                 return True
             if current_position == previous_position:
@@ -320,10 +321,12 @@ class player():
                 self.environment.draw_learned_tile(target_x, target_y, "Building")  # mark the tile as a wall in the environment
                 return self.walk_to(target_position, allow_breaking=True)
 
+
             if self.position != current_target:
                 self.logger.log(f"Failed to walk to target position {current_target}, current position is {self.position}", "ERROR")
                 raise Exception(f"Failed to walk to target position {current_target}, current position is {self.position}")
-
+            else:
+                self.like_running_into_wall = 0  # reset the counter if the player reached the target position
                        
     def optimize_path(self, path: list[tuple]) -> list[tuple]:
         '''
