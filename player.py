@@ -17,7 +17,7 @@ attempts = {
             "api_call": 4, # number of attempts to interact with the environment or game instance
             "walk_to": 3, # number of attempts to walk_to a position
             "follow_energy_path": 2, # number of attempts to follow an energy path
-            "assume_wall": 3 # number of attempts to assume that the player is running into a wall
+            "assume_wall": 5 # number of attempts to assume that the player is running into a wall
         } # reducing these yields faster actions, but may lead to errors
 
 class Item():
@@ -251,10 +251,10 @@ class player():
         '''
         previous_position = self.position
         recurrence = 0
-        self.target_position = target_position 
+        x, y = target_position
         while True:
             current_position = self.position
-            if current_position == self.target_position:
+            if current_position == (x, y):
                 self.logger.log(f"Player reached target position {target_position}", "INFO")
                 return True
             if current_position == previous_position:
