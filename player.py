@@ -82,6 +82,7 @@ class player():
 
         # behavior related 
         self.attempts = attempts # number of attempts for various actions
+        self.likely_running_into_wall = 0
         self.logger.log("Player instance created", "INFO")
 
 
@@ -243,7 +244,7 @@ class player():
             self.logger.log(f"Position {target_position} is NOT reachable by walking", "DEBUG")
             return False
 
-    def wait_until_pos_or_not_moving(self, target_position: tuple[int, int]) -> bool | str:
+    def wait_until_pos_or_not_moving(self, target_position: tuple[int, int]) -> bool:
         '''
         Waits until the player reaches the target position or stops moving
         Returns True if the player reached the target position, False if the player stopped moving
@@ -259,7 +260,7 @@ class player():
                 self.logger.log(f"Player stopped moving at position {current_position}", "WARNING")
                 if recurrence <= 2:
                     self.logger.log(f"Player is almost certainly running into a wall", "DEBUG")
-                    return "wall"
+                    self.likely_running_into_wall += 1
                 return False
             previous_position = current_position
             recurrence += 1
@@ -267,7 +268,6 @@ class player():
 
     @retry(tries=attempts["walk_to"])
     def walk_to(self, target_position: tuple[int, int], allow_breaking: bool = False) -> Exception | None:
-        self.likely_running_into_wall = 0
 
         # edge cases
         self.cutscenes_quickfix()
@@ -313,28 +313,17 @@ class player():
                     break
             # retry walking to the target position if it failed
 
-            position = self.position
-            if position != current_target:
+            if self.likely_running_into_wall >= self.attempts["assume_wall"]:
+                self.logger.log(f"Player is likely running into a wall, assuming wall at position {current_target}", "WARNING")
+                self.likely_running_into_wall = 0
+                path = nx.shortest_path(strictly_collision_graph, self.position, current_target)
+                target_x, target_y = path[1]
+                self.environment.draw_learned_tile(target_x, target_y, "Building")  # mark the tile as a wall in the environment
+                return self.walk_to(target_position, allow_breaking=allow_breaking)
 
-                # edge case for running into a wall
-                if self.likely_running_into_wall >= self.attempts["assume_wall"]:
-                    self.likely_running_into_wall = 0
-                    path = nx.shortest_path(strictly_collision_graph, current_target, target_position)
-                    target_x, target_y = path[1]
-                    self.environment.draw_learned_tile(target_x, target_y, "Building") 
-                    if self.logger.level == 0:  # DEBUG level is 0, sorry for the magic numbers
-                        self.environment.print_path(optimized_path)
-                    self.logger.log(f"Assuming that the player is running into a wall at position {current_target}, breaking the wall", "WARNING")
-                    self.walk_to(target_position, allow_breaking=True)  # retry walking to the target position, this is an edge case for running into a wall
-                    continue
-                else:
-                    self.likely_running_into_wall += 1
-                # edge case for running into a wall
-
-                self.logger.log(f"Failed to walk to target position {current_target}, current position is {position}", "ERROR")
-                raise Exception(f"Failed to walk to target position {current_target}, current position is {position}")
-            else:
-                self.likely_running_into_wall = 0  # reset the wall detection counter
+            if self.position != current_target:
+                self.logger.log(f"Failed to walk to target position {current_target}, current position is {self.position}", "ERROR")
+                raise Exception(f"Failed to walk to target position {current_target}, current position is {self.position}")
 
                        
     def optimize_path(self, path: list[tuple]) -> list[tuple]:
