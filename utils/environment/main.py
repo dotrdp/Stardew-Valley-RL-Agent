@@ -48,6 +48,7 @@ class environment():
         res["IsWorldReady"] = self.game_instance.reflection(function="getproperty", args=["Context", "IsWorldReady"])["Result"]
         self.logger.log(f"Environment state: {res}", "DEBUG")
         return res
+
     def update_spatial_state(self):
         self.logger.log("Updating spatial state", "DEBUG")
         self.spatial_state = self.map.get_data()

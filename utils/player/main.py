@@ -6,7 +6,6 @@ from dotenv import dotenv_values
 from logger import Logger
 
 from ..api.API import read_msgpack_base64
-from ..environment.main import environment
 from .inventory import inventory, Item
 
 prefs = dotenv_values(".env") 
@@ -23,7 +22,7 @@ attempts = {
         } # reducing these yields faster actions, but may lead to errors
 
 class player():
-    def __init__(self, environment: environment):
+    def __init__(self, environment):
 
         self.environment = environment
         self.r = self.environment.game_instance.__getattribute__("reflection") # USEFUL API FOR READING GAME DATA
