@@ -68,6 +68,7 @@ class environment():
     def draw_learned_tile(self, position: tuple[int, int], type: str):
         x, y = position
         self.learned_spatial_features[x][y] = Tile(x, y, type)
+        self.spatial_state[x][y] = Tile(x, y, type)
 
     
     
