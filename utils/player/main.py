@@ -297,7 +297,7 @@ class player():
                 path = nx.shortest_path(graph, self.position, current_target)
                 self.logger.log(f"Player is likely running into a wall, assuming wall at position {path[1]}", "WARNING")
                 self.environment.draw_learned_tile(path[1], "Building") # mark the tile as a wall in the environment
-                self.logger.log(f"{path}", "DEBUG")
+                self.environment.print_path(path)  # this calls print, therefore it couldnt be blocked otherwise
                 if path[1] == current_target:
                     self.logger.log(f"Target position {current_target} is blocked by a wall", "ERROR")
                     raise Exception(f"Target position {current_target} is blocked by a wall")
