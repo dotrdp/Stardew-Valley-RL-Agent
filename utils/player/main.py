@@ -297,6 +297,7 @@ class player():
                 path = nx.shortest_path(graph, self.position, target_position)
                 self.logger.log(f"Player is likely running into a wall, assuming wall at position {path[1]}", "WARNING")
                 self.environment.draw_learned_tile(path[1], "Building") # mark the tile as a wall in the environment
+                self.environment.update_spatial_state() # update the spatial state of the environment
                 graph = self.environment.get_energy_graph() # update the graph
                 path = nx.dijkstra_path(graph, self.position, target_position) # get the new path
                 self.follow_energy_path(path) # type: ignore
