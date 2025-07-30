@@ -286,12 +286,21 @@ class player():
 
             if self.likely_running_into_wall >= self.attempts["assume_wall"]:
                 self.likely_running_into_wall = 0
-                path = nx.shortest_path(strictly_collision_graph, self.position, current_target)
+                graph = None
+                try:
+                    graph = self.environment.get_collision_graph()
+                except nx.NetworkXNoPath:
+                    graph = self.environment.get_energy_graph()
+                if graph is None:
+                    self.logger.log("Failed to get collision graph, cannot assume wall", "ERROR")
+                    raise Exception("Failed to get collision graph, cannot assume wall")
+                path = nx.shortest_path(graph, self.position, current_target)
                 self.logger.log(f"Player is likely running into a wall, assuming wall at position {path[1]}", "WARNING")
                 self.environment.draw_learned_tile(path[1], "Building") # type: ignore  # mark the tile as a wall in the environment
                 self.logger.log(f"{path}", "DEBUG")
                 if path[1] == current_target:
-                    return
+                    self.logger.log(f"Target position {current_target} is blocked by a wall", "ERROR")
+                    raise Exception(f"Target position {current_target} is blocked by a wall")
                 return self.walk_to(target_position, allow_breaking=True)
 
 
