@@ -5,6 +5,7 @@ from dotenv import dotenv_values
 from .world_action import world_action
 from .environment_graphs import Env_Graphs
 from .path_utils import print_path as pt
+from .map_wrapper import Map, Tile
 
 
 prefs = dotenv_values(".env")
