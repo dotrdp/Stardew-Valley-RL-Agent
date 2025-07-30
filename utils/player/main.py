@@ -289,6 +289,7 @@ class player():
                 path = nx.shortest_path(strictly_collision_graph, self.position, current_target)
                 self.logger.log(f"Player is likely running into a wall, assuming wall at position {path[1]}", "WARNING")
                 self.environment.draw_learned_tile(path[1], "Building") # type: ignore  # mark the tile as a wall in the environment
+                self.logger.log(f"{path[1]}", "DEBUG")
                 return self.walk_to(target_position, allow_breaking=True)
 
 
