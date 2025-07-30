@@ -286,9 +286,9 @@ class player():
             # retry walking to the target position if it failed
 
             if self.likely_running_into_wall >= self.attempts["assume_wall"]:
-                self.logger.log(f"Player is likely running into a wall, assuming wall at position {current_target}", "WARNING")
                 self.likely_running_into_wall = 0
                 path = nx.shortest_path(strictly_collision_graph, self.position, current_target)
+                self.logger.log(f"Player is likely running into a wall, assuming wall at position {path[1]}", "WARNING")
                 self.environment.draw_learned_tile(path[1], "Building") # type: ignore  # mark the tile as a wall in the environment
                 return self.walk_to(target_position, allow_breaking=True)
 
