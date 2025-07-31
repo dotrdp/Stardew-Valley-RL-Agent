@@ -281,6 +281,7 @@ class player():
                 asyncio.run(self.single_step(current_target))  # try to walk to the target position again
                 success = self.wait_until_pos_or_not_moving(current_target)
                 if success:
+                    self.logger.log("TRYING PLWEASE", "ERROR")
                     break
             # retry walking to the target position if it failed
 
