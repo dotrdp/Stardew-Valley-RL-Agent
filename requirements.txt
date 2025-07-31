@@ -8,9 +8,11 @@ msgpack
 docker
 retry
 python-dotenv
+git+https://github.com/KellerJordan/Muon
+torch>=2.0.0
+lightning
 
 # Optional dependencies (commented out because torch is commented in agent.py)
-# torch>=2.0.0
 # numpy>=1.21.0
 
 # Standard library modules (no installation required)
