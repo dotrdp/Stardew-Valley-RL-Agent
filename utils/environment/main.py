@@ -42,7 +42,9 @@ class environment():
         res = {
             "IsPlayerFree": False,
             "CanPlayerMove": False,
-            "IsWorldReady": False}
+            "IsWorldReady": False,
+            "time": self.game_instance.reflection(function="getproperty", args=["Context", "Time"])["Result"],
+            }
         res["IsPlayerFree"] = self.game_instance.reflection(function="getproperty", args=["Context", "IsPlayerFree"])["Result"]
         res["CanPlayerMove"] = self.game_instance.reflection(function="getproperty", args=["Context", "CanPlayerMove"])["Result"]
         res["IsWorldReady"] = self.game_instance.reflection(function="getproperty", args=["Context", "IsWorldReady"])["Result"]
