@@ -45,8 +45,7 @@ def get_state_embedding(env, player) -> torch.Tensor:
     # Energy graph: aggregate normalized 'we' within normalized distance <= 1
     energy_graph = env.get_energy_graph()
     nodes = energy_graph.nodes
-    player_node = nodes[player.position]
-    print("we rolling")
+    player_node = player.position
 
     # Find all shortest path lengths from player_node
     lengths = torch.zeros(len(nodes), dtype=torch.float32)
