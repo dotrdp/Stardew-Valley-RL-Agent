@@ -272,11 +272,8 @@ class Map():
 
         for tile in buildings:
             x, y = tile["X"], tile["Y"]
-            try:
-                tile_type = tile["Properties"]["Type"]
-                result[x][y] = Tile(x, y, tile_type)
-            except Exception as e:
-                pass
+            tile_type = tile["Properties"]["Type"]
+            result[x][y] = Tile(x, y, tile_type)
  
         #for warp in warps:
         #    x, y = warp["TargetX"], warp["TargetY"]
