@@ -1,4 +1,4 @@
-from ..__init__ import read_msgpack_base64
+from utils import read_msgpack_base64
 from colorama import Fore
 
 
