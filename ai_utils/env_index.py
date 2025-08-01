@@ -12,10 +12,10 @@ items = {
 # str -> index -> mlp
 
 seasons = {
-    "Spring": 1.0,
-    "Summer": 2.0,
-    "Autumn": 3.0,
-    "Winter": 4.0,
+    "spring": 1.0,
+    "summer": 2.0,
+    "autumn": 3.0,
+    "winter": 4.0,
 }
 
 def get_fixed_neighborhood_vector(energy_graph, player_node, nodes,tile_dataset, radius=30, max_nodes=120):
@@ -47,8 +47,8 @@ def get_fixed_neighborhood_vector(energy_graph, player_node, nodes,tile_dataset,
                         if prop["tool"] in items:
                             lengths[-1] = items[prop["tool"]]
                         else:
-                            lengths[-1] = -1.0
-                    lengths[-1] = -2.0
+                            lengths[-1] = float(length)
+                    lengths[-1] = -1.0
             except nx.NetworkXNoPath:
                 lengths.append(-1.0)
     return lengths
@@ -65,17 +65,13 @@ def get_state_embedding(env, player) -> torch.Tensor:
     rain_feat = torch.tensor([1.0 if env.raining else -1.0], dtype=torch.float32)
 
     # Season as one-hot (already 0/1, so scale to [-1, 1])
-    season_feat = torch.full((len(seasons),), -1.0, dtype=torch.float32)
-    if env.season in seasons:
-        season_feat[seasons[env.season]] = 1.0
-    else:
-        print(f"Warning: Season '{env.season}' not recognized in seasons dictionary.")
+    seasons_feat = torch.tensor(seasons[env.season], dtype=torch.float32) if env.season in seasons else ValueError(f"Unknown season: {env.season}") 
 
     # Inventory as multi-hot (already 0/1, so scale to [-1, 1])
-    inventory_feat = torch.full((len(items),), -1.0, dtype=torch.float32)
-    for item in player.inventory.items:
+    inventory_feat = torch.arange(len(items), dtype=torch.float32)
+    for index, item in enumerate(player.inventory.items):
         if item in items:
-            inventory_feat[items[item]] = 1.0
+            inventory_feat[index] = items[item]
         else:
             print(f"Warning: Item '{item}' not recognized in items dictionary.")
 
@@ -94,7 +90,7 @@ def get_state_embedding(env, player) -> torch.Tensor:
         time_feat,
         snow_feat,
         rain_feat,
-        season_feat,
+        seasons_feat,
         inventory_feat,
         stamina_feat,
         lengths
