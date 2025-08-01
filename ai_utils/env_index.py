@@ -71,7 +71,7 @@ def get_state_embedding(env, player) -> torch.Tensor:
     inventory_feat = torch.arange(len(items), dtype=torch.float32)
     for index, item in enumerate(player.inventory.items):
         if item.name in items:
-            inventory_feat[index] = items[item]
+            inventory_feat[index] = items[item.name]
         else:
             print(f"Warning: Item '{item}' not recognized in items dictionary.")
 
