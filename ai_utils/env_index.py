@@ -56,9 +56,9 @@ def get_state_embedding(env, player) -> torch.Tensor:
             try:
                 length = nx.shortest_path_length(energy_graph, source=player_node, target=node)
                 # Normalize length to [-1, 1] based on max distance
-                lengths[nodes[node]] = (length / env.max_distance) * 2 - 1
+                lengths[node] = (length / env.max_distance) * 2 - 1
             except nx.NetworkXNoPath:
-                lengths[nodes[node]] = -1.0
+                lengths[node] = -1.0
     result = torch.cat([
         time_feat,
         snow_feat,
