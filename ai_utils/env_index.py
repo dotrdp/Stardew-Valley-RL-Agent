@@ -56,7 +56,7 @@ def get_state_embedding(env, player) -> torch.Tensor:
             try:
                 length = nx.shortest_path_length(energy_graph, source=player_node, target=node)
                 # Normalize length to [-1, 1] based on max distance
-                lengths[i] = (length / env.max_distance) * 2 - 1
+                lengths[i] = (length / 20) * 2 - 1
             except nx.NetworkXNoPath:
                 lengths[i] = -1.0
         print(" WE ROLLIGN")
