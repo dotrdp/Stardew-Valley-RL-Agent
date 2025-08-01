@@ -67,7 +67,7 @@ def get_state_embedding(env, player) -> torch.Tensor:
     rain_feat = torch.tensor([1.0 if env.raining else 0.0], dtype=torch.float32)
 
     # Season as one-hot (already 0/1, so scale to [-1, 1])
-    seasons_feat = torch.tensor(seasons[env.season], dtype=torch.float32) if env.season in seasons else ValueError(f"Unknown season: {env.season}") 
+    seasons_feat = torch.tensor([seasons[env.season]], dtype=torch.float32) if env.season in seasons else ValueError(f"Unknown season: {env.season}") 
 
     # Inventory as multi-hot (already 0/1, so scale to [-1, 1])
     inventory_feat = torch.Tensor()
