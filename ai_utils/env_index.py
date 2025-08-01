@@ -85,7 +85,8 @@ def get_state_embedding(env, player) -> torch.Tensor:
     lengths = torch.tensor(get_fixed_neighborhood_vector(energy_graph, player_node, nodes, env))
 
     # suppose we want a circle around the player node, so the amount of nodes feed into the model and the dimensionality of the resultant vector is always the same
-    print(" WE ROLLIGN")
+    if isinstance(seasons_feat, ValueError):
+        raise seasons_feat
     result = torch.cat([
         time_feat,
         snow_feat,
