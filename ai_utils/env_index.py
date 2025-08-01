@@ -50,7 +50,7 @@ def get_state_embedding(env, player) -> torch.Tensor:
     # Find all shortest path lengths from player_node
     lengths = torch.zeros(len(nodes), dtype=torch.float32)
     for node in nodes:
-        print(node)
+        print(type(node))
         if node != player_node:
             length = nx.shortest_path_length(energy_graph, source=player_node, target=node)
             lengths[node] = length
