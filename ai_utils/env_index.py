@@ -1,4 +1,3 @@
-from ..utils import player, environment # for type hints
 import torch
 import networkx as nx
 
