@@ -1,4 +1,4 @@
-from map_wrapper import Tile
+from .main import Tile
 
 def print_path(spatial_state, path):
     copy = spatial_state.copy()
