@@ -4,7 +4,7 @@ import networkx as nx
 items = {
     "Pickaxe": 1.0,
     "Axe": 2.0,
-    "MeeleWeapon": 3.0,
+    "MeleeWeapon": 3.0,
     "Empty": 0.0,
     "Wood": 4.0,
     "Stone": 5.0,
@@ -73,7 +73,7 @@ def get_state_embedding(env, player) -> torch.Tensor:
     inventory_feat = torch.Tensor()
     for index, item in enumerate(player.inventory.items):
         if item.name in items:
-            torch.concat((inventory_feat, torch.tensor([items[item.name]], dtype=torch.float32)))
+            inventory_feat = torch.concat((inventory_feat, torch.tensor([items[item.name]], dtype=torch.float32)))
         else:
             print(f"Warning: Item '{item.name}' not recognized in items dictionary.")
 
@@ -84,7 +84,6 @@ def get_state_embedding(env, player) -> torch.Tensor:
     nodes = energy_graph.nodes
     player_node = player.position
     lengths = torch.tensor(get_fixed_neighborhood_vector(energy_graph, player_node, nodes, env))
-    print(inventory_feat)
 
     # suppose we want a circle around the player node, so the amount of nodes feed into the model and the dimensionality of the resultant vector is always the same
     if isinstance(seasons_feat, ValueError):
