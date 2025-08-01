@@ -21,6 +21,7 @@ class environment():
         self.world_env = world_action(self.game_instance)
         self.map = Map(self.game_instance)
         self.spatial_state = self.map.get_data()
+        self.time, self.season, self.raining, self.snow = self.map.time, self.map.season, self.map.raining, self.map.snowing
         self.learned_spatial_features = {}
         self.logger = Logger(loglevel)
         self.env_graphs = Env_Graphs(self.spatial_state, self.logger)
@@ -53,6 +54,7 @@ class environment():
     def update_spatial_state(self):
         self.logger.log("Updating spatial state", "DEBUG")
         self.spatial_state = self.map.get_data()
+        self.time, self.season, self.raining, self.snow = self.map.time, self.map.season, self.map.raining, self.map.snowing
         if self.learned_spatial_features != {}:
             for i, v in self.learned_spatial_features.items():
                 x, y = i

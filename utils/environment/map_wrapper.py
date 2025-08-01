@@ -199,6 +199,10 @@ class Map():
         self.defaults = defaults
         self.readmsgpack = read_msgpack_base64
         self.known_properties = known_properties
+        self.time = None
+        self.season = None
+        self.snowing = False
+        self.raining = False
         self.buildings = buildings
 
     def get_building(self, buildname):
@@ -310,6 +314,13 @@ class Map():
                         
         player_x, player_y = int(player["_Field_X"]), int(player["_Field_Y"])
         result[player_x][player_y] = Tile(player_x, player_y, "player")
+        if "Time" in map:
+            self.time = map["Time"]
+        if "Season" in map:
+            self.season = map["Season"]
+        if "Weather" in map:
+            self.snowing = map["Weather"]["IsSnowing"]
+            self.raining = map["Weather"]["IsRaining"]
 
 
         self.api.logger.log("Generated map data from API", "DEBUG")
