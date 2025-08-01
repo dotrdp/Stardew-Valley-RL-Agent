@@ -19,12 +19,13 @@ for the rest it works like any other method
 """
 
 import subprocess
-from logger import Logger
-from dotenv import dotenv_values 
+from dotenv import dotenv_values
+
 
 from .docs import DOCS
 from .execute import exec_method
 from .utils import read_msgpack_base64, template # needed here because other modules import it from here, DO NOT REMOVE read_msgpack_base64
+from ..logger import Logger
 
 prefs = dotenv_values(".env")
 docker_image_name = prefs.get("docker_image_name", "sdvd-server")
