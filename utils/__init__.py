@@ -7,10 +7,8 @@ __all__ = [
     "Map",
     "Tile",
 ]
-from .api.API import StardewModdingAPI, read_msgpack_base64
-from .environment.main import environment
-from .environment.map_wrapper import Map, Tile
-from logger import Logger
+from .api.API import StardewModdingAPI, read_msgpack_base64, Logger
+from .environment.main import environment, Map, Tile
 from .player.main import player
 
 
