@@ -1,7 +1,7 @@
 import torch.nn as nn
 import lightning as L
-from utils import environment, player
-from ai_utils import SimpleLSTM
+from utils import environment, player, StardewModdingAPI
+from ai_utils import SimpleLSTM, env_index, get_state_embedding
 from muon import MuonWithAuxAdam # give it some cutting edge shall we?, seems to be better than all mighty adam, besides it is currently trending and it's main use case is around RL and neural networks, not yet implemented in pytorch lightning hence this package
 
 # figured out in the past LSTMs were used for RL, but they're just outdated transformers
@@ -9,6 +9,11 @@ from muon import MuonWithAuxAdam # give it some cutting edge shall we?, seems to
 # we doing LSTM ig, but let's give it attention please.
 
 # pretty much X -> Embedding -> torch built-in LSTM -> attention -> linear layer -> output + skip connection(layer norm)
+
+api = StardewModdingAPI()
+environment = environment(api)
+player = player(environment)
+get_state_embedding(environment, player)
 
 class LSTM_attn(L.LightningModule):
     def __init__(self, input_dim, hidden_dim, output_dim):
