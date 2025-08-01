@@ -54,6 +54,7 @@ def get_state_embedding(env, player) -> torch.Tensor:
     norm_distances = {n: l / 20.0 for n, l in lengths.items()}
 
     # Normalize 'we' values to [-1, 1] if possible
+    # such that the minimum 'we' is -1 and maximum 'we' is 1, whereas everything else is in a range of 0-1
     we_values = [energy_graph.nodes[n].get('weight', 0.0) for n in nodes]
     min_we, max_we = min(we_values), max(we_values)
     def norm_we(we):

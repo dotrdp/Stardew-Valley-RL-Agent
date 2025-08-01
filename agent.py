@@ -13,7 +13,7 @@ from muon import MuonWithAuxAdam # give it some cutting edge shall we?, seems to
 api = StardewModdingAPI()
 environment = environment(api)
 player = player(environment)
-get_state_embedding(environment, player)
+print(get_state_embedding(environment, player))
 
 # NOTE: TODO))
 # policy gradient, actor-critic, and entropy to avoid overfitting
