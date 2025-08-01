@@ -41,7 +41,7 @@ def get_fixed_neighborhood_vector(energy_graph, player_node, nodes,tile_dataset,
                 # Normalize length to [-1, 1] based on radius
                 lengths.append(length)
                 x, y = node
-                prop = tile_dataset[x][y].properties
+                prop = tile_dataset.spatial_state[x][y].properties
                 if "collision" in prop:
                     if "tool" in prop:
                         if prop["tool"] in items:
