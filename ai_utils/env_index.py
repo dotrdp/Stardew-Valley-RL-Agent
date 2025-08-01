@@ -18,7 +18,7 @@ seasons = {
     "Winter": 4,
 }
 
-def get_fixed_neighborhood_vector(energy_graph, player_node, nodes, radius=20, max_nodes=120):
+def get_fixed_neighborhood_vector(energy_graph, player_node, nodes, radius=30, max_nodes=120):
     # Find nodes within a circle (graph distance) around player_node
     circle_nodes = [
         node for node in nodes
