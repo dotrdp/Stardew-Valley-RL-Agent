@@ -1,7 +1,6 @@
-from map_wrapper import Map, Tile
-from logger import Logger
 from dotenv import dotenv_values
 
+from ..logger import Logger
 from .world_action import world_action
 from .environment_graphs import Env_Graphs
 from .path_utils import print_path as pt
