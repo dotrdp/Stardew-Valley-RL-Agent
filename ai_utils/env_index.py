@@ -101,6 +101,13 @@ def get_state_embedding(env, player) -> torch.Tensor:
         raise TypeError("Rain feature must be a torch.Tensor")
     if not isinstance(stamina_feat, torch.Tensor):
         raise TypeError("Stamina feature must be a torch.Tensor")
+    print(f"Inventory feature: {inventory_feat}")
+    print(f"Lengths feature: {lengths}")
+    print(f"Time feature: {time_feat}")
+    print(f"Snow feature: {snow_feat}")
+    print(f"Rain feature: {rain_feat}")
+    print(f"Stamina feature: {stamina_feat}")
+    print(f"Seasons feature: {seasons_feat}")
     result = torch.cat([
         time_feat,
         snow_feat,
