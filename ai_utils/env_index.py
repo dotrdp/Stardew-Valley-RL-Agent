@@ -24,7 +24,7 @@ seasons = {
 # implementation details: we need a normalized vector with -1-1 range, note the graph must be normalized into a distance and normalize it's weights
 def get_state_embedding(env, player) -> torch.Tensor:
     # Normalize time to [-1, 1]
-    time_feat = torch.tensor([(env.time / 24.0) * 2 - 1], dtype=torch.float32)
+    time_feat = torch.tensor([env.time], dtype=torch.float32)
     snow_feat = torch.tensor([1.0 if env.snow else -1.0], dtype=torch.float32)
     rain_feat = torch.tensor([1.0 if env.raining else -1.0], dtype=torch.float32)
 
@@ -32,15 +32,19 @@ def get_state_embedding(env, player) -> torch.Tensor:
     season_feat = torch.full((len(seasons),), -1.0, dtype=torch.float32)
     if env.season in seasons:
         season_feat[seasons[env.season]] = 1.0
+    else:
+        print(f"Warning: Season '{env.season}' not recognized in seasons dictionary.")
 
     # Inventory as multi-hot (already 0/1, so scale to [-1, 1])
     inventory_feat = torch.full((len(items),), -1.0, dtype=torch.float32)
     for item in player.inventory.items:
         if item in items:
             inventory_feat[items[item]] = 1.0
+        else:
+            print(f"Warning: Item '{item}' not recognized in items dictionary.")
 
     # Stamina normalized to [-1, 1]
-    stamina_feat = torch.tensor([(player.stamina / 256.0) * 2 - 1], dtype=torch.float32)
+    stamina_feat = torch.tensor([(player.stamina / 270)], dtype=torch.float32)
 
     # Energy graph: aggregate normalized 'we' within normalized distance <= 1
     energy_graph = env.get_energy_graph()
@@ -56,7 +60,7 @@ def get_state_embedding(env, player) -> torch.Tensor:
             try:
                 length = nx.shortest_path_length(energy_graph, source=player_node, target=node)
                 # Normalize length to [-1, 1] based on max distance
-                lengths[i] = (length / 20) * 2 - 1
+                lengths[i] = length
             except nx.NetworkXNoPath:
                 lengths[i] = -1.0
         print(" WE ROLLIGN")
