@@ -39,8 +39,7 @@ def get_fixed_neighborhood_vector(energy_graph, player_node, nodes, radius=20, m
             try:
                 length = nx.shortest_path_length(energy_graph, source=player_node, target=node)
                 # Normalize length to [-1, 1] based on radius
-                norm_length = 2 * (length / radius) - 1
-                lengths.append(norm_length)
+                lengths.append(length)
             except nx.NetworkXNoPath:
                 lengths.append(-1.0)
     return lengths
