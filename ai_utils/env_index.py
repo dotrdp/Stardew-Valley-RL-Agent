@@ -46,10 +46,12 @@ def get_state_embedding(env, player) -> torch.Tensor:
     energy_graph = env.get_energy_graph()
     nodes = energy_graph.nodes
     player_node = nodes[player.position]
+    print("we rolling")
 
     # Find all shortest path lengths from player_node
     lengths = torch.zeros(len(nodes), dtype=torch.float32)
     for node in nodes:
+        print(f"Processing node: {node}, player_node: {player_node}")
         # print(type(node)) this is a trupe, uh forgot what is it called (x, y)
         if node != player_node:
             try:
