@@ -241,6 +241,12 @@ class Map():
                      tilesheets[id] = {} 
                    tilesheets[id][label] = value
               
+        if "Back" not in tileprops:
+            self.api.logger.log("No Back layer found in tile properties, using default properties", "WARNING")
+            tileprops["Back"] = {}
+            for x in range(number_of_x+1):
+                for y in range(number_of_y+1):
+                    tileprops["Back"][f"{x},{y}"] = {"Buildable": "f"}
         for prop in tileprops["Back"]:
             x, y = prop.split(",")
             value = tileprops["Back"][prop]
@@ -266,7 +272,11 @@ class Map():
 
         for tile in buildings:
             x, y = tile["X"], tile["Y"]
-            result[x][y] = Tile(x, y, "Building")
+            try:
+                tile_type = tile["Properties"]["Type"]
+                result[x][y] = Tile(x, y, tile_type)
+            except Exception as e:
+                pass
  
         #for warp in warps:
         #    x, y = warp["TargetX"], warp["TargetY"]
