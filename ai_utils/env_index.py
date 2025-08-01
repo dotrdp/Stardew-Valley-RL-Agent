@@ -5,9 +5,11 @@ items = {
     "Pickaxe": 1.0,
     "Axe": 2.0,
     "MeeleWeapon": 3.0,
-    "nothing": 0.0,
-    "wood": 4.0,
-    "stone": 5.0,
+    "Empty": 0.0,
+    "Wood": 4.0,
+    "Stone": 5.0,
+    "Hoe": 6.0,
+    "WateringCan": 7.0,
 }
 # str -> index -> mlp
 
@@ -61,21 +63,20 @@ def get_fixed_neighborhood_vector(energy_graph, player_node, nodes,tile_dataset,
 def get_state_embedding(env, player) -> torch.Tensor:
     # Normalize time to [-1, 1]
     time_feat = torch.tensor([env.time], dtype=torch.float32)
-    snow_feat = torch.tensor([1.0 if env.snow else -1.0], dtype=torch.float32)
-    rain_feat = torch.tensor([1.0 if env.raining else -1.0], dtype=torch.float32)
+    snow_feat = torch.tensor([1.0 if env.snow else 0.0], dtype=torch.float32)
+    rain_feat = torch.tensor([1.0 if env.raining else 0.0], dtype=torch.float32)
 
     # Season as one-hot (already 0/1, so scale to [-1, 1])
     seasons_feat = torch.tensor(seasons[env.season], dtype=torch.float32) if env.season in seasons else ValueError(f"Unknown season: {env.season}") 
 
     # Inventory as multi-hot (already 0/1, so scale to [-1, 1])
-    inventory_feat = torch.arange(len(items), dtype=torch.float32)
+    inventory_feat = torch.Tensor()
     for index, item in enumerate(player.inventory.items):
         if item.name in items:
-            inventory_feat[index] = items[item.name]
+            torch.concat((inventory_feat, torch.tensor([items[item.name]], dtype=torch.float32)), out=inventory_feat)
         else:
             print(f"Warning: Item '{item}' not recognized in items dictionary.")
 
-    # Stamina normalized to [-1, 1]
     stamina_feat = torch.tensor([(player.stamina / 270)], dtype=torch.float32)
 
     # Energy graph: aggregate normalized 'we' within normalized distance <= 1
@@ -83,7 +84,7 @@ def get_state_embedding(env, player) -> torch.Tensor:
     nodes = energy_graph.nodes
     player_node = player.position
     lengths = torch.tensor(get_fixed_neighborhood_vector(energy_graph, player_node, nodes, env))
-    print(f"Lengths: {lengths}")
+    print(inventory_feat)
 
     # suppose we want a circle around the player node, so the amount of nodes feed into the model and the dimensionality of the resultant vector is always the same
     if isinstance(seasons_feat, ValueError):
