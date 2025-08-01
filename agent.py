@@ -15,6 +15,9 @@ environment = environment(api)
 player = player(environment)
 get_state_embedding(environment, player)
 
+# NOTE: TODO))
+# policy gradient, actor-critic, and entropy to avoid overfitting
+
 class LSTM_attn(L.LightningModule):
     def __init__(self, input_dim, hidden_dim, output_dim):
         super().__init__()
@@ -25,8 +28,7 @@ class LSTM_attn(L.LightningModule):
         self.fc = nn.Sequential(
         nn.Linear(hidden_dim, output_dim),
         nn.ReLU(),
-        nn.Linear(output_dim, output_dim)
-        )
+        nn.Linear(output_dim, output_dim))
 
     def forward(self, x):
         y, hidden, memory = self.lstm(x)
@@ -48,11 +50,12 @@ class LSTM_attn(L.LightningModule):
                  lr=3e-4, betas=(0.9, 0.95), weight_decay=0.01),
         ]
         optimizer = MuonWithAuxAdam(param_groups)
-        return optimizer
+        return optimizer #muon why not
+
 # just some simple LSTM with attention, using my beloved muon optimizer, props to the guys who implemented it
 
 class Agent:
-    def __init__(self, env: environment, player: player):
+    def __init__(self, env, player):
         self.env = env
         self.player = player
 
