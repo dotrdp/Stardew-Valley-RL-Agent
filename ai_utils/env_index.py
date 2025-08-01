@@ -49,16 +49,16 @@ def get_state_embedding(env, player) -> torch.Tensor:
 
     # Find all shortest path lengths from player_node
     lengths = torch.zeros(len(nodes), dtype=torch.float32)
-    for node in nodes:
+    for node, i in enumerate(nodes):
         print(f"Processing node: {node}, player_node: {player_node}")
         # print(type(node)) this is a trupe, uh forgot what is it called (x, y)
         if node != player_node:
             try:
                 length = nx.shortest_path_length(energy_graph, source=player_node, target=node)
                 # Normalize length to [-1, 1] based on max distance
-                lengths[node] = (length / env.max_distance) * 2 - 1
+                lengths[i] = (length / env.max_distance) * 2 - 1
             except nx.NetworkXNoPath:
-                lengths[node] = -1.0
+                lengths[i] = -1.0
         print(" WE ROLLIGN")
     result = torch.cat([
         time_feat,
