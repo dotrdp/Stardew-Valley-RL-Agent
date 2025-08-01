@@ -49,36 +49,23 @@ def get_state_embedding(env, player) -> torch.Tensor:
     player_node = nodes[player.position]
 
     # Find all shortest path lengths from player_node
-    lengths = nx.single_source_shortest_path_length(energy_graph, player_node, cutoff=20)
-    # Normalize distances to [0, 1]
-    norm_distances = {n: l / 20.0 for n, l in lengths.items()}
+    lengths = torch.zeros(len(nodes), dtype=torch.float32)
+    for node in nodes:
+        if node != player_node:
+            length = nx.shortest_path_length(energy_graph, source=player_node, target=node)
+            lengths[node] = length
+    lengths = lengths / lengths.max()  # Normalize to [0, 1]
 
-    # Normalize 'we' values to [-1, 1] if possible
-    # such that the minimum 'we' is -1 and maximum 'we' is 1, whereas everything else is in a range of 0-1
-    we_values = [energy_graph.nodes[n].get('weight', 0.0) for n in nodes]
-    min_we, max_we = min(we_values), max(we_values)
-    def norm_we(we):
-        if max_we == min_we:
-            return 0.0
-        return ((we - min_we) / (max_we - min_we)) * 2 - 1
-
-    agg_we = 0.0
-    count = 0
-    for node, norm_dist in norm_distances.items():
-        if norm_dist <= 1.0:
-            we = energy_graph.nodes[node].get('weight', 0.0)
-            agg_we += norm_we(we)
-            count += 1
-    agg_we_feat = torch.tensor([agg_we / count if count > 0 else 0.0], dtype=torch.float32)
-
-    # Concatenate all features
-    embedding = torch.cat([
+    result = torch.cat([
         time_feat,
         snow_feat,
         rain_feat,
         season_feat,
         inventory_feat,
         stamina_feat,
-        agg_we_feat
+        lengths
     ])
-    return embedding
+
+    return result
+
+
