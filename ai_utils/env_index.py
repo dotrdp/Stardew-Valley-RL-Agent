@@ -73,9 +73,9 @@ def get_state_embedding(env, player) -> torch.Tensor:
     inventory_feat = torch.Tensor()
     for index, item in enumerate(player.inventory.items):
         if item.name in items:
-            torch.concat((inventory_feat, torch.tensor([items[item.name]], dtype=torch.float32)), out=inventory_feat)
+            torch.concat((inventory_feat, torch.tensor([items[item.name]], dtype=torch.float32)))
         else:
-            print(f"Warning: Item '{item}' not recognized in items dictionary.")
+            print(f"Warning: Item '{item.name}' not recognized in items dictionary.")
 
     stamina_feat = torch.tensor([(player.stamina / 270)], dtype=torch.float32)
 
@@ -89,6 +89,18 @@ def get_state_embedding(env, player) -> torch.Tensor:
     # suppose we want a circle around the player node, so the amount of nodes feed into the model and the dimensionality of the resultant vector is always the same
     if isinstance(seasons_feat, ValueError):
         raise seasons_feat
+    if not isinstance(inventory_feat, torch.Tensor):
+        raise TypeError("Inventory feature must be a torch.Tensor")
+    if not isinstance(lengths, torch.Tensor):
+        raise TypeError("Lengths feature must be a torch.Tensor")
+    if not isinstance(time_feat, torch.Tensor):
+        raise TypeError("Time feature must be a torch.Tensor")
+    if not isinstance(snow_feat, torch.Tensor):
+        raise TypeError("Snow feature must be a torch.Tensor")
+    if not isinstance(rain_feat, torch.Tensor):
+        raise TypeError("Rain feature must be a torch.Tensor")
+    if not isinstance(stamina_feat, torch.Tensor):
+        raise TypeError("Stamina feature must be a torch.Tensor")
     result = torch.cat([
         time_feat,
         snow_feat,
