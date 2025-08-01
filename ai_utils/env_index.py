@@ -59,6 +59,7 @@ def get_state_embedding(env, player) -> torch.Tensor:
                 lengths[node] = (length / env.max_distance) * 2 - 1
             except nx.NetworkXNoPath:
                 lengths[node] = -1.0
+        print(" WE ROLLIGN")
     result = torch.cat([
         time_feat,
         snow_feat,
