@@ -18,9 +18,8 @@ ALIASES = {
 
 ####################################################################################################
 import argparse
+from utils import read_msgpack_base64, StardewModdingAPI, Map 
 
-from API import StardewModdingAPI, read_msgpack_base64
-from map_wrapper import Map
 parser = argparse.ArgumentParser(description='cli to call methods on the spot')
 parser.add_argument('function', type=str, help='API method to call')
 parser.add_argument('target', nargs='?', help='Target resource or object')
@@ -43,8 +42,8 @@ if a.function == "tp":
         print(f"{k}: {v}")
     raise SystemExit(0)
 if a.function == "map":
-    map = Map(api)
-    print(map)
+    ade = Map(api=api)
+    print(ade)
 if a.function == "skip":
     value = True if a.target == "true" else False
     res = api.skip_events(value) # type: ignore
