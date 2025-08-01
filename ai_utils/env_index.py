@@ -49,7 +49,7 @@ def get_state_embedding(env, player) -> torch.Tensor:
 
     # Find all shortest path lengths from player_node
     lengths = torch.zeros(len(nodes), dtype=torch.float32)
-    for node, i in enumerate(nodes):
+    for i, node in enumerate(nodes):
         print(f"Processing node: {node}, player_node: {player_node}")
         # print(type(node)) this is a trupe, uh forgot what is it called (x, y)
         if node != player_node:
