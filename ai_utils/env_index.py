@@ -18,6 +18,34 @@ seasons = {
     "Winter": 4,
 }
 
+def get_fixed_neighborhood_vector(energy_graph, player_node, nodes, radius=3, max_nodes=10):
+    # Find nodes within a circle (graph distance) around player_node
+    circle_nodes = [
+        node for node in nodes
+        if node != player_node and
+        nx.has_path(energy_graph, player_node, node) and
+        nx.shortest_path_length(energy_graph, player_node, node) <= radius
+    ]
+    # Pad or truncate to fixed size
+    circle_nodes = circle_nodes[:max_nodes]
+    while len(circle_nodes) < max_nodes:
+        circle_nodes.append(None)  # Use None for padding
+
+    lengths = []
+    for node in circle_nodes:
+        if node is None:
+            lengths.append(-1.0)  # Padding value
+        else:
+            try:
+                length = nx.shortest_path_length(energy_graph, source=player_node, target=node)
+                # Normalize length to [-1, 1] based on radius
+                norm_length = 2 * (length / radius) - 1
+                lengths.append(norm_length)
+            except nx.NetworkXNoPath:
+                lengths.append(-1.0)
+    return lengths
+
+
 # vector -> LSTM
 
 # vector to define the world
@@ -50,20 +78,10 @@ def get_state_embedding(env, player) -> torch.Tensor:
     energy_graph = env.get_energy_graph()
     nodes = energy_graph.nodes
     player_node = player.position
+    lengths = torch.tensor(get_fixed_neighborhood_vector(energy_graph, player_node, nodes))
 
-    # Find all shortest path lengths from player_node
-    lengths = torch.zeros(len(nodes), dtype=torch.float32)
-    for i, node in enumerate(nodes):
-        print(f"Processing node: {node}, player_node: {player_node}")
-        # print(type(node)) this is a trupe, uh forgot what is it called (x, y)
-        if node != player_node:
-            try:
-                length = nx.shortest_path_length(energy_graph, source=player_node, target=node)
-                # Normalize length to [-1, 1] based on max distance
-                lengths[i] = length
-            except nx.NetworkXNoPath:
-                lengths[i] = -1.0
-        print(" WE ROLLIGN")
+    # suppose we want a circle around the player node, so the amount of nodes feed into the model and the dimensionality of the resultant vector is always the same
+    print(" WE ROLLIGN")
     result = torch.cat([
         time_feat,
         snow_feat,
@@ -73,6 +91,26 @@ def get_state_embedding(env, player) -> torch.Tensor:
         stamina_feat,
         lengths
     ])
+#     # output
+# tensor([ 2.3200e+03, -1.0000e+00, -1.0000e+00, -1.0000e+00, -1.0000e+00,
+#         -1.0000e+00, -1.0000e+00, -1.0000e+00, -1.0000e+00, -1.0000e+00,
+#         -1.0000e+00, -1.0000e+00, -1.0000e+00,  1.0000e+00, -1.0000e+00,
+#         -1.0000e+00,  1.3000e+01,  1.2000e+01,  1.2000e+01,  1.1000e+01,
+#          1.1000e+01,  1.0000e+01,  1.0000e+01,  9.0000e+00,  9.0000e+00,
+#          8.0000e+00,  8.0000e+00,  7.0000e+00,  9.0000e+00,  8.0000e+00,
+#         -1.0000e+00,  1.1000e+01,  1.0000e+01,  9.0000e+00,  7.0000e+00,
+#          6.0000e+00,  7.0000e+00, -1.0000e+00,  1.0000e+01,  9.0000e+00,
+#          8.0000e+00,  6.0000e+00,  5.0000e+00,  6.0000e+00,  8.0000e+00,
+#         -1.0000e+00,  9.0000e+00,  8.0000e+00,  7.0000e+00,  7.0000e+00,
+#          6.0000e+00,  5.0000e+00,  4.0000e+00,  5.0000e+00, -1.0000e+00,
+#          8.0000e+00,  7.0000e+00,  6.0000e+00,  5.0000e+00,  4.0000e+00,
+#          3.0000e+00,  4.0000e+00, -1.0000e+00,  7.0000e+00,  6.0000e+00,
+#          5.0000e+00,  4.0000e+00,  3.0000e+00,  2.0000e+00,  3.0000e+00,
+#         -1.0000e+00,  6.0000e+00,  5.0000e+00,  4.0000e+00,  3.0000e+00,
+#          2.0000e+00,  1.0000e+00,  2.0000e+00, -1.0000e+00,  5.0000e+00,
+#          4.0000e+00,  3.0000e+00,  2.0000e+00,  1.0000e+00,  0.0000e+00,
+#          1.0000e+00, -1.0000e+00,  6.0000e+00,  5.0000e+00,  4.0000e+00,
+#          3.0000e+00,  2.0000e+00,  1.0000e+00,  2.0000e+00])
 
     return result
 
