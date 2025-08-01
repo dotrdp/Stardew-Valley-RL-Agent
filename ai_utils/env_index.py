@@ -86,6 +86,7 @@ locations = {
     "Wisp": 55.0,
     "WizardHouse": 56.0,
     "Woods": 57.0,
+    "Hospital": 58.0,
 }
 
 def get_fixed_neighborhood_vector(energy_graph, player_node, nodes,tile_dataset, radius=20, max_nodes=400):
@@ -119,7 +120,7 @@ def get_fixed_neighborhood_vector(energy_graph, player_node, nodes,tile_dataset,
                         else:
                             lengths[-1] = float(-1)*float(length)
                 else:
-                    lengths[-1] = 0.0
+                    lengths[-1] = float(length)
             except nx.NetworkXNoPath:
                 lengths.append(-1.0)
     return lengths
