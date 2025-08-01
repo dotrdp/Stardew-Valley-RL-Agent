@@ -1,11 +1,8 @@
 import keyboard 
-from map_wrapper import Map
-from player import player
-from ENV import environment
-from API import StardewModdingAPI
+from utils import Map, player, environment, StardewModdingAPI
 
 
-api = StardewModdingAPI(method="ssh+tty")
+api = StardewModdingAPI()
 env = environment(api)
 doll = player(env)
 map = Map(api)

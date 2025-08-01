@@ -20,7 +20,13 @@ seasons = {
     "winter": 4.0,
 }
 
-def get_fixed_neighborhood_vector(energy_graph, player_node, nodes,tile_dataset, radius=30, max_nodes=120):
+locations = {
+    "Farm": 1.0,
+    "FarmHouse": 2.0,
+    "Beach": 3.0,
+}
+
+def get_fixed_neighborhood_vector(energy_graph, player_node, nodes,tile_dataset, radius=20, max_nodes=400):
     # Find nodes within a circle (graph distance) around player_node
     circle_nodes = [
         node for node in nodes
@@ -36,7 +42,7 @@ def get_fixed_neighborhood_vector(energy_graph, player_node, nodes,tile_dataset,
     lengths = []
     for node in circle_nodes:
         if node is None:
-            lengths.append(-1.0)  # Padding value
+            lengths.append(0.0)  # Padding value
         else:
             try:
                 length = nx.shortest_path_length(energy_graph, source=player_node, target=node)
@@ -49,8 +55,9 @@ def get_fixed_neighborhood_vector(energy_graph, player_node, nodes,tile_dataset,
                         if prop["tool"] in items:
                             lengths[-1] = items[prop["tool"]]
                         else:
-                            lengths[-1] = float(length)
-                    lengths[-1] = -1.0
+                            lengths[-1] = float(-1)*float(length)
+                else:
+                    lengths[-1] = 0.0
             except nx.NetworkXNoPath:
                 lengths.append(-1.0)
     return lengths
@@ -65,17 +72,23 @@ def get_state_embedding(env, player) -> torch.Tensor:
     time_feat = torch.tensor([env.time], dtype=torch.float32)
     snow_feat = torch.tensor([1.0 if env.snow else 0.0], dtype=torch.float32)
     rain_feat = torch.tensor([1.0 if env.raining else 0.0], dtype=torch.float32)
+    money_feat = torch.tensor([player.money], dtype=torch.float32)
 
     # Season as one-hot (already 0/1, so scale to [-1, 1])
     seasons_feat = torch.tensor([seasons[env.season]], dtype=torch.float32) if env.season in seasons else ValueError(f"Unknown season: {env.season}") 
 
     # Inventory as multi-hot (already 0/1, so scale to [-1, 1])
     inventory_feat = torch.Tensor()
-    for index, item in enumerate(player.inventory.items):
+    for item in player.inventory.items:
         if item.name in items:
             inventory_feat = torch.concat((inventory_feat, torch.tensor([items[item.name]], dtype=torch.float32)))
         else:
             print(f"Warning: Item '{item.name}' not recognized in items dictionary.")
+    location_feat = torch.Tensor([0.0])
+    if player.location in locations:
+        location_feat = torch.tensor([locations[player.location]], dtype=torch.float32)
+    else:
+        print(f"Warning: Location '{player.location}' not recognized in locations dictionary.")
 
     stamina_feat = torch.tensor([(player.stamina / 270)], dtype=torch.float32)
 
@@ -100,43 +113,17 @@ def get_state_embedding(env, player) -> torch.Tensor:
         raise TypeError("Rain feature must be a torch.Tensor")
     if not isinstance(stamina_feat, torch.Tensor):
         raise TypeError("Stamina feature must be a torch.Tensor")
-    print(f"Inventory feature: {inventory_feat}")
-    print(f"Lengths feature: {lengths}")
-    print(f"Time feature: {time_feat}")
-    print(f"Snow feature: {snow_feat}")
-    print(f"Rain feature: {rain_feat}")
-    print(f"Stamina feature: {stamina_feat}")
-    print(f"Seasons feature: {seasons_feat}")
     result = torch.cat([
         time_feat,
+        money_feat,
+        location_feat,
         snow_feat,
         rain_feat,
         seasons_feat,
-        inventory_feat,
         stamina_feat,
+        inventory_feat,
         lengths
     ])
-#     # output
-# tensor([ 2.3200e+03, -1.0000e+00, -1.0000e+00, -1.0000e+00, -1.0000e+00,
-#         -1.0000e+00, -1.0000e+00, -1.0000e+00, -1.0000e+00, -1.0000e+00,
-#         -1.0000e+00, -1.0000e+00, -1.0000e+00,  1.0000e+00, -1.0000e+00,
-#         -1.0000e+00,  1.3000e+01,  1.2000e+01,  1.2000e+01,  1.1000e+01,
-#          1.1000e+01,  1.0000e+01,  1.0000e+01,  9.0000e+00,  9.0000e+00,
-#          8.0000e+00,  8.0000e+00,  7.0000e+00,  9.0000e+00,  8.0000e+00,
-#         -1.0000e+00,  1.1000e+01,  1.0000e+01,  9.0000e+00,  7.0000e+00,
-#          6.0000e+00,  7.0000e+00, -1.0000e+00,  1.0000e+01,  9.0000e+00,
-#          8.0000e+00,  6.0000e+00,  5.0000e+00,  6.0000e+00,  8.0000e+00,
-#         -1.0000e+00,  9.0000e+00,  8.0000e+00,  7.0000e+00,  7.0000e+00,
-#          6.0000e+00,  5.0000e+00,  4.0000e+00,  5.0000e+00, -1.0000e+00,
-#          8.0000e+00,  7.0000e+00,  6.0000e+00,  5.0000e+00,  4.0000e+00,
-#          3.0000e+00,  4.0000e+00, -1.0000e+00,  7.0000e+00,  6.0000e+00,
-#          5.0000e+00,  4.0000e+00,  3.0000e+00,  2.0000e+00,  3.0000e+00,
-#         -1.0000e+00,  6.0000e+00,  5.0000e+00,  4.0000e+00,  3.0000e+00,
-#          2.0000e+00,  1.0000e+00,  2.0000e+00, -1.0000e+00,  5.0000e+00,
-#          4.0000e+00,  3.0000e+00,  2.0000e+00,  1.0000e+00,  0.0000e+00,
-#          1.0000e+00, -1.0000e+00,  6.0000e+00,  5.0000e+00,  4.0000e+00,
-#          3.0000e+00,  2.0000e+00,  1.0000e+00,  2.0000e+00])
-
     return result
 
 
