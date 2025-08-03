@@ -1,8 +1,9 @@
 import torch.nn as nn
 import lightning as L
 from utils import environment, player, StardewModdingAPI
-from ai_utils import SimpleLSTM, get_state_embedding
+from ai_utils import SimpleLSTM,  get_state_embedding
 from muon import MuonWithAuxAdam # give it some cutting edge shall we?, seems to be better than all mighty adam, besides it is currently trending and it's main use case is around RL and neural networks, not yet implemented in pytorch lightning hence this package
+from enum import Enum
 
 # figured out in the past LSTMs were used for RL, but they're just outdated transformers
 
@@ -15,16 +16,33 @@ environment = environment(api)
 player = player(environment)
 print(get_state_embedding(environment, player))
 
+
+class Action(Enum):
+    MOVE_UP = 0
+    MOVE_DOWN = 1
+    MOVE_LEFT = 2
+    MOVE_RIGHT = 3
+    USE_ITEM1 = 4
+    USE_ITEM2 = 5
+    USE_ITEM3 = 6
+    USE_ITEM4 = 7
+    USE_ITEM5 = 8
+    USE_ITEM6 = 9
+    USE_ITEM7 = 10
+    USE_ITEM8 = 11
+    USE_ITEM9 = 12
+    USE_ITEM10 = 13
+    USE_ITEM11 = 13
+    USE_ITEM12 = 13
+
 # NOTE: TODO))
 # policy gradient, actor-critic, and entropy to avoid overfitting
 
 class LSTM_attn(L.LightningModule):
-    def __init__(self, input_dim, hidden_dim, output_dim):
+    def __init__(self,input_dim,output_dim, hidden_dim): # output dim is 13
         super().__init__()
         self.lstm = SimpleLSTM(input_dim, hidden_dim) # this thing was adapted from lightning documentation, it comes with MLP and uses the torch built-in LSTM, which should be fairly good
-
         self.attention = nn.MultiheadAttention(hidden_dim, num_heads=2) # figured out heads aint that useful
-
         self.fc = nn.Sequential(
         nn.Linear(hidden_dim, output_dim),
         nn.ReLU(),
@@ -34,9 +52,8 @@ class LSTM_attn(L.LightningModule):
         y, hidden, memory = self.lstm(x)
         # watch me use these 3 as QKV
         attn_output, _ = self.attention(y, hidden, memory)
-
         output = self.fc(attn_output) + attn_output
-
+        output = nn.Softmax(output)
         return output
 
     def configure_optimizers(self):
@@ -61,6 +78,5 @@ class Agent:
 
     def act(self, state):
         # Convert the state to a tensor
-        pass
 
         # Get the action from the player

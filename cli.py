@@ -14,6 +14,7 @@ ALIASES = {
     "tp": "custom_stuff",
     "map": "custom_stuff",
     "skip": "custom_stuff",
+    "tp_default": request("reflection", "invokemethod", ["game1", "warpFarmer", "Farm", "64", "15", "true"]),
 }
 
 ####################################################################################################

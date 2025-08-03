@@ -23,6 +23,7 @@ class environment():
         self.spatial_state = self.map.get_data()
         self.time, self.season, self.raining, self.snow = self.map.time, self.map.season, self.map.raining, self.map.snowing
         self.learned_spatial_features = {}
+        self.previous_spatial_state = {}
         self.logger = Logger(loglevel)
         self.env_graphs = Env_Graphs(self.spatial_state, self.logger)
         self.logger.log("Environment initialized", "INFO")
@@ -53,6 +54,7 @@ class environment():
 
     def update_spatial_state(self):
         self.logger.log("Updating spatial state", "DEBUG")
+        self.previous_spatial_state = self.spatial_state.copy()
         self.spatial_state = self.map.get_data()
         self.time, self.season, self.raining, self.snow = self.map.time, self.map.season, self.map.raining, self.map.snowing
         if self.learned_spatial_features != {}:
@@ -74,7 +76,4 @@ class environment():
         x, y = position
         self.learned_spatial_features[x][y] = Tile(x, y, type)
         self.spatial_state[x][y] = Tile(x, y, type)
-
-    
-    
 
