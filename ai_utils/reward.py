@@ -111,6 +111,7 @@ class RewardSystem():
         health = self.player.health #if the player health hits 0, he will lose all his money, and items. 
         position = self.player.position # this is a tuple of (x, y) coordinates, e.g (0, 0) for the top left corner of the map
 
+        # TODO))
         # if previous_position != position:
         #     # check if the player has moved, or if he's chopping a tree or something
 
@@ -131,7 +132,7 @@ class RewardSystem():
         if location != previous_location:
             cumreward += 10 # reward the player for changing location, e.g for moving his ass out of the FarmHouse, to the Farm lmao
 
-        # let me know how should we implement the pathfinding, essentially in the original game it is a pain to get it good for a reason, it just kinda works, until a non-realized tile with a building breaks the entire thing, so I was thinking we could evaluate the agent's action at each turn, essentially letting it figure out everything
+        # NOTE: let me know how should we implement the pathfinding, essentially in the original game it is a pain to get it good for a reason, it just kinda works, until a non-realized tile with a building breaks the entire thing, so I was thinking we could evaluate the agent's action at each turn, essentially letting it figure out everything
 
         return cumreward + money * 0.01  # 1% of the money, github copilot said so
 
