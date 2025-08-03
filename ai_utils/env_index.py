@@ -1,5 +1,7 @@
 import torch
 import networkx as nx
+import numpy as np
+
 
 items = {
     "Pickaxe": 1.0,
@@ -19,6 +21,8 @@ items = {
     "Raft": 14.0,
     "Shears": 15.0,
 }
+
+# NOTE: do one hot encoding for items, seasons, locations
 # str -> index -> mlp
 
 seasons = {
@@ -130,7 +134,7 @@ def get_fixed_neighborhood_vector(energy_graph, player_node, nodes,tile_dataset,
 
 # vector to define the world
 # implementation details: we need a normalized vector with -1-1 range, note the graph must be normalized into a distance and normalize it's weights
-def get_state_embedding(env, player) -> torch.Tensor:
+def get_state_embedding(env, player) -> np.ndarray:
     # Normalize time to [-1, 1]
     time_feat = torch.tensor([env.time], dtype=torch.float32)
     snow_feat = torch.tensor([1.0 if env.snow else 0.0], dtype=torch.float32)
@@ -176,17 +180,9 @@ def get_state_embedding(env, player) -> torch.Tensor:
         raise TypeError("Rain feature must be a torch.Tensor")
     if not isinstance(stamina_feat, torch.Tensor):
         raise TypeError("Stamina feature must be a torch.Tensor")
-    result = torch.cat([
-        time_feat,
-        money_feat,
-        location_feat,
-        snow_feat,
-        rain_feat,
-        seasons_feat,
-        stamina_feat,
-        inventory_feat,
-        lengths
-    ])
-    return result
 
 
+    a = np.array(time_feat.tolist() + snow_feat.tolist() + rain_feat.tolist() + money_feat.tolist() + seasons_feat.tolist() + inventory_feat.tolist() + location_feat.tolist() + stamina_feat.tolist() + lengths.tolist())
+    b = np.zeros((a.size, a.max() + 1))
+    b[np.arange(a.size), a] = 1
+    return b
