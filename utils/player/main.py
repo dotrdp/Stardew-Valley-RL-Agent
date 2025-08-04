@@ -1,6 +1,8 @@
 import time
 from retry import retry
 from dotenv import dotenv_values
+import networkx as nx
+import asyncio
 
 from utils import read_msgpack_base64
 from utils import Logger
@@ -256,179 +258,179 @@ class player():
         self.logger.log("Closing dialogue", "INFO")
         self.logger.log("Invoking exitActiveMenu\nIt requires some special movement sometimes", "WARNING")
         return self.environment.game_instance.reflection(function="invokemethod", args=["game1", "exitActiveMenu"])
-    # def check_if_reachable_by_breaking(self, target_position: tuple[int, int]) -> bool:
-    #     '''
-    #     Checks if the target position is reachable by breaking obstacles in the way
-    #     Returns True if reachable, False otherwise
-    #     '''
-    #     self.logger.log(f"Checking if position {target_position} is reachable by breaking", "DEBUG")
-    #     energy_graph = self.environment.get_energy_graph()
-    #     try:
-    #         res = nx.has_path(energy_graph, self.position, target_position)
-    #     except nx.NetworkXNoPath:
-    #         self.logger.log(f"Position {target_position} is NOT reachable by breaking", "DEBUG")
-    #         return False
-    #     if res:
-    #         self.logger.log(f"Position {target_position} is reachable by breaking", "DEBUG")
-    #         return True
-    #     else:
-    #         return False
-    # def check_if_reachable_by_walking(self, target_position: tuple[int, int]) -> bool:
-    #     '''
-    #     Checks if the target position is reachable by walking
-    #     Returns True if reachable, False otherwise
-    #     '''
-    #     self.logger.log(f"Checking if position {target_position} is reachable by walking", "DEBUG")
-    #     strictly_collision_graph = self.environment.get_collision_graph()
-    #     try:
-    #         res = nx.has_path(strictly_collision_graph, self.position, target_position)
-    #     except nx.NetworkXNoPath:
-    #         self.logger.log(f"Position {target_position} is NOT reachable by walking", "DEBUG")
-    #         return False
-    #     if res:
-    #         self.logger.log(f"Position {target_position} is reachable by walking", "DEBUG")
-    #         return True
-    #     else:
-    #         return False
-    #
-
-    # @retry(tries=attempts["walk_to"])
-    # def walk_to(self, target_position: tuple[int, int], allow_breaking: bool = False) -> Exception | None:
-    #     self.Walking = True
-    #
-    #     # edge cases
-    #     self.cutscenes_quickfix()
-    #     current_position = self.position
-    #     if current_position == target_position:
-    #         self.logger.log(f"Already at target position {target_position}, no need to walk", "DEBUG")
-    #         return
-    #     try:
-    #         strictly_collision_graph = self.environment.get_collision_graph()
-    #         path = nx.shortest_path(strictly_collision_graph, current_position, target_position)
-    #     except nx.NetworkXNoPath:
-    #         try:
-    #             energy_graph = self.environment.get_energy_graph()
-    #             path = nx.dijkstra_path(energy_graph, current_position, target_position)
-    #         except nx.NetworkXNoPath:
-    #             self.logger.log(f"Target position {target_position} is not reachable by walking or breaking", "ERROR")
-    #             raise Exception(f"Target position {target_position} is not reachable by walking or breaking")
-    #         if allow_breaking: # back to breaking logs u go!
-    #             self.logger.log(f"Target position {target_position} is reachable by breaking, but not by walking, following energy path", "DEBUG")
-    #             self.follow_energy_path(path) #type: ignore
-    #             return
-    #         else:
-    #             self.logger.log(f"Target position {target_position} is not reachable by walking, but reachable by breaking, but allow_breaking is False", "ERROR")
-    #             return
-    #     # edge cases
-    #
-    #     optimized_path = self.optimize_path(path) #type: ignore
-    #     # if len(optimized_path) >= 1:
-    #     #     optimized_path = optimized_path[1:]  # remove the first point, since it is the current position
-    #     # path logic 
-    #     if self.logger.level == 0:  # DEBUG level is 0, sorry for the magic numbers
-    #         self.environment.print_path(optimized_path)  # this calls print, therefore it couldnt be blocked otherwise
-    #
-    #     for current_target in optimized_path:
-    #         self.logger.log(f"current target position: {current_target}", "INFO")
-    #
-    #         asyncio.run(self.single_step(current_target)) # this will raise an exception if the environment is not available, including retries
-    #         success = self.wait_until_pos_or_not_moving(current_target)  # wait until the player reaches the target position
-    #
-    #         # retry walking to the target position if it failed
-    #         for _ in range(self.attempts["walk_to"]):
-    #             asyncio.run(self.single_step(current_target))  # try to walk to the target position again
-    #             success = self.wait_until_pos_or_not_moving(current_target)
-    #             if success:
-    #                 self.logger.log("TRYING PLWEASE", "ERROR")
-    #                 break
-    #         # retry walking to the target position if it failed
-    #
-    #         if self.likely_running_into_wall >= self.attempts["assume_wall"]:
-    #             self.likely_running_into_wall = 0
-    #             graph = None
-    #             try:
-    #                 graph = self.environment.get_collision_graph()
-    #             except nx.NetworkXNoPath:
-    #                 graph = self.environment.get_energy_graph()
-    #             if graph is None:
-    #                 self.logger.log("Failed to get collision graph, cannot assume wall", "ERROR")
-    #                 raise Exception("Failed to get collision graph, cannot assume wall")
-    #             path = nx.shortest_path(graph, self.position, target_position)
-    #             self.logger.log(f"Player is likely running into a wall, assuming wall at position {path[1]}", "WARNING")
-    #             self.environment.draw_learned_tile(path[1], "Building") # mark the tile as a wall in the environment
-    #             self.environment.update_spatial_state() # update the spatial state of the environment
-    #             graph2 = self.environment.get_energy_graph() # update the graph
-    #             path2 = nx.dijkstra_path(graph2, self.position, target_position) # get the new path
-    #             self.follow_energy_path(path2) # type: ignore
-    #             if path2[1] == target_position:
-    #                 self.logger.log(f"Target position {target_position} is blocked by a wall", "ERROR")
-    #                 raise Exception(f"Target position {target_position} is blocked by a wall")
-    #             continue
-    #
-    #
-    #         if self.position != current_target:
-    #             self.logger.log(f"Failed to walk to target position {current_target}, current position is {self.position}", "ERROR")
-    #             raise Exception(f"Failed to walk to target position {current_target}, current position is {self.position}")
-    #         else:
-    #             self.like_running_into_wall = 0  # reset the counter if the player reached the target position
-    #
+    def check_if_reachable_by_breaking(self, target_position: tuple[int, int]) -> bool:
+        '''
+        Checks if the target position is reachable by breaking obstacles in the way
+        Returns True if reachable, False otherwise
+        '''
+        self.logger.log(f"Checking if position {target_position} is reachable by breaking", "DEBUG")
+        energy_graph = self.environment.get_energy_graph()
+        try:
+            res = nx.has_path(energy_graph, self.position, target_position)
+        except nx.NetworkXNoPath:
+            self.logger.log(f"Position {target_position} is NOT reachable by breaking", "DEBUG")
+            return False
+        if res:
+            self.logger.log(f"Position {target_position} is reachable by breaking", "DEBUG")
+            return True
+        else:
+            return False
+    def check_if_reachable_by_walking(self, target_position: tuple[int, int]) -> bool:
+        '''
+        Checks if the target position is reachable by walking
+        Returns True if reachable, False otherwise
+        '''
+        self.logger.log(f"Checking if position {target_position} is reachable by walking", "DEBUG")
+        strictly_collision_graph = self.environment.get_collision_graph()
+        try:
+            res = nx.has_path(strictly_collision_graph, self.position, target_position)
+        except nx.NetworkXNoPath:
+            self.logger.log(f"Position {target_position} is NOT reachable by walking", "DEBUG")
+            return False
+        if res:
+            self.logger.log(f"Position {target_position} is reachable by walking", "DEBUG")
+            return True
+        else:
+            return False
 
 
+    @retry(tries=attempts["walk_to"])
+    def walk_to(self, target_position: tuple[int, int], allow_breaking: bool = False) -> Exception | None:
+        self.Walking = True
 
-    # @retry(tries=attempts["follow_energy_path"])
-    # def follow_energy_path(self, path: list):
-    #
-    #     self.moving = True
-    #     # tool pointers
-    #     current_target = None
-    #     tools = {"Pickaxe": None, "Axe": None, "Scythe": None}
-    #     self.logger.log("Following energy path", "DEBUG")
-    #     for item in self.inventory.items:
-    #         if item.name in tools:
-    #             tools[item.name] = item
-    #         elif item.name == "MeleeWeapon":
-    #             tools["Scythe"] = item
-    #     # tool pointers
-    #
-    #     for point in path:
-    #         point_properties = self.environment.spatial_state[point[0]][point[1]].properties
-    #         if "tool" in point_properties:
-    #
-    #             # edge case
-    #             if point_properties["tool"] not in tools:
-    #                 self.logger.log(f"Tool {point_properties['tool']} not found in inventory, skipping point {point}", "WARNING")
-    #                 continue
-    #             # edge case
-    #
-    #             # utils
-    #             tool = point_properties["tool"]
-    #             current_target = path[path.index(point) - 1] 
-    #             # utils
-    #
-    #             self.walk_to(current_target, allow_breaking=True) # last walkable point in theory
-    #
-    #             # edge case
-    #             if "health" in point_properties:
-    #                 health = point_properties["health"]
-    #                 self.face_direction(point)
-    #                 for i in range(health):
-    #                     self.logger.log(f"Dealing damage to point {point} ({i+1}/{health})", "DEBUG")
-    #                     tools[tool](use=True) # type: ignore
-    #                     self.environment.update_spatial_state()
-    #                     x, y = point
-    #                     if not "collision" in self.environment.spatial_state[x][y].properties:
-    #                         break
-    #                 self.environment.update_spatial_state()
-    #                 if self.logger.level == 0:
-    #                     self.environment.print_path(path[path.index(point):])
-    #                 continue
-    #             # edge case
-    #
-    #             self.break_next_tile(point, tools[tool]) # type: ignore
-    #             self.environment.update_spatial_state()
-    #             if self.logger.level == 0: # DEBUG level is 0, sorry for the magic numbers
-    #                 self.environment.print_path(path[path.index(point):]) # this calls print, therefore it couldnt be blocked otherwise
-    #             time.sleep(0.1)
-    #     self.Moving = False 
-    #
+        # edge cases
+        self.cutscenes_quickfix()
+        current_position = self.position
+        if current_position == target_position:
+            self.logger.log(f"Already at target position {target_position}, no need to walk", "DEBUG")
+            return
+        try:
+            strictly_collision_graph = self.environment.get_collision_graph()
+            path = nx.shortest_path(strictly_collision_graph, current_position, target_position)
+        except nx.NetworkXNoPath:
+            try:
+                energy_graph = self.environment.get_energy_graph()
+                path = nx.dijkstra_path(energy_graph, current_position, target_position)
+            except nx.NetworkXNoPath:
+                self.logger.log(f"Target position {target_position} is not reachable by walking or breaking", "ERROR")
+                raise Exception(f"Target position {target_position} is not reachable by walking or breaking")
+            if allow_breaking: # back to breaking logs u go!
+                self.logger.log(f"Target position {target_position} is reachable by breaking, but not by walking, following energy path", "DEBUG")
+                self.follow_energy_path(path) #type: ignore
+                return
+            else:
+                self.logger.log(f"Target position {target_position} is not reachable by walking, but reachable by breaking, but allow_breaking is False", "ERROR")
+                return
+        # edge cases
+
+        optimized_path = self.optimize_path(path) #type: ignore
+        # if len(optimized_path) >= 1:
+        #     optimized_path = optimized_path[1:]  # remove the first point, since it is the current position
+        # path logic 
+        if self.logger.level == 0:  # DEBUG level is 0, sorry for the magic numbers
+            self.environment.print_path(optimized_path)  # this calls print, therefore it couldnt be blocked otherwise
+
+        for current_target in optimized_path:
+            self.logger.log(f"current target position: {current_target}", "INFO")
+
+            asyncio.run(self.single_step(current_target)) # this will raise an exception if the environment is not available, including retries
+            success = self.wait_until_pos_or_not_moving(current_target)  # wait until the player reaches the target position
+
+            # retry walking to the target position if it failed
+            for _ in range(self.attempts["walk_to"]):
+                asyncio.run(self.single_step(current_target))  # try to walk to the target position again
+                success = self.wait_until_pos_or_not_moving(current_target)
+                if success:
+                    self.logger.log("TRYING PLWEASE", "ERROR")
+                    break
+            # retry walking to the target position if it failed
+
+            if self.likely_running_into_wall >= self.attempts["assume_wall"]:
+                self.likely_running_into_wall = 0
+                graph = None
+                try:
+                    graph = self.environment.get_collision_graph()
+                except nx.NetworkXNoPath:
+                    graph = self.environment.get_energy_graph()
+                if graph is None:
+                    self.logger.log("Failed to get collision graph, cannot assume wall", "ERROR")
+                    raise Exception("Failed to get collision graph, cannot assume wall")
+                path = nx.shortest_path(graph, self.position, target_position)
+                self.logger.log(f"Player is likely running into a wall, assuming wall at position {path[1]}", "WARNING")
+                self.environment.draw_learned_tile(path[1], "Building") # mark the tile as a wall in the environment
+                self.environment.update_spatial_state() # update the spatial state of the environment
+                graph2 = self.environment.get_energy_graph() # update the graph
+                path2 = nx.dijkstra_path(graph2, self.position, target_position) # get the new path
+                self.follow_energy_path(path2) # type: ignore
+                if path2[1] == target_position:
+                    self.logger.log(f"Target position {target_position} is blocked by a wall", "ERROR")
+                    raise Exception(f"Target position {target_position} is blocked by a wall")
+                continue
+
+
+            if self.position != current_target:
+                self.logger.log(f"Failed to walk to target position {current_target}, current position is {self.position}", "ERROR")
+                raise Exception(f"Failed to walk to target position {current_target}, current position is {self.position}")
+            else:
+                self.like_running_into_wall = 0  # reset the counter if the player reached the target position
+
+
+
+
+    @retry(tries=attempts["follow_energy_path"])
+    def follow_energy_path(self, path: list):
+
+        self.moving = True
+        # tool pointers
+        current_target = None
+        tools = {"Pickaxe": None, "Axe": None, "Scythe": None}
+        self.logger.log("Following energy path", "DEBUG")
+        for item in self.inventory.items:
+            if item.name in tools:
+                tools[item.name] = item
+            elif item.name == "MeleeWeapon":
+                tools["Scythe"] = item
+        # tool pointers
+
+        for point in path:
+            point_properties = self.environment.spatial_state[point[0]][point[1]].properties
+            if "tool" in point_properties:
+
+                # edge case
+                if point_properties["tool"] not in tools:
+                    self.logger.log(f"Tool {point_properties['tool']} not found in inventory, skipping point {point}", "WARNING")
+                    continue
+                # edge case
+
+                # utils
+                tool = point_properties["tool"]
+                current_target = path[path.index(point) - 1] 
+                # utils
+
+                self.walk_to(current_target, allow_breaking=True) # last walkable point in theory
+
+                # edge case
+                if "health" in point_properties:
+                    health = point_properties["health"]
+                    self.face_direction(point)
+                    for i in range(health):
+                        self.logger.log(f"Dealing damage to point {point} ({i+1}/{health})", "DEBUG")
+                        tools[tool](use=True) # type: ignore
+                        self.environment.update_spatial_state()
+                        x, y = point
+                        if not "collision" in self.environment.spatial_state[x][y].properties:
+                            break
+                    self.environment.update_spatial_state()
+                    if self.logger.level == 0:
+                        self.environment.print_path(path[path.index(point):])
+                    continue
+                # edge case
+
+                self.break_next_tile(point, tools[tool]) # type: ignore
+                self.environment.update_spatial_state()
+                if self.logger.level == 0: # DEBUG level is 0, sorry for the magic numbers
+                    self.environment.print_path(path[path.index(point):]) # this calls print, therefore it couldnt be blocked otherwise
+                time.sleep(0.1)
+        self.Moving = False 
+
 
