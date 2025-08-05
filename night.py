@@ -13,7 +13,16 @@ tp_default() # te lleva afuera a la granja
 collision_graph = environment.get_collision_graph() # sin incluir paredes solo el componente del grafo donde esta el jugador
 energy_graph = environment.get_energy_graph() # conecta todos los nodos incluyendo lo que sea rompible
 
-energy_path = nx.shortest_path(energy_graph, player.position, (30, 30)) 
+connected_components = list(nx.connected_components(energy_graph))[0]
+max_distance = 0
+furthest_point = None
+for point in connected_components:
+    distance = nx.shortest_path_length(energy_graph, source=(x, y), target=point, weight='weight')
+    if distance > max_distance:
+        max_distance = distance
+        furthest_point = point
+xt, yt = furthest_point #type: ignore
+path = nx.dijkstra_path(energy_graph, source=(64, 64), target=(xt, yt), weight='weight') #type: ignore
 
-player.follow_energy_path(energy_path)
-environment.print_path(energy_path) 
+player.follow_energy_path(path) # type: ignore
+environment.print_path(path) 
