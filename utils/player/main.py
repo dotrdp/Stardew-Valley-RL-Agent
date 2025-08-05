@@ -2,6 +2,7 @@ import time
 from retry import retry
 from dotenv import dotenv_values
 import networkx as nx
+import asyncio
 
 from utils import read_msgpack_base64
 from utils import Logger
