@@ -22,6 +22,9 @@ for point in connected_components:
         print("New furthest point found:", point, "with distance:", distance)
         max_distance = distance
         furthest_point = point
+        if max_distance > 100:
+            print("Furthest point is too far away, stopping search.")
+            break
 xt, yt = furthest_point #type: ignore
 path = nx.dijkstra_path(energy_graph, source=(64, 15), target=(xt, yt), weight='weight') #type: ignore
 
