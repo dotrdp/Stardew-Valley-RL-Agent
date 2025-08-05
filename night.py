@@ -6,7 +6,7 @@ environment = environment(api)
 player = player(environment)
 
 def tp_default():
-    api.reflection(function="invokemethod", args=["game1", "warpFarmer", "64", "64", "true"]) #type: ignore
+    api.reflection(function="invokemethod", args=["game1", "warpFarmer", "64", "15", "true"]) #type: ignore
 
 tp_default() # te lleva afuera a la granja
 
@@ -17,12 +17,13 @@ connected_components = list(nx.connected_components(energy_graph))[0]
 max_distance = 0
 furthest_point = None
 for point in connected_components:
-    distance = nx.shortest_path_length(energy_graph, source=(x, y), target=point, weight='weight')
+    distance = nx.shortest_path_length(energy_graph, source=(64, 15), target=point, weight='weight')
     if distance > max_distance:
+        print("New furthest point found:", point, "with distance:", distance)
         max_distance = distance
         furthest_point = point
 xt, yt = furthest_point #type: ignore
-path = nx.dijkstra_path(energy_graph, source=(64, 64), target=(xt, yt), weight='weight') #type: ignore
+path = nx.dijkstra_path(energy_graph, source=(64, 15), target=(xt, yt), weight='weight') #type: ignore
 
 player.follow_energy_path(path) # type: ignore
 environment.print_path(path) 
