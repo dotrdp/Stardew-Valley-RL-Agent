@@ -139,21 +139,22 @@ def get_state_embedding(env, player) -> np.ndarray:
     time_feat = torch.tensor([env.time], dtype=torch.float32)
     snow_feat = torch.tensor([1.0 if env.snow else 0.0], dtype=torch.float32)
     rain_feat = torch.tensor([1.0 if env.raining else 0.0], dtype=torch.float32)
-    money_feat = torch.tensor([player.money], dtype=torch.float32)
+    # money_feat = torch.tensor([player.money], dtype=torch.float32)
 
     # Season as one-hot (already 0/1, so scale to [-1, 1])
-    seasons_feat = torch.tensor([seasons[env.season]], dtype=torch.float32) if env.season in seasons else ValueError(f"Unknown season: {env.season}") 
+    seasons_feat = torch.tensor([seasons[env.season]/len(seasons)], dtype=torch.float32) if env.season in seasons else torch.tensor([0.0], dtype=torch.float32)
 
-    # Inventory as multi-hot (already 0/1, so scale to [-1, 1])
+        # Inventory as multi-hot (already 0/1, so scale to [-1, 1])
     inventory_feat = torch.Tensor()
     for item in player.inventory.items:
         if item.name in items:
             inventory_feat = torch.concat((inventory_feat, torch.tensor([items[item.name]], dtype=torch.float32)))
         else:
+            inventory_feat = torch.concat((inventory_feat, torch.tensor([0.0], dtype=torch.float32)))
             print(f"Warning: Item '{item.name}' not recognized in items dictionary.")
     location_feat = torch.Tensor([0.0])
     if player.location in locations:
-        location_feat = torch.tensor([locations[player.location]], dtype=torch.float32)
+        location_feat = torch.tensor([locations[player.location]/len(locations)], dtype=torch.float32)
     else:
         print(f"Warning: Location '{player.location}' not recognized in locations dictionary.")
 
@@ -182,7 +183,7 @@ def get_state_embedding(env, player) -> np.ndarray:
         raise TypeError("Stamina feature must be a torch.Tensor")
 
 
-    a = np.array(time_feat.tolist() + snow_feat.tolist() + rain_feat.tolist() + money_feat.tolist() + seasons_feat.tolist() + inventory_feat.tolist() + location_feat.tolist() + stamina_feat.tolist() + lengths.tolist())
+    a = np.array(time_feat.tolist() + snow_feat.tolist() + rain_feat.tolist() + seasons_feat.tolist() + inventory_feat.tolist() + location_feat.tolist() + stamina_feat.tolist() + lengths.tolist())
     b = np.zeros((a.size, a.max() + 1))
     b[np.arange(a.size), a] = 1
     return b
