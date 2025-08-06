@@ -1,6 +1,5 @@
 import torch
 import networkx as nx
-import numpy as np
 
 
 items = {
@@ -126,9 +125,10 @@ locations = {
     "WizardHouse": 56.0,
     "Woods": 57.0,
     "Hospital": 58.0,
+    'Farm': 59.0,
 }
 
-def get_fixed_neighborhood_vector(energy_graph, player_node, nodes,tile_dataset, radius=20, max_nodes=400):
+def get_fixed_neighborhood_vector(energy_graph, player_node, nodes,tile_dataset, radius=10, max_nodes=314):
     # Find nodes within a circle (graph distance) around player_node
     circle_nodes = [
         node for node in nodes
