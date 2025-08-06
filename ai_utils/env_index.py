@@ -1,5 +1,6 @@
 import torch
 import networkx as nx
+from .avactions import get_available_actions, world_actions
 
 
 items = {
@@ -166,6 +167,7 @@ def get_fixed_neighborhood_vector(energy_graph, player_node, nodes,tile_dataset,
 # vector to define the world
 # implementation details: we need a normalized vector with -1-1 range, note the graph must be normalized into a distance and normalize it's weights
 def get_state_embedding(env, player) -> torch.Tensor:
+    available_actions = torch.tensor([float(x)/len(world_actions) for x in get_available_actions(player).__members__], dtype=torch.float32)
     # Normalize time to [-1, 1]
     time_feat = torch.tensor([env.time], dtype=torch.float32)
     snow_feat = torch.tensor([1.0 if env.snow else 0.0], dtype=torch.float32)
@@ -217,5 +219,5 @@ def get_state_embedding(env, player) -> torch.Tensor:
     # a = np.array(time_feat.tolist() + snow_feat.tolist() + rain_feat.tolist() + money_feat.tolist() + seasons_feat.tolist() + inventory_feat.tolist() + location_feat.tolist() + stamina_feat.tolist() + lengths.tolist())
     # b = np.zeros((a.size, a.max() + 1))
     # b[np.arange(a.size), a] = 1
-    b = torch.cat((time_feat, snow_feat, rain_feat, money_feat, seasons_feat, inventory_feat, location_feat, stamina_feat, lengths), dim=0)
+    b = torch.cat((available_actions, time_feat, snow_feat, rain_feat, money_feat, seasons_feat, inventory_feat, location_feat, stamina_feat, lengths), dim=0)
     return b

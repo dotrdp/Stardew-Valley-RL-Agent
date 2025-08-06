@@ -1,7 +1,7 @@
 import torch.nn as nn
 import lightning as L
 from utils import environment, player, StardewModdingAPI
-from ai_utils import SimpleLSTM,  get_state_embedding
+from ai_utils import SimpleLSTM,  get_state_embedding, get_available_actions
 from muon import MuonWithAuxAdam # give it some cutting edge shall we?, seems to be better than all mighty adam, besides it is currently trending and it's main use case is around RL and neural networks, not yet implemented in pytorch lightning hence this package
 from enum import Enum
 
@@ -15,25 +15,8 @@ api = StardewModdingAPI()
 environment = environment(api)
 player = player(environment)
 print(get_state_embedding(environment, player))
+print(get_available_actions(player))
 
-
-class Action(Enum):
-    MOVE_UP = 0
-    MOVE_DOWN = 1
-    MOVE_LEFT = 2
-    MOVE_RIGHT = 3
-    USE_ITEM1 = 4
-    USE_ITEM2 = 5
-    USE_ITEM3 = 6
-    USE_ITEM4 = 7
-    USE_ITEM5 = 8
-    USE_ITEM6 = 9
-    USE_ITEM7 = 10
-    USE_ITEM8 = 11
-    USE_ITEM9 = 12
-    USE_ITEM10 = 13
-    USE_ITEM11 = 13
-    USE_ITEM12 = 13
 
 # NOTE: TODO))
 # policy gradient, actor-critic, and entropy to avoid overfitting
