@@ -142,22 +142,23 @@ def get_state_embedding(env, player) -> np.ndarray:
     money_feat = torch.tensor([player.money], dtype=torch.float32)
 
     # Season as one-hot (already 0/1, so scale to [-1, 1])
-    seasons_feat = torch.tensor([seasons[env.season]], dtype=torch.float32) if env.season in seasons else ValueError(f"Unknown season: {env.season}") 
+    seasons_feat = torch.tensor([seasons[env.season]/len(seasons)], dtype=torch.float32) if env.season in seasons else torch.tensor([0.0], dtype=torch.float32)
 
     # Inventory as multi-hot (already 0/1, so scale to [-1, 1])
     inventory_feat = torch.Tensor()
     for item in player.inventory.items:
         if item.name in items:
-            inventory_feat = torch.concat((inventory_feat, torch.tensor([items[item.name]], dtype=torch.float32)))
+            inventory_feat = torch.concat((inventory_feat, torch.tensor([items[item.name]/len(items)], dtype=torch.float32)))
         else:
             print(f"Warning: Item '{item.name}' not recognized in items dictionary.")
     location_feat = torch.Tensor([0.0])
     if player.location in locations:
-        location_feat = torch.tensor([locations[player.location]], dtype=torch.float32)
+        location_feat = torch.tensor([locations[player.location]/len(locations)], dtype=torch.float32)
     else:
+        location_feat = torch.tensor([0.0], dtype=torch.float32)
         print(f"Warning: Location '{player.location}' not recognized in locations dictionary.")
 
-    stamina_feat = torch.tensor([(player.stamina / 270)], dtype=torch.float32)
+    stamina_feat = torch.tensor([(player.stamina/270)], dtype=torch.float32)
 
     # Energy graph: aggregate normalized 'we' within normalized distance <= 1
     energy_graph = env.get_energy_graph()
