@@ -21,6 +21,41 @@ items = {
     "Raft": 14.0,
     "Shears": 15.0,
 }
+tiles_types = {
+    "Building":  1,
+    "normal":    2, 
+    "player":    3,
+    "Chest":     4,
+    "Stone":     5,
+    "Weeds":     6,
+    "Twig":      7,
+    "Tree":      8,
+    "t5p":       9,
+    "t1p":       10,
+    "door":      11,
+    "NpcBarrier":12,
+    "Bed":       13,
+    "something": 14,
+    "PetBowl":   15,
+    "shipbin":   16,
+    "Seed Spot": 17,
+    "NoS":       18,
+    "Grass":     19,
+    "bar":       21,
+    "Buildable": 22,
+    "NF":        23,
+    "NFNS":      24,
+    "notbuild":  25,
+    "Stone Owl": 26,
+"Artifact Spot": 27,
+"debugmarker":   28,
+    "cbuilding": 29,
+    "mail":      30,
+    "f":         31,
+  "NFF":         32,
+"debug_red":     33,
+    "Water":     34,
+}
 
 # NOTE: do one hot encoding for items, seasons, locations
 # str -> index -> mlp
@@ -112,21 +147,16 @@ def get_fixed_neighborhood_vector(energy_graph, player_node, nodes,tile_dataset,
             lengths.append(0.0)  # Padding value
         else:
             try:
-                length = nx.shortest_path_length(energy_graph, source=player_node, target=node)
+                length = nx.dijkstra_path(energy_graph, source=player_node, target=node)
                 # Normalize length to [-1, 1] based on radius
-                lengths.append(length)
                 x, y = node
-                prop = tile_dataset.spatial_state[x][y].properties
-                if "collision" in prop:
-                    if "tool" in prop:
-                        if prop["tool"] in items:
-                            lengths[-1] = items[prop["tool"]]
-                        else:
-                            lengths[-1] = float(-1)*float(length)
+                type = tile_dataset.spatial_state[x][y].type
+                if 'collision' in tile_dataset.spatial_state[x][y].properties:
+                    lengths.append((tiles_types[type] / (len(tiles_types))/4) if type in tiles_types else 0.0)
                 else:
-                    lengths[-1] = float(length)
+                    lengths.append((tiles_types[type] / len(tiles_types))/2 if type in tiles_types else 1.0)
             except nx.NetworkXNoPath:
-                lengths.append(-1.0)
+                lengths.append(0.0)
     return lengths
 
 
@@ -134,7 +164,7 @@ def get_fixed_neighborhood_vector(energy_graph, player_node, nodes,tile_dataset,
 
 # vector to define the world
 # implementation details: we need a normalized vector with -1-1 range, note the graph must be normalized into a distance and normalize it's weights
-def get_state_embedding(env, player) -> np.ndarray:
+def get_state_embedding(env, player) -> torch.Tensor:
     # Normalize time to [-1, 1]
     time_feat = torch.tensor([env.time], dtype=torch.float32)
     snow_feat = torch.tensor([1.0 if env.snow else 0.0], dtype=torch.float32)
@@ -183,7 +213,8 @@ def get_state_embedding(env, player) -> np.ndarray:
         raise TypeError("Stamina feature must be a torch.Tensor")
 
 
-    a = np.array(time_feat.tolist() + snow_feat.tolist() + rain_feat.tolist() + money_feat.tolist() + seasons_feat.tolist() + inventory_feat.tolist() + location_feat.tolist() + stamina_feat.tolist() + lengths.tolist())
-    b = np.zeros((a.size, a.max() + 1))
-    b[np.arange(a.size), a] = 1
+    # a = np.array(time_feat.tolist() + snow_feat.tolist() + rain_feat.tolist() + money_feat.tolist() + seasons_feat.tolist() + inventory_feat.tolist() + location_feat.tolist() + stamina_feat.tolist() + lengths.tolist())
+    # b = np.zeros((a.size, a.max() + 1))
+    # b[np.arange(a.size), a] = 1
+    b = torch.cat((time_feat, snow_feat, rain_feat, money_feat, seasons_feat, inventory_feat, location_feat, stamina_feat, lengths), dim=0)
     return b
