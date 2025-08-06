@@ -144,7 +144,7 @@ def get_fixed_neighborhood_vector(energy_graph, player_node, nodes,tile_dataset,
     lengths = []
     for node in circle_nodes:
         if node is None:
-            lengths.append(0.0)  # Padding value
+            lengths.append(0.02)  # Padding value
         else:
             try:
                 length = nx.dijkstra_path(energy_graph, source=player_node, target=node)
@@ -156,8 +156,9 @@ def get_fixed_neighborhood_vector(energy_graph, player_node, nodes,tile_dataset,
                 else:
                     lengths.append((tiles_types[type] / len(tiles_types))/2 if type in tiles_types else 1.0)
             except nx.NetworkXNoPath:
-                lengths.append(0.0)
+                lengths.append(0.01) 
     return lengths
+#NOTE: do as I say, not as I do
 
 
 # vector -> LSTM
