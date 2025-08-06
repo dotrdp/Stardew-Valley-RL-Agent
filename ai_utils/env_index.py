@@ -167,7 +167,7 @@ def get_fixed_neighborhood_vector(energy_graph, player_node, nodes,tile_dataset,
 # vector to define the world
 # implementation details: we need a normalized vector with -1-1 range, note the graph must be normalized into a distance and normalize it's weights
 def get_state_embedding(env, player) -> torch.Tensor:
-    available_actions = torch.tensor([float(x)/len(world_actions) for x in get_available_actions(player).__members__], dtype=torch.float32)
+    available_actions = torch.tensor([float(x.value)/len(world_actions) for x in get_available_actions(player)], dtype=torch.float32)
     # Normalize time to [-1, 1]
     time_feat = torch.tensor([env.time], dtype=torch.float32)
     snow_feat = torch.tensor([1.0 if env.snow else 0.0], dtype=torch.float32)
