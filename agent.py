@@ -77,6 +77,7 @@ class Agent:
         self.player = player
 
     def act(self, state):
+            pass
         # Convert the state to a tensor
 
         # Get the action from the player
