@@ -3,10 +3,14 @@ name = "furrow-gen"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "Episode-parallel runner: expert demonstrations, evaluation"
 
 [dependencies]
 furrow.workspace = true
 furrow-expert.workspace = true
 furrow-traj.workspace = true
 rayon.workspace = true
-anyhow.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

@@ -71,3 +71,38 @@ fn obs_and_mask_have_expected_sizes() {
     assert_eq!(names.len(), env.num_actions());
     assert_eq!(names[0], "Wait30");
 }
+
+#[test]
+fn vec_env_matches_serial_envs() {
+    use furrow::VecEnv;
+    let cfg = EnvConfig { seed: 9, ..Default::default() };
+    let n = 6;
+    let mut v = VecEnv::new(cfg, n, 4, (0, 1000));
+    let seeds = v.seeds().to_vec();
+    let mut serial: Vec<Env> = seeds.iter().map(|s| Env::new(EnvConfig { seed: *s, ..cfg })).collect();
+    let mut rng = Pcg32::from_seed(1);
+    let a = serial[0].num_actions();
+    for _ in 0..200 {
+        let acts: Vec<u32> = serial.iter().map(|e| random_valid(e, &mut rng)).collect();
+        v.step(&acts).unwrap();
+        for (i, e) in serial.iter_mut().enumerate() {
+            let s = e.step(acts[i]);
+            assert_eq!(v.out.reward[i], s.reward);
+            if s.terminated || s.truncated {
+                break;
+            }
+            assert_eq!(&v.out.obs[i * e.obs_global().len()..(i + 1) * e.obs_global().len()], e.obs_global());
+            assert_eq!(&v.out.mask[i * a..(i + 1) * a], e.action_mask());
+        }
+    }
+}
+
+#[test]
+fn describe_and_render_are_nonempty_and_deterministic() {
+    let e1 = Env::new(EnvConfig { seed: 4, ..Default::default() });
+    let e2 = Env::new(EnvConfig { seed: 4, ..Default::default() });
+    assert_eq!(e1.describe(), e2.describe());
+    assert!(e1.describe().contains("Old Mill"));
+    assert!(e1.render_ascii().contains('@'));
+    assert!(!e1.valid_action_names().is_empty());
+}

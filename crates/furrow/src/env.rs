@@ -355,6 +355,23 @@ impl Env {
     pub fn stable_hash(&self) -> u64 {
         self.state.stable_hash()
     }
+    /// Compact text description of the state (for LLM agents).
+    pub fn describe(&self) -> String {
+        self.state.describe()
+    }
+    /// ASCII map of the current location.
+    pub fn render_ascii(&self) -> String {
+        self.state.render_ascii()
+    }
+    /// Names of the currently valid actions.
+    pub fn valid_action_names(&self) -> Vec<String> {
+        let names = self.action_names();
+        names.into_iter().zip(self.mask_cache.iter()).filter(|(_, m)| **m).map(|(n, _)| n).collect()
+    }
+    /// Action id by name (exact match).
+    pub fn action_id(&self, name: &str) -> Option<u32> {
+        self.action_names().iter().position(|n| n == name).map(|p| p as u32)
+    }
     /// Action names in the configured mode.
     pub fn action_names(&self) -> Vec<String> {
         match self.cfg.action_mode {

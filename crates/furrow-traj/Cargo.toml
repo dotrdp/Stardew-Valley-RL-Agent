@@ -3,5 +3,11 @@ name = "furrow-traj"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "furrow-traj/2 trajectory dataset format (npy shard directories)"
 
 [dependencies]
+serde_json.workspace = true
+half.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

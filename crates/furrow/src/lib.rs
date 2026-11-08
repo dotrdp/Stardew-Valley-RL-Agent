@@ -26,3 +26,6 @@ pub mod macro_action;
 pub mod obs;
 pub mod env;
 pub use env::{ActionMode, Env, EnvConfig, RemixPartition, RestorationMode, RewardConfig, Step};
+pub mod text;
+pub mod vec_env;
+pub use vec_env::{VecEnv, VecOut};
