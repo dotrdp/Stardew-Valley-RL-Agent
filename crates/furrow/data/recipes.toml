@@ -5,7 +5,7 @@ id = 0
 key = "furnace"
 output = "furnace"
 count = 1
-inputs = [ { item = "stone", count = 25 }, { item = "copper_ore", count = 20 } ]
+inputs = [ { item = "stone", count = 20 }, { item = "copper_ore", count = 10 } ]
 unlock = "start"
 [[recipe]]
 id = 1
@@ -56,9 +56,9 @@ id = 0
 key = "furnace"
 item = "furnace"
 rules = [
-  { input = "copper_ore", input_count = 5, fuel = "coal", fuel_count = 1, output = "copper_bar", output_count = 1, minutes = 180 },
-  { input = "iron_ore", input_count = 5, fuel = "coal", fuel_count = 1, output = "iron_bar", output_count = 1, minutes = 240 },
-  { input = "gold_ore", input_count = 5, fuel = "coal", fuel_count = 1, output = "gold_bar", output_count = 1, minutes = 360 },
+  { input = "copper_ore", input_count = 3, fuel = "coal", fuel_count = 1, output = "copper_bar", output_count = 1, minutes = 180 },
+  { input = "iron_ore", input_count = 3, fuel = "coal", fuel_count = 1, output = "iron_bar", output_count = 1, minutes = 240 },
+  { input = "gold_ore", input_count = 3, fuel = "coal", fuel_count = 1, output = "gold_bar", output_count = 1, minutes = 360 },
 ]
 [[machine]]
 id = 1

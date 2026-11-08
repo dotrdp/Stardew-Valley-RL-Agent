@@ -144,6 +144,10 @@ pub struct GameState {
     pub complete: bool,
     pub scratch: PathScratch,
     pub routes: Routes,
+    /// Per-step cache of ETAs to every POI (see `eta_cached`).
+    pub eta_cache: Vec<u32>,
+    /// Cache key: (steps, loc, x, y, abs_minute).
+    pub eta_key: (u32, u8, u8, u8, u32),
 }
 
 impl GameState {
@@ -210,6 +214,8 @@ impl GameState {
             complete: false,
             scratch: PathScratch::default(),
             routes: Routes::build(c),
+            eta_cache: Vec::new(),
+            eta_key: (u32::MAX, 0, 0, 0, 0),
         };
         st.start_day();
         st

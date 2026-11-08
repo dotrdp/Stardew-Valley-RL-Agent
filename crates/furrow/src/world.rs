@@ -120,7 +120,7 @@ impl Obj {
     /// Does this object block movement?
     #[inline]
     pub fn blocks(self) -> bool {
-        !matches!(self, Obj::None | Obj::Warp | Obj::Ladder | Obj::MachinePad)
+        !matches!(self, Obj::None | Obj::Warp | Obj::Ladder | Obj::MachinePad | Obj::Forage)
     }
     /// Is this a debris/tree/rock-like breakable?
     pub fn breakable(self) -> bool {
@@ -339,7 +339,8 @@ impl PathScratch {
                 self.stamp[ni] = self.gen;
                 self.dist[ni] = d + 1;
                 self.parent[ni] = cur as u16;
-                if g.passable(nx, ny) {
+                // warps and ladders are destinations only: never path *through* them
+                if g.passable(nx, ny) && !matches!(g.obj(nx as u8, ny as u8), Obj::Warp | Obj::Ladder) {
                     self.queue[tail] = ni as u16;
                     tail += 1;
                 }
@@ -825,13 +826,17 @@ pub fn spawn_forage(c: &Content, seed: u64, day: u32, season: Season, grid: &mut
         return 0;
     }
     let mut count = grid.count_obj(Obj::Forage);
+    // only spawn on tiles reachable from the location's entrance
+    let hub = c.warps.iter().find(|w| w.to == fl.location).map(|w| w.to_tile).unwrap_or(c.world.start_tile);
+    let mut scratch = PathScratch::default();
+    scratch.bfs(grid, hub.0, hub.1);
     let mut tries = 0;
     while count < fl.daily_cap as u32 && tries < 500 {
         tries += 1;
         let r = &rects[rng.below(rects.len() as u32) as usize];
         let x = rng.range(r.x0 as u32, r.x1 as u32) as u8;
         let y = rng.range(r.y0 as u32, r.y1 as u32) as u8;
-        if grid.obj(x, y) == Obj::None && grid.terrain(x, y).walkable() {
+        if grid.obj(x, y) == Obj::None && grid.terrain(x, y).walkable() && scratch.dist(grid, x, y) != UNREACHABLE {
             let item: ItemId = table[rng.weighted(&weights)].0;
             grid.set_obj(x, y, Obj::Forage, item);
             count += 1;

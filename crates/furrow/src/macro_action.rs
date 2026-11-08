@@ -100,6 +100,7 @@ pub fn macro_actions() -> &'static [Macro] {
         for i in &c.buyable {
             v.push(Macro::Buy(*i, 1));
             v.push(Macro::Buy(*i, 5));
+            v.push(Macro::Buy(*i, 25));
         }
         v.push(Macro::ShipSurplus);
         for r in &c.recipes {
@@ -150,11 +151,15 @@ pub struct MacroResult {
 
 /// Minimum ticks a macro consumes.
 pub const MIN_MACRO_TICKS: u32 = 5;
+/// Travel allowance on top of the activity time box.
+pub const TRAVEL_CAP: u32 = 480;
 
 /// Controller execution context.
 struct Ctl<'a> {
     st: &'a mut GameState,
     budget: u32,
+    /// Activity time box (minutes) applied from `start_activity()`.
+    box_minutes: u32,
     abs0: u32,
     day0: u16,
     ticks: u32,
@@ -181,6 +186,10 @@ impl Ctl<'_> {
     fn sync(&mut self) {
         self.ticks = self.st.abs_minute - self.abs0;
         self.day_ends = (self.st.day - self.day0) as u8;
+    }
+    /// Start the activity time box (called after travelling to the activity site).
+    fn start_activity(&mut self) {
+        self.budget = self.ticks + self.box_minutes;
     }
     /// Stop condition: the day ended or the time box is exhausted.
     fn over(&self) -> bool {
@@ -257,6 +266,19 @@ impl Ctl<'_> {
     /// Navigate to a location (its hub) if not already there.
     fn goto_loc(&mut self, loc: LocId) -> bool {
         let c = self.c();
+        let mines = c.loc_id("mines");
+        if self.st.player.loc == mines && loc != mines {
+            let exit = &c.pois[c.poi_id("mine_exit") as usize];
+            if !self.walk(exit.stand, false) {
+                return false;
+            }
+            if self.st.player.facing != exit.face {
+                self.prim(Primitive::Face(exit.face));
+            }
+            if !self.prim(Primitive::Interact) {
+                return false;
+            }
+        }
         let mut hops = 0;
         while self.st.player.loc != loc && hops < 8 && !self.over() {
             hops += 1;
@@ -291,6 +313,21 @@ impl Ctl<'_> {
         if !self.goto_loc(loc) {
             return false;
         }
+        if (self.st.player.x, self.st.player.y) == target {
+            // standing on the target (e.g. a walkable crop tile): step off, then face back
+            for d in Dir::ALL {
+                let (dx, dy) = d.delta();
+                let (nx, ny) = (target.0 as i32 + dx, target.1 as i32 + dy);
+                let g = self.st.world.grid(self.st.player.loc);
+                if g.passable(nx, ny) && !matches!(g.obj(nx as u8, ny as u8), Obj::Warp | Obj::Ladder) {
+                    self.prim(Primitive::Move(d));
+                    let back = Dir::ALL[(d as usize + 2) % 4];
+                    self.prim(Primitive::Face(back));
+                    return (self.st.player.x as i32, self.st.player.y as i32) == (nx, ny);
+                }
+            }
+            return false;
+        }
         self.walk(target, true)
     }
     /// Go to a POI stand tile and face the POI.
@@ -319,7 +356,7 @@ impl Ctl<'_> {
                     continue;
                 }
                 let d = st.scratch.dist(g, x, y);
-                if d == UNREACHABLE || d == 0 {
+                if d == UNREACHABLE {
                     continue;
                 }
                 if best.is_none_or(|b| d < b.2) {
@@ -474,7 +511,13 @@ impl GameState {
                 let fl = &c.forage[f as usize];
                 !in_mines && self.count_kind(fl.location, Obj::Forage) > 0 && self.free_slots() > 0
             }
-            Macro::Fish(_) => !in_mines && self.tool_usable(Tool::Rod) && self.player.energy > c.fishing.energy_per_cast as i32 && self.free_slots() > 0,
+            Macro::Fish(spot) => {
+                !in_mines
+                    && self.tool_usable(Tool::Rod)
+                    && self.player.energy > c.fishing.energy_per_cast as i32
+                    && self.free_slots() > 0
+                    && self.eta_poi(nav, spot) != u32::MAX
+            }
             Macro::ChopWood => {
                 !in_mines
                     && self.tool_usable(Tool::Axe)
@@ -488,8 +531,13 @@ impl GameState {
                     && self.player.energy > 3
                     && self.count_kind(c.loc_id("woods"), Obj::Stump) > 0
             }
-            Macro::MineDescend => self.tool_usable(Tool::Pickaxe) && self.player.energy > 3 && self.mine.deepest < c.mining.floors,
-            Macro::MineFloor => self.tool_usable(Tool::Pickaxe) && self.player.energy > 3,
+            Macro::MineDescend => {
+                self.tool_usable(Tool::Pickaxe)
+                    && self.player.energy > 3
+                    && self.mine.deepest < c.mining.floors
+                    && (!in_mines || self.mine_progress_possible())
+            }
+            Macro::MineFloor => self.tool_usable(Tool::Pickaxe) && self.player.energy > 3 && (!in_mines || self.mine_progress_possible()),
             Macro::Buy(item, q) => {
                 if in_mines {
                     return false;
@@ -510,15 +558,21 @@ impl GameState {
                 match seller {
                     Some(s) => {
                         let sh = &c.shops[s as usize];
-                        arrive >= sh.open as u32 && arrive < sh.close as u32 || (arrive < sh.open as u32)
+                        arrive < sh.close as u32 && arrive + 120 >= sh.open as u32
                     }
                     None => arrive < c.merchant.close as u32,
                 }
             }
             Macro::ShipSurplus => !in_mines && self.any_surplus(),
-            Macro::Craft(r) => self.can_craft(r),
+            Macro::Craft(r) => {
+                self.can_craft(r)
+                    && (c.items[c.recipes[r as usize].output as usize].category != Category::Machine
+                        || (!in_mines && self.count_kind(c.world.start_location, Obj::MachinePad) > 0))
+            }
             Macro::LoadMachines => {
-                !in_mines && self.machines.iter().any(|m| m.ready_at == 0 && !m.has_output && self.any_input_for(m.kind))
+                !in_mines
+                    && (self.machines.iter().any(|m| m.ready_at == 0 && !m.has_output && self.any_input_for(m.kind))
+                        || (self.held_machine().is_some() && self.count_kind(c.world.start_location, Obj::MachinePad) > 0))
             }
             Macro::CollectMachines => !in_mines && self.machines.iter().any(|m| m.has_output) && self.free_slots() > 0,
             Macro::UpgradeTool(t) => {
@@ -536,6 +590,34 @@ impl GameState {
             Macro::PayCoins(r) => !in_mines && self.can_deliver_any(r),
             Macro::Eat => self.player.energy < self.player.energy_max as i32 && self.food_slot().is_some(),
         }
+    }
+    /// In the mines: is a breakable rock or a ladder reachable from the player?
+    pub fn mine_progress_possible(&mut self) -> bool {
+        let c = self.c();
+        let pick = self.player.tool_level[Tool::Pickaxe as usize];
+        let loc = self.player.loc;
+        let (px, py) = (self.player.x, self.player.y);
+        let g = self.world.grid(loc);
+        self.scratch.bfs(g, px, py);
+        for y in 0..g.h {
+            for x in 0..g.w {
+                let o = g.obj(x, y);
+                let ok = match o {
+                    Obj::Ladder => true,
+                    Obj::Rock => c.rocks[(g.data[g.idx(x, y)] & 0xff) as usize].min_pick <= pick,
+                    _ => false,
+                };
+                if ok && self.scratch.dist(g, x, y) != UNREACHABLE {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+    /// A machine item held in the bag (to be placed), if any.
+    pub fn held_machine(&self) -> Option<ItemId> {
+        let c = self.c();
+        self.player.bag.iter().find(|(i, n)| *n > 0 && c.items[*i as usize].category == Category::Machine).map(|(i, _)| *i)
     }
     /// Any bag item satisfies some rule of a machine kind (with fuel)?
     pub fn any_input_for(&self, kind: crate::content::MachineId) -> bool {
@@ -613,7 +695,8 @@ pub fn run_macro(st: &mut GameState, nav: &NavTables, m: Macro, budget: u32, max
     st.decisions_today = st.decisions_today.saturating_add(1);
     let mut ctl = Ctl {
         st,
-        budget,
+        budget: budget + TRAVEL_CAP,
+        box_minutes: budget,
         abs0,
         day0,
         ticks: 0,
@@ -625,7 +708,7 @@ pub fn run_macro(st: &mut GameState, nav: &NavTables, m: Macro, budget: u32, max
     ctl.close_menu_if_needed(m);
     ctl.sync();
     let progressed = ctl.progressed;
-    let timeboxed = ctl.ticks >= budget && !done;
+    let timeboxed = ctl.ticks >= ctl.budget && !done;
     if ctl.ticks < MIN_MACRO_TICKS && ctl.day_ends == 0 {
         let pad = MIN_MACRO_TICKS - ctl.ticks;
         ctl.st.advance(pad);
@@ -701,6 +784,12 @@ impl Ctl<'_> {
                 }
                 let ok = self.prim(Primitive::MenuOption(r));
                 self.prim(Primitive::CloseMenu);
+                if ok {
+                    let out = c.recipes[r as usize].output;
+                    if c.items[out as usize].category == Category::Machine {
+                        self.place_machine(out);
+                    }
+                }
                 ok
             }
             Macro::LoadMachines => self.load_machines(),
@@ -756,6 +845,7 @@ impl Ctl<'_> {
         if !self.goto_loc(farm) {
             return false;
         }
+        self.start_activity();
         self.select_tool(Tool::Can);
         loop {
             if self.over() || !self.energy_ok(1) {
@@ -825,6 +915,7 @@ impl Ctl<'_> {
         if !self.goto_loc(farm) {
             return false;
         }
+        self.start_activity();
         let rects = self.field_rects(farm);
         loop {
             if self.over() || !self.energy_ok(3) {
@@ -869,6 +960,7 @@ impl Ctl<'_> {
         if !self.goto_loc(loc) {
             return false;
         }
+        self.start_activity();
         let rects = self.field_rects(loc);
         loop {
             if self.st.count(crop.seed) == 0 {
@@ -920,12 +1012,13 @@ impl Ctl<'_> {
         if !self.goto_loc(loc) {
             return false;
         }
+        self.start_activity();
         loop {
             if self.over() || self.st.free_slots() == 0 {
                 return self.st.count_kind(loc, Obj::Forage) == 0;
             }
             let Some(t) = self.nearest(|g, x, y| g.obj(x, y) == Obj::Forage) else {
-                return true;
+                return self.st.count_kind(loc, Obj::Forage) == 0;
             };
             if !self.goto_adjacent(loc, t) {
                 return false;
@@ -942,7 +1035,8 @@ impl Ctl<'_> {
             return false;
         }
         self.select_tool(Tool::Rod);
-        let limit = self.ticks + 60;
+        self.start_activity();
+        let limit = self.ticks + 60.min(self.box_minutes);
         let mut casts = 0;
         while !self.over() && self.ticks < limit && self.energy_ok(c.fishing.energy_per_cast) && self.st.free_slots() > 0 {
             if !self.prim(Primitive::UseTool) {
@@ -967,6 +1061,7 @@ impl Ctl<'_> {
         if !self.goto_loc(loc) {
             return false;
         }
+        self.start_activity();
         self.select_tool(Tool::Axe);
         let mut chopped = 0;
         loop {
@@ -1020,6 +1115,7 @@ impl Ctl<'_> {
         if !self.enter_mines() {
             return false;
         }
+        self.start_activity();
         let mines = c.loc_id("mines");
         self.select_tool(Tool::Pickaxe);
         let pick = self.st.player.tool_level[Tool::Pickaxe as usize];
@@ -1046,6 +1142,14 @@ impl Ctl<'_> {
             let Some(t) = self.nearest(|g, x, y| {
                 g.obj(x, y) == Obj::Rock && c.rocks[(g.data[g.idx(x, y)] & 0xff) as usize].min_pick <= pick
             }) else {
+                // floor exhausted: take a ladder if one is reachable
+                if let Some(l) = self.nearest(|g, x, y| g.obj(x, y) == Obj::Ladder) {
+                    let floor = self.st.mine.floor;
+                    if self.walk(l, false) && self.st.mine.floor != floor {
+                        self.progressed = true;
+                        continue;
+                    }
+                }
                 return broke > 0;
             };
             if !self.goto_adjacent(mines, t) {
@@ -1082,7 +1186,7 @@ impl Ctl<'_> {
             None => c.merchant.open,
         };
         let mut waits = 0;
-        while self.st.minute < open_at && waits < 60 && !self.over() {
+        while self.st.minute < open_at && waits < 24 && self.day_ends == 0 {
             self.prim(Primitive::Wait);
             waits += 1;
         }
@@ -1131,6 +1235,24 @@ impl Ctl<'_> {
         shipped > 0
     }
 
+    /// Place a held machine item on the nearest free machine pad of the farm.
+    fn place_machine(&mut self, item: ItemId) -> bool {
+        let farm = self.c().world.start_location;
+        if !self.goto_loc(farm) {
+            return false;
+        }
+        let Some(t) = self.nearest(|g, x, y| g.obj(x, y) == Obj::MachinePad) else {
+            return false;
+        };
+        if !self.goto_adjacent(farm, t) {
+            return false;
+        }
+        if !self.select_item(item) {
+            return false;
+        }
+        self.prim(Primitive::UseTool)
+    }
+
     fn load_machines(&mut self) -> bool {
         let c = self.c();
         let farm = c.world.start_location;
@@ -1138,6 +1260,12 @@ impl Ctl<'_> {
             return false;
         }
         let mut loaded = 0;
+        while let Some(item) = self.st.held_machine() {
+            if self.over() || !self.place_machine(item) {
+                break;
+            }
+            loaded += 1;
+        }
         let n = self.st.machines.len();
         for mi in 0..n {
             if self.over() {

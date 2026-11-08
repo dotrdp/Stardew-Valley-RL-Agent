@@ -126,8 +126,24 @@ impl GameState {
         walk
     }
 
+    /// ETA to every POI, computed at most once per state (cached by step/position/time).
+    pub fn eta_cached(&mut self, nav: &NavTables) -> &[u32] {
+        let key = (self.steps, self.player.loc, self.player.x, self.player.y, self.abs_minute);
+        if self.eta_key != key || self.eta_cache.len() != self.c().pois.len() {
+            let mut v = std::mem::take(&mut self.eta_cache);
+            v.resize(self.c().pois.len(), u32::MAX);
+            self.eta_all(nav, &mut v);
+            self.eta_cache = v;
+            self.eta_key = key;
+        }
+        &self.eta_cache
+    }
+
     /// ETA to a POI's stand tile.
     pub fn eta_poi(&mut self, nav: &NavTables, poi: PoiId) -> u32 {
+        if (poi as usize) < self.c().pois.len() {
+            return self.eta_cached(nav)[poi as usize];
+        }
         let p = &self.c().pois[poi as usize];
         self.eta_to(nav, p.location, p.stand)
     }

@@ -149,8 +149,7 @@ impl GameState {
         }
         // eta
         o = g("eta");
-        let mut etas = vec![u32::MAX; c.pois.len()];
-        self.eta_all(nav, &mut etas);
+        let etas = self.eta_cached(nav).to_vec();
         for (i, e) in etas.iter().enumerate() {
             out[o + i] = if *e == u32::MAX { 1.0 } else { frac(*e, 600) };
         }

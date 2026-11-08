@@ -74,7 +74,7 @@ pool = [
 [upgrades]
 days = 2
 levels = [
-  { level = 1, coins = 1500, bar = "copper_bar", bars = 5 },
-  { level = 2, coins = 4000, bar = "iron_bar", bars = 5 },
+  { level = 1, coins = 1500, bar = "copper_bar", bars = 3 },
+  { level = 2, coins = 4000, bar = "iron_bar", bars = 3 },
   { level = 3, coins = 9000, bar = "gold_bar", bars = 5 },
 ]

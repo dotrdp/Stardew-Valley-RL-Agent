@@ -7,7 +7,7 @@ rocks_per_floor_max = 40
 energy_per_swing = 3
 xp_per_rock = 6
 ladder_rocks = 1           # exactly this many rocks hide a ladder per floor
-extra_ladder_ppm = 40000   # additional per-rock chance of revealing a ladder
+extra_ladder_ppm = 150000  # additional per-rock chance of revealing a ladder
 
 # rock kinds: hardness = pickaxe swings at level 0 (each level removes one swing, min 1); min_pick = minimum pickaxe level
 [[rock]]
@@ -15,19 +15,19 @@ id = 0
 key = "stone_rock"
 hardness = 2
 min_pick = 0
-drops = [ { item = "stone", min = 1, max = 3, ppm = 1000000 }, { item = "coal", min = 1, max = 1, ppm = 120000 } ]
+drops = [ { item = "stone", min = 1, max = 3, ppm = 1000000 }, { item = "coal", min = 1, max = 1, ppm = 200000 } ]
 [[rock]]
 id = 1
 key = "copper_node"
 hardness = 3
 min_pick = 0
-drops = [ { item = "copper_ore", min = 1, max = 3, ppm = 1000000 }, { item = "stone", min = 1, max = 1, ppm = 500000 } ]
+drops = [ { item = "copper_ore", min = 2, max = 4, ppm = 1000000 }, { item = "stone", min = 1, max = 1, ppm = 500000 } ]
 [[rock]]
 id = 2
 key = "iron_node"
 hardness = 3
 min_pick = 1
-drops = [ { item = "iron_ore", min = 1, max = 3, ppm = 1000000 }, { item = "coal", min = 1, max = 1, ppm = 150000 } ]
+drops = [ { item = "iron_ore", min = 2, max = 4, ppm = 1000000 }, { item = "coal", min = 1, max = 1, ppm = 150000 } ]
 [[rock]]
 id = 3
 key = "gold_node"
@@ -39,7 +39,7 @@ id = 4
 key = "gem_node"
 hardness = 4
 min_pick = 1
-drops = [ { item = "quartz", min = 1, max = 1, ppm = 450000 }, { item = "amethyst", min = 1, max = 1, ppm = 350000 }, { item = "topaz", min = 1, max = 1, ppm = 170000 }, { item = "diamond", min = 1, max = 1, ppm = 30000 } ]
+drops = [ { item = "quartz", min = 1, max = 1, ppm = 400000 }, { item = "amethyst", min = 1, max = 1, ppm = 350000 }, { item = "topaz", min = 1, max = 1, ppm = 200000 }, { item = "diamond", min = 1, max = 1, ppm = 80000 } ]
 [[rock]]
 id = 5
 key = "coal_seam"
