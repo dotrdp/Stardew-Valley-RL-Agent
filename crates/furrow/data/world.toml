@@ -1,0 +1,368 @@
+# World topology and anchors. Positions are tile coordinates (x right, y down). Layout details (debris, trees, rocks,
+# forage spots) are procedural per seed; everything here is fixed so POIs are always reachable.
+[world]
+start_location = "homestead"
+start_tile = [8, 8]
+day_start = 360
+day_end = 1560
+season_days = 24
+energy_max = 200
+backpack_slots = 24
+stack_max = 999
+start_money = 500
+passout_energy_ppm = 500000
+passout_money_ppm = 100000
+passout_money_cap = 1000
+weather_ppm = { spring = [600000, 300000, 100000, 0], summer = [700000, 200000, 100000, 0], autumn = [600000, 300000, 100000, 0], winter = [400000, 100000, 0, 500000] }  # sunny, rainy, stormy, snowy
+minecart_minutes = 10       # GoTo travel time when the minecart network is unlocked (any pair of outdoor locations)
+
+[[location]]
+id = 0
+key = "homestead"
+name = "Homestead"
+width = 48
+height = 36
+kind = "farm"
+[[location]]
+id = 1
+key = "village"
+name = "Hollow Fork"
+width = 44
+height = 32
+kind = "town"
+[[location]]
+id = 2
+key = "woods"
+name = "Alder Woods"
+width = 40
+height = 32
+kind = "wild"
+[[location]]
+id = 3
+key = "coast"
+name = "Gull Coast"
+width = 40
+height = 24
+kind = "wild"
+[[location]]
+id = 4
+key = "quarry"
+name = "Slate Quarry"
+width = 32
+height = 24
+kind = "wild"
+[[location]]
+id = 5
+key = "mines"
+name = "Slate Mines"
+width = 24
+height = 24
+kind = "mines"
+[[location]]
+id = 6
+key = "greenhouse"
+name = "Greenhouse"
+width = 16
+height = 12
+kind = "greenhouse"
+
+# Rectangles: [x0, y0, x1, y1] inclusive
+[[region]]
+location = "homestead"
+kind = "house_floor"
+rect = [2, 2, 10, 10]
+[[region]]
+location = "homestead"
+kind = "field"
+rect = [8, 14, 39, 29]
+[[region]]
+location = "homestead"
+kind = "pads"
+rect = [16, 12, 27, 12]
+[[region]]
+location = "homestead"
+kind = "water"
+rect = [40, 28, 46, 34]
+[[region]]
+location = "homestead"
+kind = "trees"
+rect = [1, 14, 6, 34]
+[[region]]
+location = "homestead"
+kind = "trees"
+rect = [41, 1, 46, 26]
+[[region]]
+location = "village"
+kind = "path"
+rect = [1, 15, 42, 17]
+[[region]]
+location = "village"
+kind = "path"
+rect = [21, 1, 23, 30]
+[[region]]
+location = "woods"
+kind = "water"
+rect = [16, 0, 19, 31]
+[[region]]
+location = "woods"
+kind = "bridge"
+rect = [16, 16, 19, 16]
+[[region]]
+location = "woods"
+kind = "trees"
+rect = [1, 1, 14, 30]
+[[region]]
+location = "woods"
+kind = "trees"
+rect = [21, 1, 38, 30]
+[[region]]
+location = "woods"
+kind = "forage"
+rect = [1, 1, 38, 30]
+[[region]]
+location = "woods"
+kind = "stumps"
+rect = [24, 20, 38, 30]
+[[region]]
+location = "coast"
+kind = "water"
+rect = [0, 16, 39, 23]
+[[region]]
+location = "coast"
+kind = "sand"
+rect = [0, 6, 39, 15]
+[[region]]
+location = "coast"
+kind = "forage"
+rect = [1, 7, 38, 15]
+[[region]]
+location = "quarry"
+kind = "water"
+rect = [24, 0, 31, 10]
+[[region]]
+location = "quarry"
+kind = "rocks"
+rect = [8, 8, 22, 22]
+[[region]]
+location = "quarry"
+kind = "forage"
+rect = [8, 8, 22, 22]
+[[region]]
+location = "quarry"
+kind = "boulders"
+rect = [1, 14, 6, 22]
+[[region]]
+location = "greenhouse"
+kind = "field"
+rect = [2, 1, 13, 9]
+
+# POIs: kind in bed | crate | well | mill_board | counter | stall | fishing_spot | mine_entrance | elevator | pad_anchor
+# `tile` is the interactable object tile; `stand` is where the player stands; `face` is the facing direction (n/e/s/w).
+[[poi]]
+id = 0
+key = "bed"
+location = "homestead"
+kind = "bed"
+tile = [4, 4]
+stand = [5, 4]
+face = "w"
+[[poi]]
+id = 1
+key = "crate"
+location = "homestead"
+kind = "crate"
+tile = [12, 8]
+stand = [12, 9]
+face = "n"
+[[poi]]
+id = 2
+key = "well"
+location = "homestead"
+kind = "well"
+tile = [14, 12]
+stand = [14, 13]
+face = "n"
+[[poi]]
+id = 3
+key = "farm_pond"
+location = "homestead"
+kind = "fishing_spot"
+tile = [40, 31]
+stand = [39, 31]
+face = "e"
+[[poi]]
+id = 4
+key = "general_counter"
+location = "village"
+kind = "counter"
+tile = [10, 8]
+stand = [10, 9]
+face = "n"
+[[poi]]
+id = 5
+key = "smithy_counter"
+location = "village"
+kind = "counter"
+tile = [32, 8]
+stand = [32, 9]
+face = "n"
+[[poi]]
+id = 6
+key = "carpenter_counter"
+location = "village"
+kind = "counter"
+tile = [12, 24]
+stand = [12, 23]
+face = "s"
+[[poi]]
+id = 7
+key = "mill_board"
+location = "village"
+kind = "mill_board"
+tile = [22, 13]
+stand = [22, 14]
+face = "n"
+[[poi]]
+id = 8
+key = "merchant_stall"
+location = "village"
+kind = "stall"
+tile = [34, 20]
+stand = [34, 19]
+face = "s"
+[[poi]]
+id = 9
+key = "woods_river"
+location = "woods"
+kind = "fishing_spot"
+tile = [16, 10]
+stand = [15, 10]
+face = "e"
+[[poi]]
+id = 10
+key = "coast_sea"
+location = "coast"
+kind = "fishing_spot"
+tile = [20, 16]
+stand = [20, 15]
+face = "s"
+[[poi]]
+id = 11
+key = "quarry_lake"
+location = "quarry"
+kind = "fishing_spot"
+tile = [24, 5]
+stand = [23, 5]
+face = "e"
+[[poi]]
+id = 12
+key = "mine_entrance"
+location = "quarry"
+kind = "mine_entrance"
+tile = [4, 4]
+stand = [4, 5]
+face = "n"
+[[poi]]
+id = 13
+key = "elevator"
+location = "quarry"
+kind = "elevator"
+tile = [7, 4]
+stand = [7, 5]
+face = "n"
+[[poi]]
+id = 14
+key = "mine_exit"
+location = "mines"
+kind = "mine_exit"
+tile = [12, 23]
+stand = [12, 22]
+face = "s"
+[[poi]]
+id = 15
+key = "mine_elevator"
+location = "mines"
+kind = "elevator"
+tile = [2, 23]
+stand = [2, 22]
+face = "s"
+[[poi]]
+id = 16
+key = "greenhouse_well"
+location = "greenhouse"
+kind = "well"
+tile = [14, 10]
+stand = [13, 10]
+face = "e"
+
+# Warps: stepping onto `tile` moves the player to `to_tile` in `to` (facing preserved).
+[[warp]]
+id = 0
+from = "homestead"
+tile = [47, 18]
+to = "village"
+to_tile = [1, 16]
+[[warp]]
+id = 1
+from = "village"
+tile = [0, 16]
+to = "homestead"
+to_tile = [46, 18]
+[[warp]]
+id = 2
+from = "homestead"
+tile = [0, 20]
+to = "woods"
+to_tile = [38, 16]
+[[warp]]
+id = 3
+from = "woods"
+tile = [39, 16]
+to = "homestead"
+to_tile = [1, 20]
+[[warp]]
+id = 4
+from = "village"
+tile = [22, 31]
+to = "coast"
+to_tile = [20, 1]
+[[warp]]
+id = 5
+from = "coast"
+tile = [20, 0]
+to = "village"
+to_tile = [22, 30]
+[[warp]]
+id = 6
+from = "village"
+tile = [22, 0]
+to = "quarry"
+to_tile = [16, 22]
+[[warp]]
+id = 7
+from = "quarry"
+tile = [16, 23]
+to = "village"
+to_tile = [22, 1]
+[[warp]]
+id = 8
+from = "homestead"
+tile = [20, 4]
+to = "greenhouse"
+to_tile = [8, 10]
+[[warp]]
+id = 9
+from = "greenhouse"
+tile = [8, 11]
+to = "homestead"
+to_tile = [20, 5]
+
+# Procedural densities (ppm of eligible tiles) rolled from the layout stream per seed
+[density]
+field_weeds_ppm = 180000
+field_twig_ppm = 90000
+field_stone_ppm = 90000
+field_tree_ppm = 30000
+tree_region_ppm = 350000
+stump_count = 6
+wild_fiber_ppm = 60000

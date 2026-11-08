@@ -1,0 +1,86 @@
+# Crafting recipes. unlock: "start" | "farming:N" | "foraging:N" | "fishing:N" | "mining:N" | "wing:<wing key>"
+# Machines are placeable items; their processing rules are in [[machine]].
+[[recipe]]
+id = 0
+key = "furnace"
+output = "furnace"
+count = 1
+inputs = [ { item = "stone", count = 25 }, { item = "copper_ore", count = 20 } ]
+unlock = "start"
+[[recipe]]
+id = 1
+key = "charcoal_kiln"
+output = "charcoal_kiln"
+count = 1
+inputs = [ { item = "wood", count = 30 }, { item = "copper_bar", count = 1 } ]
+unlock = "foraging:2"
+[[recipe]]
+id = 2
+key = "pickle_jar"
+output = "pickle_jar"
+count = 1
+inputs = [ { item = "wood", count = 30 }, { item = "stone", count = 10 }, { item = "copper_bar", count = 1 } ]
+unlock = "farming:2"
+[[recipe]]
+id = 3
+key = "juice_press"
+output = "juice_press"
+count = 1
+inputs = [ { item = "wood", count = 40 }, { item = "copper_bar", count = 2 }, { item = "iron_bar", count = 1 } ]
+unlock = "farming:4"
+[[recipe]]
+id = 4
+key = "drying_rack"
+output = "drying_rack"
+count = 1
+inputs = [ { item = "wood", count = 20 }, { item = "resin", count = 5 } ]
+unlock = "fishing:2"
+[[recipe]]
+id = 5
+key = "fertilizer"
+output = "fertilizer"
+count = 5
+inputs = [ { item = "resin", count = 2 }, { item = "fiber", count = 3 } ]
+unlock = "start"
+[[recipe]]
+id = 6
+key = "trail_mix"
+output = "trail_mix"
+count = 1
+inputs = [ { item = "hazelnut", count = 2 }, { item = "blackberry", count = 3 } ]
+unlock = "foraging:1"
+
+# Machines: input selector is a category or an item; duration in minutes (crosses nights: time keeps running).
+[[machine]]
+id = 0
+key = "furnace"
+item = "furnace"
+rules = [
+  { input = "copper_ore", input_count = 5, fuel = "coal", fuel_count = 1, output = "copper_bar", output_count = 1, minutes = 180 },
+  { input = "iron_ore", input_count = 5, fuel = "coal", fuel_count = 1, output = "iron_bar", output_count = 1, minutes = 240 },
+  { input = "gold_ore", input_count = 5, fuel = "coal", fuel_count = 1, output = "gold_bar", output_count = 1, minutes = 360 },
+]
+[[machine]]
+id = 1
+key = "charcoal_kiln"
+item = "charcoal_kiln"
+rules = [ { input = "wood", input_count = 10, output = "coal", output_count = 1, minutes = 60 } ]
+[[machine]]
+id = 2
+key = "pickle_jar"
+item = "pickle_jar"
+rules = [ { input_category = "crop", input_count = 1, output = "pickles", output_count = 1, minutes = 2880 } ]
+[[machine]]
+id = 3
+key = "juice_press"
+item = "juice_press"
+rules = [ { input_category = "crop", input_count = 1, output = "juice", output_count = 1, minutes = 4320 } ]
+[[machine]]
+id = 4
+key = "drying_rack"
+item = "drying_rack"
+rules = [
+  { input_category = "fish", input_count = 3, output = "dried_fish", output_count = 1, minutes = 1440 },
+  { input = "morel", input_count = 2, output = "dried_mushroom", output_count = 1, minutes = 1440 },
+  { input = "chanterelle", input_count = 2, output = "dried_mushroom", output_count = 1, minutes = 1440 },
+]

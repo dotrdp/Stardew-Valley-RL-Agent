@@ -1,0 +1,52 @@
+# Daily forage spawns per location. Each day at 06:00 the location's forage count is topped up to `daily_cap`
+# with items drawn by weight from the season's table (exogenous stream: seed, day, location).
+[[forage_location]]
+id = 0
+location = "woods"
+daily_cap = 8
+[[forage_location.season]]
+season = "spring"
+items = [ { item = "morel", weight = 20 }, { item = "wild_leek", weight = 45 }, { item = "violet", weight = 35 } ]
+[[forage_location.season]]
+season = "summer"
+items = [ { item = "blackberry", weight = 60 }, { item = "honeycomb", weight = 15 }, { item = "wild_leek", weight = 25 } ]
+[[forage_location.season]]
+season = "autumn"
+items = [ { item = "chanterelle", weight = 20 }, { item = "hazelnut", weight = 45 }, { item = "wild_plum", weight = 25 }, { item = "pinecone", weight = 10 } ]
+[[forage_location.season]]
+season = "winter"
+items = [ { item = "snowdrop", weight = 35 }, { item = "pinecone", weight = 65 } ]
+
+[[forage_location]]
+id = 1
+location = "coast"
+daily_cap = 6
+[[forage_location.season]]
+season = "spring"
+items = [ { item = "mussel", weight = 45 }, { item = "cockle", weight = 30 }, { item = "seaweed", weight = 25 } ]
+[[forage_location.season]]
+season = "summer"
+items = [ { item = "mussel", weight = 35 }, { item = "cockle", weight = 25 }, { item = "seaweed", weight = 25 }, { item = "sea_glass", weight = 15 } ]
+[[forage_location.season]]
+season = "autumn"
+items = [ { item = "mussel", weight = 45 }, { item = "cockle", weight = 30 }, { item = "seaweed", weight = 25 } ]
+[[forage_location.season]]
+season = "winter"
+items = [ { item = "mussel", weight = 55 }, { item = "seaweed", weight = 45 } ]
+
+[[forage_location]]
+id = 2
+location = "quarry"
+daily_cap = 3
+[[forage_location.season]]
+season = "spring"
+items = [ { item = "quartz", weight = 70 }, { item = "fossil_shard", weight = 30 } ]
+[[forage_location.season]]
+season = "summer"
+items = [ { item = "quartz", weight = 70 }, { item = "fossil_shard", weight = 30 } ]
+[[forage_location.season]]
+season = "autumn"
+items = [ { item = "quartz", weight = 70 }, { item = "fossil_shard", weight = 30 } ]
+[[forage_location.season]]
+season = "winter"
+items = [ { item = "quartz", weight = 70 }, { item = "fossil_shard", weight = 30 } ]

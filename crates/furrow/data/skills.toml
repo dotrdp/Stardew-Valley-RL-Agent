@@ -1,0 +1,34 @@
+# Four skills; XP thresholds for levels 1..=10; effects are linear per level.
+[skills]
+thresholds = [100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200, 4000]
+energy_cost_reduction_ppm_per_level = 40000   # -4% per level, floor at 60%
+farming_extra_yield_ppm_per_level = 20000
+foraging_double_ppm_per_level = 30000
+mining_extra_drop_ppm_per_level = 25000
+fishing_cast_minus_per_level = 1
+
+[xp]
+hoe_till = 2
+water_tile = 1
+harvest = 0        # crop.xp is used instead
+forage_pickup = 7
+chop_tree = 12
+chop_stump = 25
+break_rock = 0     # mining.xp_per_rock
+fish_catch = 0     # fishing.xp_per_catch
+craft = 5
+
+[tools]
+hoe_energy = 2
+can_energy_per_tile = 1
+axe_energy = 3
+pickaxe_energy = 3
+rod_energy = 4
+can_capacity = [40, 60, 80, 120]
+tree_hits = [10, 8, 6, 4]        # axe level 0..3
+stump_hits = [0, 8, 6, 4]        # stump needs axe >= 1
+boulder_hits = [0, 0, 6, 4]      # boulder needs pickaxe >= 2
+tree_wood = [8, 10, 12, 14]
+tree_resin_ppm = 500000
+stump_hardwood = 4
+boulder_stone = 10

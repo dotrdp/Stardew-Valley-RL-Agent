@@ -1,0 +1,606 @@
+# Furrow — original item table. Every entity has an explicit, immutable, dense id.
+# category: seed | crop | forage | fish | junk | mineral | ore | bar | gem | resource | artisan | food | machine | fertilizer
+# sell = shipping-crate price (coins); energy = restored when eaten (0 = inedible)
+
+[[item]]
+id = 0
+key = "radish_seed"
+name = "Radish Seeds"
+category = "seed"
+sell = 10
+energy = 0
+[[item]]
+id = 1
+key = "pea_seed"
+name = "Pea Seeds"
+category = "seed"
+sell = 25
+energy = 0
+[[item]]
+id = 2
+key = "lettuce_seed"
+name = "Lettuce Seeds"
+category = "seed"
+sell = 15
+energy = 0
+[[item]]
+id = 3
+key = "tulip_bulb"
+name = "Tulip Bulb"
+category = "seed"
+sell = 10
+energy = 0
+[[item]]
+id = 4
+key = "tomato_seed"
+name = "Tomato Seeds"
+category = "seed"
+sell = 25
+energy = 0
+[[item]]
+id = 5
+key = "chili_seed"
+name = "Chili Seeds"
+category = "seed"
+sell = 20
+energy = 0
+[[item]]
+id = 6
+key = "melon_seed"
+name = "Melon Seeds"
+category = "seed"
+sell = 40
+energy = 0
+[[item]]
+id = 7
+key = "sunflower_seed"
+name = "Sunflower Seeds"
+category = "seed"
+sell = 20
+energy = 0
+[[item]]
+id = 8
+key = "pumpkin_seed"
+name = "Pumpkin Seeds"
+category = "seed"
+sell = 50
+energy = 0
+[[item]]
+id = 9
+key = "beet_seed"
+name = "Beet Seeds"
+category = "seed"
+sell = 10
+energy = 0
+[[item]]
+id = 10
+key = "barley_seed"
+name = "Barley Seeds"
+category = "seed"
+sell = 15
+energy = 0
+[[item]]
+id = 11
+key = "grape_cutting"
+name = "Grape Cutting"
+category = "seed"
+sell = 30
+energy = 0
+[[item]]
+id = 12
+key = "corn_seed"
+name = "Corn Seeds"
+category = "seed"
+sell = 25
+energy = 0
+
+[[item]]
+id = 13
+key = "radish"
+name = "Radish"
+category = "crop"
+sell = 40
+energy = 20
+[[item]]
+id = 14
+key = "pea"
+name = "Snap Peas"
+category = "crop"
+sell = 45
+energy = 20
+[[item]]
+id = 15
+key = "lettuce"
+name = "Lettuce"
+category = "crop"
+sell = 55
+energy = 25
+[[item]]
+id = 16
+key = "tulip"
+name = "Tulip"
+category = "crop"
+sell = 35
+energy = 0
+[[item]]
+id = 17
+key = "tomato"
+name = "Tomato"
+category = "crop"
+sell = 60
+energy = 25
+[[item]]
+id = 18
+key = "chili"
+name = "Chili Pepper"
+category = "crop"
+sell = 45
+energy = 15
+[[item]]
+id = 19
+key = "melon"
+name = "Melon"
+category = "crop"
+sell = 240
+energy = 60
+[[item]]
+id = 20
+key = "sunflower"
+name = "Sunflower"
+category = "crop"
+sell = 80
+energy = 0
+[[item]]
+id = 21
+key = "pumpkin"
+name = "Pumpkin"
+category = "crop"
+sell = 300
+energy = 0
+[[item]]
+id = 22
+key = "beet"
+name = "Beet"
+category = "crop"
+sell = 95
+energy = 25
+[[item]]
+id = 23
+key = "barley"
+name = "Barley"
+category = "crop"
+sell = 50
+energy = 10
+[[item]]
+id = 24
+key = "grape"
+name = "Grapes"
+category = "crop"
+sell = 75
+energy = 25
+[[item]]
+id = 25
+key = "corn"
+name = "Corn"
+category = "crop"
+sell = 50
+energy = 25
+
+[[item]]
+id = 26
+key = "morel"
+name = "Morel"
+category = "forage"
+sell = 150
+energy = 30
+[[item]]
+id = 27
+key = "wild_leek"
+name = "Wild Leek"
+category = "forage"
+sell = 50
+energy = 25
+[[item]]
+id = 28
+key = "violet"
+name = "Violet"
+category = "forage"
+sell = 30
+energy = 0
+[[item]]
+id = 29
+key = "blackberry"
+name = "Blackberry"
+category = "forage"
+sell = 25
+energy = 15
+[[item]]
+id = 30
+key = "honeycomb"
+name = "Honeycomb"
+category = "forage"
+sell = 120
+energy = 40
+[[item]]
+id = 31
+key = "sea_glass"
+name = "Sea Glass"
+category = "forage"
+sell = 90
+energy = 0
+[[item]]
+id = 32
+key = "chanterelle"
+name = "Chanterelle"
+category = "forage"
+sell = 140
+energy = 35
+[[item]]
+id = 33
+key = "hazelnut"
+name = "Hazelnut"
+category = "forage"
+sell = 70
+energy = 25
+[[item]]
+id = 34
+key = "wild_plum"
+name = "Wild Plum"
+category = "forage"
+sell = 80
+energy = 25
+[[item]]
+id = 35
+key = "snowdrop"
+name = "Snowdrop"
+category = "forage"
+sell = 60
+energy = 0
+[[item]]
+id = 36
+key = "pinecone"
+name = "Pinecone"
+category = "forage"
+sell = 20
+energy = 0
+[[item]]
+id = 37
+key = "mussel"
+name = "Mussel"
+category = "forage"
+sell = 40
+energy = 20
+[[item]]
+id = 38
+key = "cockle"
+name = "Cockle"
+category = "forage"
+sell = 50
+energy = 20
+[[item]]
+id = 39
+key = "seaweed"
+name = "Seaweed"
+category = "forage"
+sell = 20
+energy = 10
+[[item]]
+id = 40
+key = "quartz"
+name = "Quartz"
+category = "mineral"
+sell = 60
+energy = 0
+[[item]]
+id = 41
+key = "fossil_shard"
+name = "Fossil Shard"
+category = "mineral"
+sell = 110
+energy = 0
+
+[[item]]
+id = 42
+key = "minnow"
+name = "Minnow"
+category = "fish"
+sell = 30
+energy = 15
+[[item]]
+id = 43
+key = "brown_trout"
+name = "Brown Trout"
+category = "fish"
+sell = 90
+energy = 35
+[[item]]
+id = 44
+key = "perch"
+name = "Perch"
+category = "fish"
+sell = 70
+energy = 30
+[[item]]
+id = 45
+key = "pike"
+name = "Pike"
+category = "fish"
+sell = 160
+energy = 45
+[[item]]
+id = 46
+key = "sardine"
+name = "Sardine"
+category = "fish"
+sell = 40
+energy = 20
+[[item]]
+id = 47
+key = "mackerel"
+name = "Mackerel"
+category = "fish"
+sell = 80
+energy = 35
+[[item]]
+id = 48
+key = "flounder"
+name = "Flounder"
+category = "fish"
+sell = 100
+energy = 35
+[[item]]
+id = 49
+key = "sea_bass"
+name = "Sea Bass"
+category = "fish"
+sell = 130
+energy = 40
+[[item]]
+id = 50
+key = "squid"
+name = "Squid"
+category = "fish"
+sell = 110
+energy = 30
+[[item]]
+id = 51
+key = "carp"
+name = "Carp"
+category = "fish"
+sell = 35
+energy = 25
+[[item]]
+id = 52
+key = "bluegill"
+name = "Bluegill"
+category = "fish"
+sell = 60
+energy = 25
+[[item]]
+id = 53
+key = "char"
+name = "Arctic Char"
+category = "fish"
+sell = 140
+energy = 40
+[[item]]
+id = 54
+key = "sturgeon"
+name = "Sturgeon"
+category = "fish"
+sell = 260
+energy = 50
+[[item]]
+id = 55
+key = "bullhead"
+name = "Bullhead"
+category = "fish"
+sell = 45
+energy = 25
+[[item]]
+id = 56
+key = "driftwood"
+name = "Driftwood"
+category = "junk"
+sell = 2
+energy = 0
+[[item]]
+id = 57
+key = "old_boot"
+name = "Old Boot"
+category = "junk"
+sell = 1
+energy = 0
+
+[[item]]
+id = 58
+key = "stone"
+name = "Stone"
+category = "resource"
+sell = 2
+energy = 0
+[[item]]
+id = 59
+key = "coal"
+name = "Coal"
+category = "resource"
+sell = 15
+energy = 0
+[[item]]
+id = 60
+key = "copper_ore"
+name = "Copper Ore"
+category = "ore"
+sell = 8
+energy = 0
+[[item]]
+id = 61
+key = "iron_ore"
+name = "Iron Ore"
+category = "ore"
+sell = 15
+energy = 0
+[[item]]
+id = 62
+key = "gold_ore"
+name = "Gold Ore"
+category = "ore"
+sell = 35
+energy = 0
+[[item]]
+id = 63
+key = "copper_bar"
+name = "Copper Bar"
+category = "bar"
+sell = 70
+energy = 0
+[[item]]
+id = 64
+key = "iron_bar"
+name = "Iron Bar"
+category = "bar"
+sell = 150
+energy = 0
+[[item]]
+id = 65
+key = "gold_bar"
+name = "Gold Bar"
+category = "bar"
+sell = 300
+energy = 0
+[[item]]
+id = 66
+key = "amethyst"
+name = "Amethyst"
+category = "gem"
+sell = 120
+energy = 0
+[[item]]
+id = 67
+key = "topaz"
+name = "Topaz"
+category = "gem"
+sell = 180
+energy = 0
+[[item]]
+id = 68
+key = "diamond"
+name = "Diamond"
+category = "gem"
+sell = 800
+energy = 0
+
+[[item]]
+id = 69
+key = "wood"
+name = "Wood"
+category = "resource"
+sell = 3
+energy = 0
+[[item]]
+id = 70
+key = "hardwood"
+name = "Hardwood"
+category = "resource"
+sell = 20
+energy = 0
+[[item]]
+id = 71
+key = "resin"
+name = "Resin"
+category = "resource"
+sell = 4
+energy = 0
+[[item]]
+id = 72
+key = "fiber"
+name = "Fiber"
+category = "resource"
+sell = 1
+energy = 0
+
+[[item]]
+id = 73
+key = "pickles"
+name = "Pickles"
+category = "artisan"
+sell = 130
+energy = 30
+[[item]]
+id = 74
+key = "juice"
+name = "Fruit Juice"
+category = "artisan"
+sell = 180
+energy = 40
+[[item]]
+id = 75
+key = "dried_fish"
+name = "Dried Fish"
+category = "artisan"
+sell = 120
+energy = 45
+[[item]]
+id = 76
+key = "dried_mushroom"
+name = "Dried Mushrooms"
+category = "artisan"
+sell = 190
+energy = 40
+[[item]]
+id = 77
+key = "trail_mix"
+name = "Trail Mix"
+category = "food"
+sell = 60
+energy = 70
+
+[[item]]
+id = 78
+key = "fertilizer"
+name = "Fertilizer"
+category = "fertilizer"
+sell = 5
+energy = 0
+[[item]]
+id = 79
+key = "furnace"
+name = "Furnace"
+category = "machine"
+sell = 50
+energy = 0
+[[item]]
+id = 80
+key = "pickle_jar"
+name = "Pickle Jar"
+category = "machine"
+sell = 50
+energy = 0
+[[item]]
+id = 81
+key = "juice_press"
+name = "Juice Press"
+category = "machine"
+sell = 80
+energy = 0
+[[item]]
+id = 82
+key = "drying_rack"
+name = "Drying Rack"
+category = "machine"
+sell = 40
+energy = 0
+[[item]]
+id = 83
+key = "charcoal_kiln"
+name = "Charcoal Kiln"
+category = "machine"
+sell = 60
+energy = 0
+[[item]]
+id = 84
+key = "bread"
+name = "Bread"
+category = "food"
+sell = 30
+energy = 50

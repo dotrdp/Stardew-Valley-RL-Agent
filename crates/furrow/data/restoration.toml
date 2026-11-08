@@ -1,0 +1,266 @@
+# The Old Mill of Hollow Fork — original restoration objective.
+# A request is complete when `need` of its slots are filled (or `coins` paid). A wing is complete when all its
+# requests are. Episode success = all wings complete. `pool` lists candidate items for Remixed mode: each slot's
+# item is resampled from the request's pool (partition "train"/"test"); counts/need never change.
+[restoration]
+name = "The Old Mill"
+
+[[wing]]
+id = 0
+key = "threshing_floor"
+name = "Threshing Floor"
+reward = { kind = "unlock", feature = "greenhouse" }
+[[wing]]
+id = 1
+key = "waterwheel"
+name = "Waterwheel"
+reward = { kind = "unlock", feature = "minecart" }
+[[wing]]
+id = 2
+key = "woodland_gallery"
+name = "Woodland Gallery"
+reward = { kind = "energy", amount = 40 }
+[[wing]]
+id = 3
+key = "forge_annex"
+name = "Forge Annex"
+reward = { kind = "tool_level", tools = ["pickaxe", "axe"] }
+[[wing]]
+id = 4
+key = "drying_loft"
+name = "Drying Loft"
+reward = { kind = "unlock", feature = "merchant_daily" }
+[[wing]]
+id = 5
+key = "keepers_office"
+name = "Keeper's Office"
+reward = { kind = "money", amount = 5000 }
+
+# ---- Threshing Floor
+[[request]]
+id = 0
+key = "spring_harvest"
+wing = "threshing_floor"
+name = "Spring Harvest"
+need = 3
+slots = [ { item = "radish", count = 5 }, { item = "pea", count = 5 }, { item = "lettuce", count = 5 }, { item = "tulip", count = 3 } ]
+pool_train = ["radish", "pea", "lettuce", "tulip"]
+pool_test = ["radish", "pea", "lettuce", "tulip", "wild_leek"]
+[[request]]
+id = 1
+key = "summer_harvest"
+wing = "threshing_floor"
+name = "Summer Harvest"
+need = 3
+slots = [ { item = "tomato", count = 5 }, { item = "chili", count = 5 }, { item = "melon", count = 2 }, { item = "sunflower", count = 3 } ]
+pool_train = ["tomato", "chili", "melon", "sunflower", "corn"]
+pool_test = ["tomato", "chili", "melon", "sunflower", "corn", "blackberry"]
+[[request]]
+id = 2
+key = "autumn_harvest"
+wing = "threshing_floor"
+name = "Autumn Harvest"
+need = 3
+slots = [ { item = "pumpkin", count = 2 }, { item = "beet", count = 5 }, { item = "barley", count = 5 }, { item = "grape", count = 5 } ]
+pool_train = ["pumpkin", "beet", "barley", "grape", "corn"]
+pool_test = ["pumpkin", "beet", "barley", "grape", "corn", "hazelnut"]
+[[request]]
+id = 3
+key = "preserves"
+wing = "threshing_floor"
+name = "Preserves"
+need = 2
+slots = [ { item = "pickles", count = 3 }, { item = "juice", count = 2 }, { item = "fertilizer", count = 10 } ]
+pool_train = ["pickles", "juice", "fertilizer"]
+pool_test = ["pickles", "juice", "fertilizer", "trail_mix"]
+
+# ---- Waterwheel
+[[request]]
+id = 4
+key = "river_catch"
+wing = "waterwheel"
+name = "River Catch"
+need = 3
+slots = [ { item = "minnow", count = 3 }, { item = "brown_trout", count = 1 }, { item = "perch", count = 1 }, { item = "pike", count = 1 } ]
+pool_train = ["minnow", "brown_trout", "perch", "pike"]
+pool_test = ["minnow", "brown_trout", "perch", "pike", "carp"]
+[[request]]
+id = 5
+key = "sea_catch"
+wing = "waterwheel"
+name = "Sea Catch"
+need = 3
+slots = [ { item = "sardine", count = 3 }, { item = "mackerel", count = 1 }, { item = "flounder", count = 1 }, { item = "sea_bass", count = 1 } ]
+pool_train = ["sardine", "mackerel", "flounder", "sea_bass", "squid"]
+pool_test = ["sardine", "mackerel", "flounder", "sea_bass", "squid", "mussel"]
+[[request]]
+id = 6
+key = "lake_catch"
+wing = "waterwheel"
+name = "Lake Catch"
+need = 3
+slots = [ { item = "carp", count = 2 }, { item = "bluegill", count = 1 }, { item = "char", count = 1 }, { item = "sturgeon", count = 1 } ]
+pool_train = ["carp", "bluegill", "char", "sturgeon", "bullhead"]
+pool_test = ["carp", "bluegill", "char", "sturgeon", "bullhead", "minnow"]
+[[request]]
+id = 7
+key = "smokehouse"
+wing = "waterwheel"
+name = "Smokehouse"
+need = 2
+slots = [ { item = "dried_fish", count = 4 }, { item = "squid", count = 1 }, { item = "bullhead", count = 3 } ]
+pool_train = ["dried_fish", "squid", "bullhead", "sardine"]
+pool_test = ["dried_fish", "squid", "bullhead", "sardine", "mackerel"]
+
+# ---- Woodland Gallery
+[[request]]
+id = 8
+key = "spring_forage"
+wing = "woodland_gallery"
+name = "Spring Forage"
+need = 2
+slots = [ { item = "morel", count = 2 }, { item = "wild_leek", count = 3 }, { item = "violet", count = 3 } ]
+pool_train = ["morel", "wild_leek", "violet"]
+pool_test = ["morel", "wild_leek", "violet", "radish"]
+[[request]]
+id = 9
+key = "summer_forage"
+wing = "woodland_gallery"
+name = "Summer Forage"
+need = 2
+slots = [ { item = "blackberry", count = 5 }, { item = "honeycomb", count = 2 }, { item = "sea_glass", count = 1 } ]
+pool_train = ["blackberry", "honeycomb", "sea_glass", "cockle"]
+pool_test = ["blackberry", "honeycomb", "sea_glass", "cockle", "seaweed"]
+[[request]]
+id = 10
+key = "autumn_forage"
+wing = "woodland_gallery"
+name = "Autumn Forage"
+need = 2
+slots = [ { item = "chanterelle", count = 2 }, { item = "hazelnut", count = 5 }, { item = "wild_plum", count = 3 } ]
+pool_train = ["chanterelle", "hazelnut", "wild_plum"]
+pool_test = ["chanterelle", "hazelnut", "wild_plum", "pinecone"]
+[[request]]
+id = 11
+key = "winter_forage"
+wing = "woodland_gallery"
+name = "Winter Forage"
+need = 2
+slots = [ { item = "snowdrop", count = 3 }, { item = "pinecone", count = 5 }, { item = "mussel", count = 5 } ]
+pool_train = ["snowdrop", "pinecone", "mussel", "seaweed"]
+pool_test = ["snowdrop", "pinecone", "mussel", "seaweed", "quartz"]
+
+# ---- Forge Annex
+[[request]]
+id = 12
+key = "shallow_ores"
+wing = "forge_annex"
+name = "Shallow Ores"
+need = 3
+slots = [ { item = "copper_ore", count = 20 }, { item = "stone", count = 50 }, { item = "coal", count = 5 } ]
+pool_train = ["copper_ore", "stone", "coal"]
+pool_test = ["copper_ore", "stone", "coal", "quartz"]
+[[request]]
+id = 13
+key = "deep_ores"
+wing = "forge_annex"
+name = "Deep Ores"
+need = 2
+slots = [ { item = "iron_ore", count = 15 }, { item = "gold_ore", count = 5 }, { item = "quartz", count = 5 } ]
+pool_train = ["iron_ore", "gold_ore", "quartz"]
+pool_test = ["iron_ore", "gold_ore", "quartz", "fossil_shard"]
+[[request]]
+id = 14
+key = "bars"
+wing = "forge_annex"
+name = "Bars"
+need = 2
+slots = [ { item = "copper_bar", count = 5 }, { item = "iron_bar", count = 3 }, { item = "gold_bar", count = 1 } ]
+pool_train = ["copper_bar", "iron_bar", "gold_bar"]
+pool_test = ["copper_bar", "iron_bar", "gold_bar", "coal"]
+[[request]]
+id = 15
+key = "gems"
+wing = "forge_annex"
+name = "Gems"
+need = 2
+slots = [ { item = "amethyst", count = 2 }, { item = "topaz", count = 1 }, { item = "diamond", count = 1 } ]
+pool_train = ["amethyst", "topaz", "diamond", "quartz"]
+pool_test = ["amethyst", "topaz", "diamond", "quartz", "fossil_shard"]
+
+# ---- Drying Loft
+[[request]]
+id = 16
+key = "dried_goods"
+wing = "drying_loft"
+name = "Dried Goods"
+need = 2
+slots = [ { item = "dried_mushroom", count = 3 }, { item = "dried_fish", count = 3 }, { item = "hazelnut", count = 10 } ]
+pool_train = ["dried_mushroom", "dried_fish", "hazelnut"]
+pool_test = ["dried_mushroom", "dried_fish", "hazelnut", "pinecone"]
+[[request]]
+id = 17
+key = "brewer"
+wing = "drying_loft"
+name = "Brewer's Bench"
+need = 2
+slots = [ { item = "juice", count = 3 }, { item = "barley", count = 10 }, { item = "grape", count = 10 } ]
+pool_train = ["juice", "barley", "grape", "corn"]
+pool_test = ["juice", "barley", "grape", "corn", "melon"]
+[[request]]
+id = 18
+key = "builder"
+wing = "drying_loft"
+name = "Builder's Pile"
+need = 3
+slots = [ { item = "wood", count = 100 }, { item = "hardwood", count = 10 }, { item = "stone", count = 100 }, { item = "resin", count = 20 } ]
+pool_train = ["wood", "hardwood", "stone", "resin"]
+pool_test = ["wood", "hardwood", "stone", "resin", "fiber"]
+[[request]]
+id = 19
+key = "field_kitchen"
+wing = "drying_loft"
+name = "Field Kitchen"
+need = 2
+slots = [ { item = "trail_mix", count = 3 }, { item = "pickles", count = 5 }, { item = "bread", count = 5 } ]
+pool_train = ["trail_mix", "pickles", "bread", "melon"]
+pool_test = ["trail_mix", "pickles", "bread", "melon", "honeycomb"]
+
+# ---- Keeper's Office
+[[request]]
+id = 20
+key = "ledger"
+wing = "keepers_office"
+name = "The Ledger"
+need = 0
+coins = 8000
+slots = []
+pool_train = []
+pool_test = []
+[[request]]
+id = 21
+key = "rare_finds"
+wing = "keepers_office"
+name = "Rare Finds"
+need = 3
+slots = [ { item = "diamond", count = 1 }, { item = "sturgeon", count = 1 }, { item = "pumpkin", count = 1 }, { item = "honeycomb", count = 1 } ]
+pool_train = ["diamond", "sturgeon", "pumpkin", "honeycomb", "fossil_shard"]
+pool_test = ["diamond", "sturgeon", "pumpkin", "honeycomb", "fossil_shard", "melon"]
+[[request]]
+id = 22
+key = "seasonal_wreath"
+wing = "keepers_office"
+name = "Seasonal Wreath"
+need = 4
+slots = [ { item = "tulip", count = 1 }, { item = "sunflower", count = 1 }, { item = "wild_plum", count = 1 }, { item = "snowdrop", count = 1 } ]
+pool_train = ["tulip", "sunflower", "wild_plum", "snowdrop", "violet", "pinecone"]
+pool_test = ["tulip", "sunflower", "wild_plum", "snowdrop", "violet", "pinecone", "sea_glass"]
+[[request]]
+id = 23
+key = "keepers_feast"
+wing = "keepers_office"
+name = "Keeper's Feast"
+need = 3
+slots = [ { item = "melon", count = 1 }, { item = "pike", count = 1 }, { item = "chanterelle", count = 1 }, { item = "gold_bar", count = 1 } ]
+pool_train = ["melon", "pike", "chanterelle", "gold_bar", "juice"]
+pool_test = ["melon", "pike", "chanterelle", "gold_bar", "juice", "dried_mushroom"]

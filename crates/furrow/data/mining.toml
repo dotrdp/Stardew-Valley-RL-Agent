@@ -1,0 +1,67 @@
+# Mines: floors 1..=60, 24x24, generated per (seed, day, floor). Elevator stops every 5 floors once reached.
+[mining]
+floors = 60
+elevator_step = 5
+rocks_per_floor_min = 28
+rocks_per_floor_max = 40
+energy_per_swing = 3
+xp_per_rock = 6
+ladder_rocks = 1           # exactly this many rocks hide a ladder per floor
+extra_ladder_ppm = 40000   # additional per-rock chance of revealing a ladder
+
+# rock kinds: hardness = pickaxe swings at level 0 (each level removes one swing, min 1); min_pick = minimum pickaxe level
+[[rock]]
+id = 0
+key = "stone_rock"
+hardness = 2
+min_pick = 0
+drops = [ { item = "stone", min = 1, max = 3, ppm = 1000000 }, { item = "coal", min = 1, max = 1, ppm = 120000 } ]
+[[rock]]
+id = 1
+key = "copper_node"
+hardness = 3
+min_pick = 0
+drops = [ { item = "copper_ore", min = 1, max = 3, ppm = 1000000 }, { item = "stone", min = 1, max = 1, ppm = 500000 } ]
+[[rock]]
+id = 2
+key = "iron_node"
+hardness = 3
+min_pick = 1
+drops = [ { item = "iron_ore", min = 1, max = 3, ppm = 1000000 }, { item = "coal", min = 1, max = 1, ppm = 150000 } ]
+[[rock]]
+id = 3
+key = "gold_node"
+hardness = 4
+min_pick = 2
+drops = [ { item = "gold_ore", min = 1, max = 2, ppm = 1000000 } ]
+[[rock]]
+id = 4
+key = "gem_node"
+hardness = 4
+min_pick = 1
+drops = [ { item = "quartz", min = 1, max = 1, ppm = 450000 }, { item = "amethyst", min = 1, max = 1, ppm = 350000 }, { item = "topaz", min = 1, max = 1, ppm = 170000 }, { item = "diamond", min = 1, max = 1, ppm = 30000 } ]
+[[rock]]
+id = 5
+key = "coal_seam"
+hardness = 2
+min_pick = 0
+drops = [ { item = "coal", min = 1, max = 2, ppm = 1000000 } ]
+
+# depth bands: weights of rock kinds by floor range
+[[band]]
+id = 0
+floors = [1, 19]
+rocks = [ { rock = "stone_rock", weight = 60 }, { rock = "copper_node", weight = 25 }, { rock = "coal_seam", weight = 10 }, { rock = "gem_node", weight = 5 } ]
+[[band]]
+id = 1
+floors = [20, 39]
+rocks = [ { rock = "stone_rock", weight = 40 }, { rock = "copper_node", weight = 15 }, { rock = "iron_node", weight = 28 }, { rock = "coal_seam", weight = 9 }, { rock = "gem_node", weight = 8 } ]
+[[band]]
+id = 2
+floors = [40, 60]
+rocks = [ { rock = "stone_rock", weight = 30 }, { rock = "iron_node", weight = 25 }, { rock = "gold_node", weight = 25 }, { rock = "coal_seam", weight = 8 }, { rock = "gem_node", weight = 12 } ]
+
+# surface rocks in the quarry (respawn daily, count), and farm debris
+[surface]
+quarry_rocks = 8
+quarry_rock_kinds = [ { rock = "stone_rock", weight = 80 }, { rock = "copper_node", weight = 20 } ]

@@ -1,0 +1,80 @@
+# Shops: open/close in minutes of day; closed_weekday 0..6 (day % 7), -1 = never closed.
+[[shop]]
+id = 0
+key = "general_store"
+name = "Hollow Fork General Store"
+location = "village"
+poi = "general_counter"
+open = 540
+close = 1020
+closed_weekday = 2
+stock = [
+  { item = "radish_seed", price = 20, seasons = ["spring"] },
+  { item = "pea_seed", price = 50, seasons = ["spring"] },
+  { item = "lettuce_seed", price = 30, seasons = ["spring"] },
+  { item = "tulip_bulb", price = 20, seasons = ["spring"] },
+  { item = "tomato_seed", price = 50, seasons = ["summer"] },
+  { item = "chili_seed", price = 40, seasons = ["summer"] },
+  { item = "melon_seed", price = 80, seasons = ["summer"] },
+  { item = "sunflower_seed", price = 40, seasons = ["summer", "autumn"] },
+  { item = "corn_seed", price = 50, seasons = ["summer", "autumn"] },
+  { item = "pumpkin_seed", price = 100, seasons = ["autumn"] },
+  { item = "beet_seed", price = 20, seasons = ["autumn"] },
+  { item = "barley_seed", price = 30, seasons = ["autumn"] },
+  { item = "grape_cutting", price = 60, seasons = ["autumn"] },
+  { item = "fertilizer", price = 30, seasons = ["spring", "summer", "autumn", "winter"] },
+  { item = "bread", price = 60, seasons = ["spring", "summer", "autumn", "winter"] },
+]
+[[shop]]
+id = 1
+key = "smithy"
+name = "Brannock's Smithy"
+location = "village"
+poi = "smithy_counter"
+open = 540
+close = 960
+closed_weekday = 5
+stock = [
+  { item = "coal", price = 150, seasons = ["spring", "summer", "autumn", "winter"] },
+  { item = "copper_ore", price = 75, seasons = ["spring", "summer", "autumn", "winter"] },
+]
+[[shop]]
+id = 2
+key = "carpenter"
+name = "Elm & Awl Carpentry"
+location = "village"
+poi = "carpenter_counter"
+open = 600
+close = 1080
+closed_weekday = 1
+stock = [
+  { item = "wood", price = 10, seasons = ["spring", "summer", "autumn", "winter"] },
+  { item = "stone", price = 20, seasons = ["spring", "summer", "autumn", "winter"] },
+]
+
+# Wandering merchant: present on these weekdays at the village stall; each visit rolls `slots` distinct items
+# from the pool (exogenous stream keyed by seed, day). price_mult_ppm applied to the item's sell price (min floor_price).
+[merchant]
+poi = "merchant_stall"
+location = "village"
+weekdays = [2, 5]
+open = 540
+close = 1200
+slots = 4
+price_mult_ppm = 3000000
+floor_price = 100
+pool = [
+  "radish_seed", "pea_seed", "tomato_seed", "melon_seed", "pumpkin_seed", "grape_cutting", "corn_seed",
+  "morel", "honeycomb", "sea_glass", "chanterelle", "wild_plum", "snowdrop", "pinecone",
+  "brown_trout", "pike", "flounder", "sea_bass", "squid", "char", "sturgeon",
+  "coal", "iron_ore", "gold_ore", "amethyst", "topaz", "hardwood", "resin", "pickles", "juice", "dried_fish",
+]
+
+# Tool upgrades at the smithy: level 1,2,3 — cost in coins + bars; takes `days` in-game days (tool unusable meanwhile).
+[upgrades]
+days = 2
+levels = [
+  { level = 1, coins = 1500, bar = "copper_bar", bars = 5 },
+  { level = 2, coins = 4000, bar = "iron_bar", bars = 5 },
+  { level = 3, coins = 9000, bar = "gold_bar", bars = 5 },
+]

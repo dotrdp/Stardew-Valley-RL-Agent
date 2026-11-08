@@ -1,0 +1,162 @@
+# Fishing without a reflex minigame. A cast takes cast_min..cast_max minutes (reduced by skill/rod).
+# Catch roll: p_catch = base_ppm + skill_ppm*fishing_level + rod_ppm*rod_level - difficulty*diff_ppm, clamped.
+# On a catch, an eligible fish (spot, season, weather, time window, min_rod) is drawn by weight; else junk/nothing.
+[fishing]
+cast_min = 12
+cast_max = 20
+cast_minus_per_level = 1
+base_ppm = 300000
+skill_ppm = 45000
+rod_ppm = 80000
+diff_ppm = 4000
+min_ppm = 60000
+max_ppm = 900000
+junk_ppm_on_miss = 300000
+energy_per_cast = 4
+xp_per_catch = 12
+
+# spots: farm_pond (0), woods_river (1), coast_sea (2), quarry_lake (3) — defined in world.toml as POIs of kind fishing_spot
+[[fish]]
+id = 0
+item = "minnow"
+spots = ["woods_river"]
+seasons = ["spring", "summer", "autumn", "winter"]
+weather = "any"
+time = [360, 1560]
+difficulty = 10
+min_rod = 0
+weight = 50
+[[fish]]
+id = 1
+item = "brown_trout"
+spots = ["woods_river"]
+seasons = ["spring", "autumn"]
+weather = "rain"
+time = [360, 1200]
+difficulty = 40
+min_rod = 0
+weight = 30
+[[fish]]
+id = 2
+item = "perch"
+spots = ["woods_river"]
+seasons = ["winter"]
+seasons_note = "winter only"
+weather = "any"
+time = [360, 1560]
+difficulty = 30
+min_rod = 0
+weight = 40
+[[fish]]
+id = 3
+item = "pike"
+spots = ["woods_river"]
+seasons = ["summer"]
+weather = "any"
+time = [360, 1080]
+difficulty = 65
+min_rod = 1
+weight = 20
+[[fish]]
+id = 4
+item = "sardine"
+spots = ["coast_sea"]
+seasons = ["spring", "summer", "autumn", "winter"]
+weather = "any"
+time = [360, 1560]
+difficulty = 15
+min_rod = 0
+weight = 50
+[[fish]]
+id = 5
+item = "mackerel"
+spots = ["coast_sea"]
+seasons = ["summer", "autumn"]
+weather = "any"
+time = [360, 1140]
+difficulty = 35
+min_rod = 0
+weight = 35
+[[fish]]
+id = 6
+item = "flounder"
+spots = ["coast_sea"]
+seasons = ["spring", "summer"]
+weather = "sun"
+time = [360, 1020]
+difficulty = 45
+min_rod = 0
+weight = 30
+[[fish]]
+id = 7
+item = "sea_bass"
+spots = ["coast_sea"]
+seasons = ["autumn", "winter"]
+weather = "any"
+time = [1080, 1560]
+difficulty = 55
+min_rod = 1
+weight = 25
+[[fish]]
+id = 8
+item = "squid"
+spots = ["coast_sea"]
+seasons = ["winter"]
+weather = "rain"
+time = [1080, 1560]
+difficulty = 60
+min_rod = 1
+weight = 25
+[[fish]]
+id = 9
+item = "carp"
+spots = ["quarry_lake", "farm_pond"]
+seasons = ["spring", "summer", "autumn", "winter"]
+weather = "any"
+time = [360, 1560]
+difficulty = 12
+min_rod = 0
+weight = 50
+[[fish]]
+id = 10
+item = "bluegill"
+spots = ["quarry_lake"]
+seasons = ["spring", "summer"]
+weather = "any"
+time = [360, 1560]
+difficulty = 30
+min_rod = 0
+weight = 40
+[[fish]]
+id = 11
+item = "char"
+spots = ["quarry_lake"]
+seasons = ["autumn", "winter"]
+weather = "rain"
+time = [360, 1560]
+difficulty = 55
+min_rod = 1
+weight = 30
+[[fish]]
+id = 12
+item = "sturgeon"
+spots = ["quarry_lake"]
+seasons = ["summer", "winter"]
+weather = "any"
+time = [360, 1140]
+difficulty = 80
+min_rod = 2
+weight = 15
+[[fish]]
+id = 13
+item = "bullhead"
+spots = ["farm_pond"]
+seasons = ["spring", "summer", "autumn", "winter"]
+weather = "any"
+time = [360, 1560]
+difficulty = 15
+min_rod = 0
+weight = 50
+
+[junk]
+items = ["driftwood", "old_boot"]
