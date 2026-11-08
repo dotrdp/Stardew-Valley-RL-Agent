@@ -44,13 +44,29 @@ impl GameState {
         let tools: Vec<String> = Tool::ALL
             .iter()
             .map(|t| {
-                let up = if p.upgrading.map(|(u, _)| u == *t).unwrap_or(false) { "*" } else { "" };
+                let up = if p.upgrading.map(|(u, _)| u == *t).unwrap_or(false) {
+                    "*"
+                } else {
+                    ""
+                };
                 format!("{}{}{}", t.name(), p.tool_level[*t as usize], up)
             })
             .collect();
-        let skills: Vec<String> = Skill::ALL.iter().map(|k| format!("{} {}", k.name(), self.level(*k))).collect();
-        let _ = writeln!(s, "Tools: {}. Skills: {}.", tools.join(" "), skills.join(", "));
-        let feats: Vec<&str> = Feature::ALL.iter().filter(|f| self.has_feature(**f)).map(|f| f.name()).collect();
+        let skills: Vec<String> = Skill::ALL
+            .iter()
+            .map(|k| format!("{} {}", k.name(), self.level(*k)))
+            .collect();
+        let _ = writeln!(
+            s,
+            "Tools: {}. Skills: {}.",
+            tools.join(" "),
+            skills.join(", ")
+        );
+        let feats: Vec<&str> = Feature::ALL
+            .iter()
+            .filter(|f| self.has_feature(**f))
+            .map(|f| f.name())
+            .collect();
         if !feats.is_empty() {
             let _ = writeln!(s, "Unlocked: {}.", feats.join(", "));
         }
@@ -66,8 +82,19 @@ impl GameState {
             }
         }
         inv.sort();
-        let inv_s: Vec<String> = inv.iter().map(|(i, n)| format!("{} x{}", c.items[*i as usize].key, n)).collect();
-        let _ = writeln!(s, "Bag: {}.", if inv_s.is_empty() { "empty".to_string() } else { inv_s.join(", ") });
+        let inv_s: Vec<String> = inv
+            .iter()
+            .map(|(i, n)| format!("{} x{}", c.items[*i as usize].key, n))
+            .collect();
+        let _ = writeln!(
+            s,
+            "Bag: {}.",
+            if inv_s.is_empty() {
+                "empty".to_string()
+            } else {
+                inv_s.join(", ")
+            }
+        );
         // farm
         let mut crops: Vec<(u8, u32, u32, u32)> = Vec::new(); // crop, planted, ready, unwatered
         for l in [c.world.start_location, c.loc_id("greenhouse")] {
@@ -93,7 +120,12 @@ impl GameState {
             crops.sort();
             let cs: Vec<String> = crops
                 .iter()
-                .map(|(cr, n, r, u)| format!("{} {} ({} ready, {} dry)", c.crops[*cr as usize].key, n, r, u))
+                .map(|(cr, n, r, u)| {
+                    format!(
+                        "{} {} ({} ready, {} dry)",
+                        c.crops[*cr as usize].key, n, r, u
+                    )
+                })
                 .collect();
             let _ = writeln!(s, "Crops: {}.", cs.join(", "));
         }
@@ -106,7 +138,11 @@ impl GameState {
                     if m.has_output {
                         format!("{k}: {} ready", c.items[m.output as usize].key)
                     } else if m.ready_at != 0 {
-                        format!("{k}: {} in {}m", c.items[m.output as usize].key, m.ready_at.saturating_sub(self.abs_minute))
+                        format!(
+                            "{k}: {} in {}m",
+                            c.items[m.output as usize].key,
+                            m.ready_at.saturating_sub(self.abs_minute)
+                        )
                     } else {
                         format!("{k}: idle")
                     }
@@ -123,7 +159,11 @@ impl GameState {
             let _ = writeln!(s, "Merchant in Hollow Fork today: {}.", st.join(", "));
         }
         if self.player.loc == c.loc_id("mines") {
-            let _ = writeln!(s, "Mine floor {} (deepest {}).", self.mine.floor, self.mine.deepest);
+            let _ = writeln!(
+                s,
+                "Mine floor {} (deepest {}).",
+                self.mine.floor, self.mine.deepest
+            );
         } else if self.mine.deepest > 0 {
             let _ = writeln!(s, "Deepest mine floor reached: {}.", self.mine.deepest);
         }
@@ -161,10 +201,23 @@ impl GameState {
                     .map(|(k, i)| {
                         let it = r.slot_item[i];
                         let mark = if r.slot_filled[i] { "✓" } else { "" };
-                        format!("{}{} x{} (have {})", mark, c.items[it as usize].key, req.slots[k].count, self.count(it))
+                        format!(
+                            "{}{} x{} (have {})",
+                            mark,
+                            c.items[it as usize].key,
+                            req.slots[k].count,
+                            self.count(it)
+                        )
                     })
                     .collect();
-                let _ = writeln!(s, "  * {} — {}/{} of: {}", req.name, self.filled_in(req.id), req.need, items.join(", "));
+                let _ = writeln!(
+                    s,
+                    "  * {} — {}/{} of: {}",
+                    req.name,
+                    self.filled_in(req.id),
+                    req.need,
+                    items.join(", ")
+                );
             }
         }
         s

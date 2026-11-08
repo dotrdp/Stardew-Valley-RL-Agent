@@ -10,7 +10,6 @@
 
 #![forbid(unsafe_code)]
 
-
 pub mod content;
 pub mod hash;
 pub mod rng;
@@ -18,13 +17,13 @@ pub mod rng;
 /// Simulation version. Bump on any change to dynamics, controllers, pathfinding, RNG draw order
 /// or observation encoding (goldens must be re-blessed together with a bump).
 pub const SIM_VERSION: u32 = 1;
-pub mod world;
-pub mod state;
 pub mod action;
-pub mod nav;
-pub mod macro_action;
-pub mod obs;
 pub mod env;
+pub mod macro_action;
+pub mod nav;
+pub mod obs;
+pub mod state;
+pub mod world;
 pub use env::{ActionMode, Env, EnvConfig, RemixPartition, RestorationMode, RewardConfig, Step};
 pub mod text;
 pub mod vec_env;

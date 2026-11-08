@@ -83,18 +83,32 @@ pub fn episode_seed(base: u64, i: usize, k: u32, range: (u64, u64)) -> u64 {
 impl VecEnv {
     /// `n` envs whose episodes draw seeds from `seed_range` (auto-reset on).
     pub fn new(cfg: EnvConfig, n: usize, num_threads: usize, seed_range: (u64, u64)) -> VecEnv {
-        let seeds: Vec<u64> = (0..n).map(|i| episode_seed(cfg.seed, i, 0, seed_range)).collect();
+        let seeds: Vec<u64> = (0..n)
+            .map(|i| episode_seed(cfg.seed, i, 0, seed_range))
+            .collect();
         Self::build(cfg, seeds, num_threads, seed_range, true)
     }
     /// Evaluation mode: one episode per given seed, no auto-reset.
     pub fn with_seeds(cfg: EnvConfig, seeds: &[u64], num_threads: usize) -> VecEnv {
         Self::build(cfg, seeds.to_vec(), num_threads, (0, u64::MAX), false)
     }
-    fn build(cfg: EnvConfig, seeds: Vec<u64>, num_threads: usize, seed_range: (u64, u64), auto_reset: bool) -> VecEnv {
+    fn build(
+        cfg: EnvConfig,
+        seeds: Vec<u64>,
+        num_threads: usize,
+        seed_range: (u64, u64),
+        auto_reset: bool,
+    ) -> VecEnv {
         let n = seeds.len();
         #[cfg(feature = "parallel")]
         let pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(if num_threads == 0 { std::thread::available_parallelism().map(|x| x.get()).unwrap_or(4) } else { num_threads })
+            .num_threads(if num_threads == 0 {
+                std::thread::available_parallelism()
+                    .map(|x| x.get())
+                    .unwrap_or(4)
+            } else {
+                num_threads
+            })
             .build()
             .expect("thread pool");
         #[cfg(not(feature = "parallel"))]
@@ -145,7 +159,13 @@ impl VecEnv {
         #[cfg(feature = "parallel")]
         {
             use rayon::prelude::*;
-            self.pool.install(|| self.envs.par_iter().enumerate().map(|(i, e)| f(i, e)).collect())
+            self.pool.install(|| {
+                self.envs
+                    .par_iter()
+                    .enumerate()
+                    .map(|(i, e)| f(i, e))
+                    .collect()
+            })
         }
         #[cfg(not(feature = "parallel"))]
         {
@@ -198,7 +218,8 @@ impl VecEnv {
         let range = self.seed_range;
         let out = &mut self.out;
         // split output buffers into per-env chunks
-        let work = |(i, ((env, ep_idx), seed)): (usize, ((&mut Env, &mut u32), &mut u64)), o: RowOut<'_>| {
+        let work = |(i, ((env, ep_idx), seed)): (usize, ((&mut Env, &mut u32), &mut u64)),
+                    o: RowOut<'_>| {
             if env.is_done() && !auto {
                 // eval mode: finished envs are frozen
                 o.obs.copy_from_slice(env.obs_global());
@@ -244,12 +265,22 @@ impl VecEnv {
             }
         };
         let rows = rows(out, n, g, a, gl);
-        let items = self.envs.iter_mut().zip(self.episode_idx.iter_mut()).zip(self.seeds.iter_mut()).enumerate();
+        let items = self
+            .envs
+            .iter_mut()
+            .zip(self.episode_idx.iter_mut())
+            .zip(self.seeds.iter_mut())
+            .enumerate();
         #[cfg(feature = "parallel")]
         {
             use rayon::prelude::*;
             let zipped: Vec<_> = items.zip(rows).collect();
-            self.pool.install(|| zipped.into_par_iter().with_max_len(1).for_each(|(it, o)| work(it, o)));
+            self.pool.install(|| {
+                zipped
+                    .into_par_iter()
+                    .with_max_len(1)
+                    .for_each(|(it, o)| work(it, o))
+            });
         }
         #[cfg(not(feature = "parallel"))]
         for (it, o) in items.zip(rows) {
@@ -285,7 +316,11 @@ struct RowOut<'a> {
 fn rows(o: &mut VecOut, n: usize, g: usize, a: usize, gl: usize) -> Vec<RowOut<'_>> {
     let mut obs = o.obs.chunks_mut(g.max(1));
     let mut mask = o.mask.chunks_mut(a.max(1));
-    let mut grid: Vec<&mut [u8]> = if gl > 0 { o.grid.chunks_mut(gl).collect() } else { (0..n).map(|_| <&mut [u8]>::default()).collect() };
+    let mut grid: Vec<&mut [u8]> = if gl > 0 {
+        o.grid.chunks_mut(gl).collect()
+    } else {
+        (0..n).map(|_| <&mut [u8]>::default()).collect()
+    };
     let mut fo = o.final_obs.chunks_mut(g.max(1));
     let mut fm = o.final_mask.chunks_mut(a.max(1));
     let mut r = o.reward.iter_mut();

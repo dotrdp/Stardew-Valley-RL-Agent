@@ -219,7 +219,9 @@ impl Env {
     fn potential(&self) -> f32 {
         let r = &self.cfg.reward;
         let s = &self.state.restoration;
-        r.phi_slot * s.slots_filled as f32 + r.phi_request * s.requests_done as f32 + r.phi_wing * s.wings_done as f32
+        r.phi_slot * s.slots_filled as f32
+            + r.phi_request * s.requests_done as f32
+            + r.phi_wing * s.wings_done as f32
     }
 
     fn refresh(&mut self) {
@@ -228,10 +230,15 @@ impl Env {
         self.obs_cache = obs;
         let mut mask = std::mem::take(&mut self.mask_cache);
         match self.cfg.action_mode {
-            ActionMode::Macro => self.state.macro_mask(&self.nav, self.cfg.max_decisions_per_day, &mut mask),
+            ActionMode::Macro => {
+                self.state
+                    .macro_mask(&self.nav, self.cfg.max_decisions_per_day, &mut mask)
+            }
             ActionMode::Primitive => {
                 for (i, m) in mask.iter_mut().enumerate() {
-                    *m = Primitive::from_id(i as u32).map(|p| self.state.primitive_valid(p)).unwrap_or(false);
+                    *m = Primitive::from_id(i as u32)
+                        .map(|p| self.state.primitive_valid(p))
+                        .unwrap_or(false);
                 }
             }
         }
@@ -266,21 +273,38 @@ impl Env {
             ActionMode::Macro => {
                 let table = macro_actions();
                 let m: Macro = table.get(action as usize).copied().unwrap_or(Macro::Wait30);
-                let r = run_macro(&mut self.state, &self.nav, m, self.cfg.macro_max_minutes as u32, self.cfg.max_decisions_per_day);
+                let r = run_macro(
+                    &mut self.state,
+                    &self.nav,
+                    m,
+                    self.cfg.macro_max_minutes as u32,
+                    self.cfg.max_decisions_per_day,
+                );
                 (r.ticks, r.day_ends, r.outcome)
             }
             ActionMode::Primitive => {
                 let p = Primitive::from_id(action).unwrap_or(Primitive::Wait);
                 let valid = self.state.primitive_valid(p);
                 let r = self.state.step_primitive(p);
-                (r.ticks, r.day_ends, if !valid { Outcome::Masked } else if r.ok { Outcome::Done } else { Outcome::Failed })
+                (
+                    r.ticks,
+                    r.day_ends,
+                    if !valid {
+                        Outcome::Masked
+                    } else if r.ok {
+                        Outcome::Done
+                    } else {
+                        Outcome::Failed
+                    },
+                )
             }
         };
         let ticks = self.state.abs_minute - abs0;
         let day_ends = (self.state.day - day0) as u8;
         self.stats.decisions += 1;
         let terminated = self.state.complete;
-        let truncated = !terminated && (self.state.day >= self.cfg.max_days || self.stats.decisions >= self.cfg.max_steps);
+        let truncated = !terminated
+            && (self.state.day >= self.cfg.max_days || self.stats.decisions >= self.cfg.max_steps);
         let rc = self.cfg.reward;
         let mut reward = rc.per_day * day_ends as f32;
         if terminated {
@@ -366,17 +390,27 @@ impl Env {
     /// Names of the currently valid actions.
     pub fn valid_action_names(&self) -> Vec<String> {
         let names = self.action_names();
-        names.into_iter().zip(self.mask_cache.iter()).filter(|(_, m)| **m).map(|(n, _)| n).collect()
+        names
+            .into_iter()
+            .zip(self.mask_cache.iter())
+            .filter(|(_, m)| **m)
+            .map(|(n, _)| n)
+            .collect()
     }
     /// Action id by name (exact match).
     pub fn action_id(&self, name: &str) -> Option<u32> {
-        self.action_names().iter().position(|n| n == name).map(|p| p as u32)
+        self.action_names()
+            .iter()
+            .position(|n| n == name)
+            .map(|p| p as u32)
     }
     /// Action names in the configured mode.
     pub fn action_names(&self) -> Vec<String> {
         match self.cfg.action_mode {
             ActionMode::Macro => macro_actions().iter().map(|m| m.name()).collect(),
-            ActionMode::Primitive => (0..NUM_PRIMITIVES as u32).map(|i| Primitive::from_id(i).unwrap().name()).collect(),
+            ActionMode::Primitive => (0..NUM_PRIMITIVES as u32)
+                .map(|i| Primitive::from_id(i).unwrap().name())
+                .collect(),
         }
     }
 }

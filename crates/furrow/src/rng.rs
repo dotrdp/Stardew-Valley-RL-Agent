@@ -172,7 +172,12 @@ mod tests {
         // PCG minimal C library's `pcg32-demo` ("Round 1").
         let mut g = Pcg32::new(42, 54);
         let expected: [u32; 6] = [
-            0xa15c_02b7, 0x7b47_f409, 0xba1d_3330, 0x83d2_f293, 0xbfa4_784b, 0xcbed_606e,
+            0xa15c_02b7,
+            0x7b47_f409,
+            0xba1d_3330,
+            0x83d2_f293,
+            0xbfa4_784b,
+            0xcbed_606e,
         ];
         for e in expected {
             assert_eq!(g.next_u32(), e);

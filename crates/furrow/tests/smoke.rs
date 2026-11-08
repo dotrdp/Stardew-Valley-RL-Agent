@@ -4,7 +4,12 @@ use furrow::{ActionMode, Env, EnvConfig};
 fn random_valid(env: &Env, rng: &mut Pcg32) -> u32 {
     let mask = env.action_mask();
     let n = mask.iter().filter(|m| **m).count();
-    assert!(n > 0, "empty mask at day {} minute {}", env.state().day, env.state().minute);
+    assert!(
+        n > 0,
+        "empty mask at day {} minute {}",
+        env.state().day,
+        env.state().minute
+    );
     let mut k = rng.below(n as u32) as usize;
     for (i, m) in mask.iter().enumerate() {
         if *m {
@@ -18,7 +23,11 @@ fn random_valid(env: &Env, rng: &mut Pcg32) -> u32 {
 }
 
 fn run(mode: ActionMode, seed: u64, steps: usize) -> (u64, u16, f32, u32) {
-    let mut env = Env::new(EnvConfig { seed, action_mode: mode, ..Default::default() });
+    let mut env = Env::new(EnvConfig {
+        seed,
+        action_mode: mode,
+        ..Default::default()
+    });
     let mut rng = Pcg32::from_seed(seed ^ 0x55);
     let mut last_abs = env.state().abs_minute;
     let mut ret = 0.0;
@@ -75,11 +84,17 @@ fn obs_and_mask_have_expected_sizes() {
 #[test]
 fn vec_env_matches_serial_envs() {
     use furrow::VecEnv;
-    let cfg = EnvConfig { seed: 9, ..Default::default() };
+    let cfg = EnvConfig {
+        seed: 9,
+        ..Default::default()
+    };
     let n = 6;
     let mut v = VecEnv::new(cfg, n, 4, (0, 1000));
     let seeds = v.seeds().to_vec();
-    let mut serial: Vec<Env> = seeds.iter().map(|s| Env::new(EnvConfig { seed: *s, ..cfg })).collect();
+    let mut serial: Vec<Env> = seeds
+        .iter()
+        .map(|s| Env::new(EnvConfig { seed: *s, ..cfg }))
+        .collect();
     let mut rng = Pcg32::from_seed(1);
     let a = serial[0].num_actions();
     for _ in 0..200 {
@@ -91,7 +106,10 @@ fn vec_env_matches_serial_envs() {
             if s.terminated || s.truncated {
                 break;
             }
-            assert_eq!(&v.out.obs[i * e.obs_global().len()..(i + 1) * e.obs_global().len()], e.obs_global());
+            assert_eq!(
+                &v.out.obs[i * e.obs_global().len()..(i + 1) * e.obs_global().len()],
+                e.obs_global()
+            );
             assert_eq!(&v.out.mask[i * a..(i + 1) * a], e.action_mask());
         }
     }
@@ -99,8 +117,14 @@ fn vec_env_matches_serial_envs() {
 
 #[test]
 fn describe_and_render_are_nonempty_and_deterministic() {
-    let e1 = Env::new(EnvConfig { seed: 4, ..Default::default() });
-    let e2 = Env::new(EnvConfig { seed: 4, ..Default::default() });
+    let e1 = Env::new(EnvConfig {
+        seed: 4,
+        ..Default::default()
+    });
+    let e2 = Env::new(EnvConfig {
+        seed: 4,
+        ..Default::default()
+    });
     assert_eq!(e1.describe(), e2.describe());
     assert!(e1.describe().contains("Old Mill"));
     assert!(e1.render_ascii().contains('@'));

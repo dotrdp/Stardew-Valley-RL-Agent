@@ -66,9 +66,20 @@ pub fn npy_header(dtype: DType, shape: &[usize]) -> Vec<u8> {
     let shape_s = match shape.len() {
         0 => "()".to_string(),
         1 => format!("({},)", shape[0]),
-        _ => format!("({})", shape.iter().map(|d| d.to_string()).collect::<Vec<_>>().join(", ")),
+        _ => format!(
+            "({})",
+            shape
+                .iter()
+                .map(|d| d.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        ),
     };
-    let dict = format!("{{'descr': '{}', 'fortran_order': False, 'shape': {}, }}", dtype.descr(), shape_s);
+    let dict = format!(
+        "{{'descr': '{}', 'fortran_order': False, 'shape': {}, }}",
+        dtype.descr(),
+        shape_s
+    );
     let pre = 10; // magic(6) + version(2) + header_len(2)
     let mut total = pre + dict.len() + 1;
     total = total.div_ceil(64) * 64;
@@ -88,7 +99,16 @@ pub fn npy_header(dtype: DType, shape: &[usize]) -> Vec<u8> {
 pub fn write_npy(path: &Path, dtype: DType, shape: &[usize], data: &[u8]) -> io::Result<()> {
     let expect: usize = shape.iter().product::<usize>() * dtype.size();
     if expect != data.len() {
-        return Err(io::Error::new(io::ErrorKind::InvalidInput, format!("npy {}: {} bytes for shape {:?} ({})", path.display(), data.len(), shape, expect)));
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!(
+                "npy {}: {} bytes for shape {:?} ({})",
+                path.display(),
+                data.len(),
+                shape,
+                expect
+            ),
+        ));
     }
     let mut f = BufWriter::new(File::create(path)?);
     f.write_all(&npy_header(dtype, shape))?;
@@ -100,17 +120,42 @@ pub fn write_npy(path: &Path, dtype: DType, shape: &[usize], data: &[u8]) -> io:
 /// Read an `.npy` file's header: `(descr, shape, data_offset)`.
 pub fn read_npy_header(bytes: &[u8]) -> io::Result<(String, Vec<usize>, usize)> {
     if bytes.len() < 10 || &bytes[..6] != b"\x93NUMPY" {
-        return Err(io::Error::new(io::ErrorKind::InvalidData, "not an npy file"));
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "not an npy file",
+        ));
     }
     let (hlen, pre) = match bytes[6] {
         1 => (u16::from_le_bytes([bytes[8], bytes[9]]) as usize, 10),
-        2 | 3 => (u32::from_le_bytes([bytes[8], bytes[9], bytes[10], bytes[11]]) as usize, 12),
-        v => return Err(io::Error::new(io::ErrorKind::InvalidData, format!("npy version {v}"))),
+        2 | 3 => (
+            u32::from_le_bytes([bytes[8], bytes[9], bytes[10], bytes[11]]) as usize,
+            12,
+        ),
+        v => {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("npy version {v}"),
+            ))
+        }
     };
-    let header = std::str::from_utf8(&bytes[pre..pre + hlen]).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-    let descr = header.split("'descr':").nth(1).and_then(|s| s.split('\'').nth(1)).unwrap_or("").to_string();
-    let shape_s = header.split("'shape':").nth(1).and_then(|s| s.split('(').nth(1)).and_then(|s| s.split(')').next()).unwrap_or("");
-    let shape = shape_s.split(',').filter_map(|x| x.trim().parse().ok()).collect();
+    let header = std::str::from_utf8(&bytes[pre..pre + hlen])
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+    let descr = header
+        .split("'descr':")
+        .nth(1)
+        .and_then(|s| s.split('\'').nth(1))
+        .unwrap_or("")
+        .to_string();
+    let shape_s = header
+        .split("'shape':")
+        .nth(1)
+        .and_then(|s| s.split('(').nth(1))
+        .and_then(|s| s.split(')').next())
+        .unwrap_or("");
+    let shape = shape_s
+        .split(',')
+        .filter_map(|x| x.trim().parse().ok())
+        .collect();
     Ok((descr, shape, pre + hlen))
 }
 
@@ -129,7 +174,9 @@ pub fn pack_mask_le(mask: &[bool], out: &mut Vec<u8>) {
 
 /// Unpack a little-endian packed mask.
 pub fn unpack_mask_le(bytes: &[u8], len: usize) -> Vec<bool> {
-    (0..len).map(|i| bytes[i / 8] & (1 << (i % 8)) != 0).collect()
+    (0..len)
+        .map(|i| bytes[i / 8] & (1 << (i % 8)) != 0)
+        .collect()
 }
 
 /// One episode's per-step columns.
@@ -170,7 +217,11 @@ pub struct EpisodeBuf {
 impl EpisodeBuf {
     /// New empty episode buffer.
     pub fn new(g: usize, a: usize) -> Self {
-        EpisodeBuf { g, a, ..Default::default() }
+        EpisodeBuf {
+            g,
+            a,
+            ..Default::default()
+        }
     }
     /// Number of steps.
     pub fn len(&self) -> usize {
@@ -200,7 +251,8 @@ impl EpisodeBuf {
         progress: [u16; 3],
         intent: u8,
     ) {
-        self.obs.extend(obs.iter().map(|x| f16::from_f32(*x).to_bits()));
+        self.obs
+            .extend(obs.iter().map(|x| f16::from_f32(*x).to_bits()));
         pack_mask_le(mask, &mut self.mask);
         self.action.push(action);
         self.expert_action.push(expert_action);
@@ -232,7 +284,7 @@ macro_rules! le {
 le!(u16, u32, i32, f32);
 
 fn as_bytes<T: LeBytes>(v: &[T]) -> Vec<u8> {
-    let mut out = Vec::with_capacity(v.len() * std::mem::size_of::<T>());
+    let mut out = Vec::with_capacity(std::mem::size_of_val(v));
     for x in v {
         x.put(&mut out);
     }
@@ -261,7 +313,10 @@ impl DatasetWriter {
         fs::create_dir_all(dir.join("shards"))?;
         fs::create_dir_all(dir.join("final_obs"))?;
         if dir.join("episodes.jsonl").exists() {
-            return Err(io::Error::new(io::ErrorKind::AlreadyExists, format!("{} already holds a dataset", dir.display())));
+            return Err(io::Error::new(
+                io::ErrorKind::AlreadyExists,
+                format!("{} already holds a dataset", dir.display()),
+            ));
         }
         let mut meta = meta.clone();
         if let Some(m) = meta.as_object_mut() {
@@ -272,7 +327,12 @@ impl DatasetWriter {
             m.insert("mask_packing".into(), "little".into());
         }
         fs::write(dir.join("meta.json"), serde_json::to_vec_pretty(&meta)?)?;
-        let episodes_file = BufWriter::new(OpenOptions::new().create(true).append(true).open(dir.join("episodes.jsonl"))?);
+        let episodes_file = BufWriter::new(
+            OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(dir.join("episodes.jsonl"))?,
+        );
         Ok(DatasetWriter {
             dir: dir.to_path_buf(),
             writer: "w0".into(),
@@ -339,22 +399,97 @@ impl DatasetWriter {
             start += e.len();
             self.final_obs.extend_from_slice(&e.final_obs);
         }
-        write_npy(&tmp.join("obs_global.npy"), DType::F16, &[t, g], &as_bytes(&col!(obs, u16)))?;
-        write_npy(&tmp.join("action.npy"), DType::I32, &[t], &as_bytes(&col!(action, i32)))?;
-        write_npy(&tmp.join("expert_action.npy"), DType::I32, &[t], &as_bytes(&col!(expert_action, i32)))?;
+        write_npy(
+            &tmp.join("obs_global.npy"),
+            DType::F16,
+            &[t, g],
+            &as_bytes(&col!(obs, u16)),
+        )?;
+        write_npy(
+            &tmp.join("action.npy"),
+            DType::I32,
+            &[t],
+            &as_bytes(&col!(action, i32)),
+        )?;
+        write_npy(
+            &tmp.join("expert_action.npy"),
+            DType::I32,
+            &[t],
+            &as_bytes(&col!(expert_action, i32)),
+        )?;
         write_npy(&tmp.join("actor.npy"), DType::U8, &[t], &col!(actor, u8))?;
-        write_npy(&tmp.join("action_mask.npy"), DType::U8, &[t, mb], &col!(mask, u8))?;
-        write_npy(&tmp.join("reward.npy"), DType::F32, &[t], &as_bytes(&col!(reward, f32)))?;
-        write_npy(&tmp.join("terminated.npy"), DType::U8, &[t], &col!(terminated, u8))?;
-        write_npy(&tmp.join("truncated.npy"), DType::U8, &[t], &col!(truncated, u8))?;
-        write_npy(&tmp.join("day_ends.npy"), DType::U8, &[t], &col!(day_ends, u8))?;
-        write_npy(&tmp.join("ticks.npy"), DType::U32, &[t], &as_bytes(&col!(ticks, u32)))?;
-        write_npy(&tmp.join("outcome.npy"), DType::U8, &[t], &col!(outcome, u8))?;
-        write_npy(&tmp.join("episode.npy"), DType::U32, &[t], &as_bytes(&episode_col))?;
-        write_npy(&tmp.join("day.npy"), DType::U16, &[t], &as_bytes(&col!(day, u16)))?;
-        write_npy(&tmp.join("minute.npy"), DType::U16, &[t], &as_bytes(&col!(minute, u16)))?;
-        write_npy(&tmp.join("progress.npy"), DType::U16, &[t, 3], &as_bytes(&col!(progress, u16)))?;
-        write_npy(&tmp.join("expert_intent.npy"), DType::U8, &[t], &col!(intent, u8))?;
+        write_npy(
+            &tmp.join("action_mask.npy"),
+            DType::U8,
+            &[t, mb],
+            &col!(mask, u8),
+        )?;
+        write_npy(
+            &tmp.join("reward.npy"),
+            DType::F32,
+            &[t],
+            &as_bytes(&col!(reward, f32)),
+        )?;
+        write_npy(
+            &tmp.join("terminated.npy"),
+            DType::U8,
+            &[t],
+            &col!(terminated, u8),
+        )?;
+        write_npy(
+            &tmp.join("truncated.npy"),
+            DType::U8,
+            &[t],
+            &col!(truncated, u8),
+        )?;
+        write_npy(
+            &tmp.join("day_ends.npy"),
+            DType::U8,
+            &[t],
+            &col!(day_ends, u8),
+        )?;
+        write_npy(
+            &tmp.join("ticks.npy"),
+            DType::U32,
+            &[t],
+            &as_bytes(&col!(ticks, u32)),
+        )?;
+        write_npy(
+            &tmp.join("outcome.npy"),
+            DType::U8,
+            &[t],
+            &col!(outcome, u8),
+        )?;
+        write_npy(
+            &tmp.join("episode.npy"),
+            DType::U32,
+            &[t],
+            &as_bytes(&episode_col),
+        )?;
+        write_npy(
+            &tmp.join("day.npy"),
+            DType::U16,
+            &[t],
+            &as_bytes(&col!(day, u16)),
+        )?;
+        write_npy(
+            &tmp.join("minute.npy"),
+            DType::U16,
+            &[t],
+            &as_bytes(&col!(minute, u16)),
+        )?;
+        write_npy(
+            &tmp.join("progress.npy"),
+            DType::U16,
+            &[t, 3],
+            &as_bytes(&col!(progress, u16)),
+        )?;
+        write_npy(
+            &tmp.join("expert_intent.npy"),
+            DType::U8,
+            &[t],
+            &col!(intent, u8),
+        )?;
         fs::rename(&tmp, &fin)?;
         for l in lines {
             writeln!(self.episodes_file, "{l}")?;
@@ -369,7 +504,12 @@ impl DatasetWriter {
     pub fn finish(mut self) -> io::Result<(u64, u64)> {
         self.flush_shard()?;
         let e = self.next_episode as usize;
-        write_npy(&self.dir.join("final_obs").join("global.npy"), DType::F32, &[e, self.g], &as_bytes(&self.final_obs))?;
+        write_npy(
+            &self.dir.join("final_obs").join("global.npy"),
+            DType::F32,
+            &[e, self.g],
+            &as_bytes(&self.final_obs),
+        )?;
         Ok((self.next_episode, self.total_steps))
     }
 }
@@ -402,12 +542,30 @@ mod tests {
     #[test]
     fn writer_round_trip() {
         let dir = tempfile::tempdir().unwrap();
-        let mut w = DatasetWriter::create(dir.path(), &serde_json::json!({"env": "test"}), 4, 10).unwrap().with_shard_cap(200);
+        let mut w = DatasetWriter::create(dir.path(), &serde_json::json!({"env": "test"}), 4, 10)
+            .unwrap()
+            .with_shard_cap(200);
         for ep in 0..3 {
             let mut e = EpisodeBuf::new(4, 10);
             for t in 0..5 {
                 let mask: Vec<bool> = (0..10).map(|i| (i + t) % 2 == 0).collect();
-                e.push(&[0.5, 1.0, 0.25, t as f32], &mask, t as i32, t as i32, 0, -1.0, t == 4, false, 1, 10, 0, t as u16, 360, [1, 2, 3], 0);
+                e.push(
+                    &[0.5, 1.0, 0.25, t as f32],
+                    &mask,
+                    t,
+                    t,
+                    0,
+                    -1.0,
+                    t == 4,
+                    false,
+                    1,
+                    10,
+                    0,
+                    t as u16,
+                    360,
+                    [1, 2, 3],
+                    0,
+                );
             }
             e.final_obs = vec![ep as f32; 4];
             e.seed = ep;
@@ -417,7 +575,9 @@ mod tests {
         assert_eq!((eps, steps), (3, 15));
         let lines = std::fs::read_to_string(dir.path().join("episodes.jsonl")).unwrap();
         assert_eq!(lines.lines().count(), 3);
-        let shards: Vec<_> = std::fs::read_dir(dir.path().join("shards")).unwrap().collect();
+        let shards: Vec<_> = std::fs::read_dir(dir.path().join("shards"))
+            .unwrap()
+            .collect();
         assert!(shards.len() >= 2, "shard cap should split");
         let bytes = std::fs::read(dir.path().join("final_obs/global.npy")).unwrap();
         let (_, shape, off) = read_npy_header(&bytes).unwrap();

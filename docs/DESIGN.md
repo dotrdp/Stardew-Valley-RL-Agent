@@ -1,5 +1,26 @@
 # Design contract — speedrun agents learned from trajectories
 
+> **Implementation status (2026-11-08).** Implemented: content (`crates/furrow/data`), sim core,
+> macro + primitive actions and masks, observations (777 dims), per-day discounted shaped reward,
+> `Env`/`VecEnv` (rayon, same-step auto-reset, deterministic seed schedule), `describe()`/ASCII
+> render, the scripted expert (100% success on test seeds), `furrow-traj/2` writer, the
+> episode-parallel generator, PyO3 bindings, Gymnasium wrappers, BC / time-conditioned BC /
+> DAgger / PPO finetuning, the evaluation protocol and the report stage. Deviations from the
+> contract below, all deliberate for v1:
+> - Content is parsed once at runtime (`OnceLock`), not compiled by `build.rs`;
+>   `OBS_GLOBAL_DIM` is `furrow::obs::obs_global_dim()`. Ids are still explicit and dense.
+> - The Python `Env.step` returns the Gymnasium 5-tuple `(obs, reward, terminated, truncated,
+>   info)` and accepts action ids **or names**; `VecEnv.step` likewise (info carries
+>   `final_obs`/`_final_obs`, `day_ends`, `ticks`, `outcome`, episode stats).
+> - The expert computes its features from `GameState` accessors that mirror observation
+>   features (no `ExpertView` decoder yet); `cost_to_go`/rollout-improved expert not yet built.
+> - Datasets store observations directly (replay/materialize tools from action logs are future
+>   work); columns are as written by `furrow-traj` (see its crate docs).
+> - Learners use a flat masked head (entity-centric head, sequence transformer and IQL are
+>   future work). Lints (`clippy.toml`), golden-trajectory files and the allocation test are
+>   future work; determinism is covered by tests.
+> - The SMAPI bridge (`mod/RLBridge`, `crates/sdv-bridge`) is designed (§7) but not implemented.
+
 Status: **v2.1 contract** = v1 + the RL critique (`docs/reviews/2026-11-08-rl-critique.md`) +
 the Rust-systems critique (`docs/reviews/2026-11-08-systems-critique.md`). Every crate/package in
 this repo is implemented against this document. If an implementation needs to deviate, update

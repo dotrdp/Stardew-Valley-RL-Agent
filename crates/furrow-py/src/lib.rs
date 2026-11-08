@@ -5,7 +5,7 @@
 //! Actions may be given as ids or names (e.g. `"Plant(radish,farm)"`). Long-running calls release
 //! the GIL.
 
-use numpy::{PyArray1, PyArrayLike1, PyArrayMethods, AllowTypeChange};
+use numpy::{AllowTypeChange, PyArray1, PyArrayLike1, PyArrayMethods};
 use pyo3::exceptions::{PyKeyError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
@@ -14,8 +14,13 @@ use furrow::{ActionMode, Env, EnvConfig, RemixPartition, RestorationMode, Reward
 use furrow_expert::{Expert, ExpertConfig};
 
 fn parse_cfg(seed: u64, kw: Option<&Bound<'_, PyDict>>) -> PyResult<EnvConfig> {
-    let mut cfg = EnvConfig { seed, ..Default::default() };
-    let Some(kw) = kw else { return Ok(cfg.normalized()) };
+    let mut cfg = EnvConfig {
+        seed,
+        ..Default::default()
+    };
+    let Some(kw) = kw else {
+        return Ok(cfg.normalized());
+    };
     for (k, v) in kw.iter() {
         let key: String = k.extract()?;
         match key.as_str() {
@@ -27,21 +32,33 @@ fn parse_cfg(seed: u64, kw: Option<&Bound<'_, PyDict>>) -> PyResult<EnvConfig> {
                         cfg.grid = true;
                         ActionMode::Primitive
                     }
-                    o => return Err(PyValueError::new_err(format!("action_mode must be 'macro' or 'primitive', got {o}"))),
+                    o => {
+                        return Err(PyValueError::new_err(format!(
+                            "action_mode must be 'macro' or 'primitive', got {o}"
+                        )))
+                    }
                 }
             }
             "restoration" => {
                 cfg.restoration = match v.extract::<String>()?.as_str() {
                     "fixed" => RestorationMode::Fixed,
                     "remixed" => RestorationMode::Remixed,
-                    o => return Err(PyValueError::new_err(format!("restoration must be 'fixed' or 'remixed', got {o}"))),
+                    o => {
+                        return Err(PyValueError::new_err(format!(
+                            "restoration must be 'fixed' or 'remixed', got {o}"
+                        )))
+                    }
                 }
             }
             "remix_partition" => {
                 cfg.remix_partition = match v.extract::<String>()?.as_str() {
                     "train" => RemixPartition::Train,
                     "test" => RemixPartition::Test,
-                    o => return Err(PyValueError::new_err(format!("remix_partition must be 'train' or 'test', got {o}"))),
+                    o => {
+                        return Err(PyValueError::new_err(format!(
+                            "remix_partition must be 'train' or 'test', got {o}"
+                        )))
+                    }
                 }
             }
             "max_days" => cfg.max_days = v.extract()?,
@@ -86,7 +103,10 @@ fn obs_dict<'py>(py: Python<'py>, env: &Env) -> PyResult<Bound<'py, PyDict>> {
     d.set_item("action_mask", PyArray1::from_slice(py, env.action_mask()))?;
     if !env.obs_grid().is_empty() {
         let (c, h, w) = env.grid_shape();
-        d.set_item("grid", PyArray1::from_slice(py, env.obs_grid()).reshape([c, h, w])?)?;
+        d.set_item(
+            "grid",
+            PyArray1::from_slice(py, env.obs_grid()).reshape([c, h, w])?,
+        )?;
     }
     Ok(d)
 }
@@ -122,10 +142,14 @@ fn resolve_action(env: &Env, a: &Bound<'_, PyAny>) -> PyResult<u32> {
         if (i as usize) < env.num_actions() {
             return Ok(i);
         }
-        return Err(PyValueError::new_err(format!("action {i} out of range (num_actions={})", env.num_actions())));
+        return Err(PyValueError::new_err(format!(
+            "action {i} out of range (num_actions={})",
+            env.num_actions()
+        )));
     }
     let name: String = a.extract()?;
-    env.action_id(&name).ok_or_else(|| PyKeyError::new_err(format!("unknown action name {name:?}")))
+    env.action_id(&name)
+        .ok_or_else(|| PyKeyError::new_err(format!("unknown action name {name:?}")))
 }
 
 /// A single Furrow environment.
@@ -139,12 +163,18 @@ impl PyEnv {
     #[new]
     #[pyo3(signature = (seed=0, **kwargs))]
     fn new(seed: u64, kwargs: Option<&Bound<'_, PyDict>>) -> PyResult<Self> {
-        Ok(PyEnv { env: Env::new(parse_cfg(seed, kwargs)?) })
+        Ok(PyEnv {
+            env: Env::new(parse_cfg(seed, kwargs)?),
+        })
     }
 
     /// Reset to a new episode. Returns `(obs, info)`.
     #[pyo3(signature = (seed=None))]
-    fn reset<'py>(&mut self, py: Python<'py>, seed: Option<u64>) -> PyResult<(Bound<'py, PyDict>, Bound<'py, PyDict>)> {
+    fn reset<'py>(
+        &mut self,
+        py: Python<'py>,
+        seed: Option<u64>,
+    ) -> PyResult<(Bound<'py, PyDict>, Bound<'py, PyDict>)> {
         let s = seed.unwrap_or(self.env.cfg().seed);
         self.env.reset(s);
         Ok((obs_dict(py, &self.env)?, info_dict(py, &self.env)?))
@@ -152,14 +182,24 @@ impl PyEnv {
 
     /// Step with an action id or name. Returns `(obs, reward, terminated, truncated, info)`.
     #[allow(clippy::type_complexity)]
-    fn step<'py>(&mut self, py: Python<'py>, action: &Bound<'py, PyAny>) -> PyResult<(Bound<'py, PyDict>, f32, bool, bool, Bound<'py, PyDict>)> {
+    fn step<'py>(
+        &mut self,
+        py: Python<'py>,
+        action: &Bound<'py, PyAny>,
+    ) -> PyResult<(Bound<'py, PyDict>, f32, bool, bool, Bound<'py, PyDict>)> {
         let a = resolve_action(&self.env, action)?;
         let s = self.env.step(a);
         let info = info_dict(py, &self.env)?;
         info.set_item("day_ends", s.day_ends)?;
         info.set_item("ticks", s.ticks)?;
         info.set_item("outcome", format!("{:?}", s.outcome).to_lowercase())?;
-        Ok((obs_dict(py, &self.env)?, s.reward, s.terminated, s.truncated, info))
+        Ok((
+            obs_dict(py, &self.env)?,
+            s.reward,
+            s.terminated,
+            s.truncated,
+            info,
+        ))
     }
 
     /// Current observation dict.
@@ -184,7 +224,9 @@ impl PyEnv {
     }
     /// Action id for a name.
     fn action_id(&self, name: &str) -> PyResult<u32> {
-        self.env.action_id(name).ok_or_else(|| PyKeyError::new_err(format!("unknown action name {name:?}")))
+        self.env
+            .action_id(name)
+            .ok_or_else(|| PyKeyError::new_err(format!("unknown action name {name:?}")))
     }
     /// Compact text description of the state (for LLM agents).
     fn describe(&self) -> String {
@@ -204,18 +246,29 @@ impl PyEnv {
     }
     /// Bit-identical copy of the environment.
     fn clone(&self) -> PyEnv {
-        PyEnv { env: self.env.clone() }
+        PyEnv {
+            env: self.env.clone(),
+        }
     }
     /// The scripted expert's (clean) action for the current state (macro mode).
     #[pyo3(signature = (style=0))]
     fn expert_action(&self, style: u32) -> u32 {
-        Expert::new(ExpertConfig { style, ..Default::default() }).act(&self.env)
+        Expert::new(ExpertConfig {
+            style,
+            ..Default::default()
+        })
+        .act(&self.env)
     }
     /// `(executed, clean)` noisy expert action (noise in [0, 1]).
     #[pyo3(signature = (noise, style=0, seed=0))]
     fn noisy_expert_action(&self, noise: f64, style: u32, seed: u64) -> (u32, u32) {
         let ppm = (noise.clamp(0.0, 1.0) * 1e6) as u32;
-        Expert::new(ExpertConfig { style, noise_ppm: ppm, seed }).noisy_act(&self.env)
+        Expert::new(ExpertConfig {
+            style,
+            noise_ppm: ppm,
+            seed,
+        })
+        .noisy_act(&self.env)
     }
     #[getter]
     fn num_actions(&self) -> usize {
@@ -246,7 +299,10 @@ impl PyEnv {
     }
     fn __repr__(&self) -> String {
         let st = self.env.state();
-        format!("furrow.Env(seed={}, day={}, minute={}, requests_done={})", st.seed, st.day, st.minute, st.restoration.requests_done)
+        format!(
+            "furrow.Env(seed={}, day={}, minute={}, requests_done={})",
+            st.seed, st.day, st.minute, st.restoration.requests_done
+        )
     }
 }
 
@@ -263,11 +319,20 @@ impl PyVecEnv {
         let g = furrow::obs::obs_global_dim();
         let a = self.v.envs().first().map(|e| e.num_actions()).unwrap_or(0);
         let d = PyDict::new(py);
-        d.set_item("global_", PyArray1::from_slice(py, &self.v.out.obs).reshape([n, g])?)?;
-        d.set_item("action_mask", PyArray1::from_slice(py, &self.v.out.mask).reshape([n, a])?)?;
+        d.set_item(
+            "global_",
+            PyArray1::from_slice(py, &self.v.out.obs).reshape([n, g])?,
+        )?;
+        d.set_item(
+            "action_mask",
+            PyArray1::from_slice(py, &self.v.out.mask).reshape([n, a])?,
+        )?;
         if !self.v.out.grid.is_empty() {
             let (c, h, w) = self.v.envs()[0].grid_shape();
-            d.set_item("grid", PyArray1::from_slice(py, &self.v.out.grid).reshape([n, c, h, w])?)?;
+            d.set_item(
+                "grid",
+                PyArray1::from_slice(py, &self.v.out.grid).reshape([n, c, h, w])?,
+            )?;
         }
         Ok(d)
     }
@@ -292,11 +357,17 @@ impl PyVecEnv {
             Some(s) => (VecEnv::with_seeds(cfg, &s, threads), false),
             None => (VecEnv::new(cfg, num_envs, threads, seed_range), true),
         });
-        Ok(PyVecEnv { v, auto_reset: auto })
+        Ok(PyVecEnv {
+            v,
+            auto_reset: auto,
+        })
     }
 
     /// Reset all envs. Returns `(obs, info)`.
-    fn reset<'py>(&mut self, py: Python<'py>) -> PyResult<(Bound<'py, PyDict>, Bound<'py, PyDict>)> {
+    fn reset<'py>(
+        &mut self,
+        py: Python<'py>,
+    ) -> PyResult<(Bound<'py, PyDict>, Bound<'py, PyDict>)> {
         py.detach(|| self.v.reset());
         let info = PyDict::new(py);
         info.set_item("episode_seed", PyArray1::from_slice(py, self.v.seeds()))?;
@@ -311,9 +382,16 @@ impl PyVecEnv {
         &mut self,
         py: Python<'py>,
         actions: PyArrayLike1<'py, i64, AllowTypeChange>,
-    ) -> PyResult<(Bound<'py, PyDict>, Bound<'py, PyArray1<f32>>, Bound<'py, PyArray1<bool>>, Bound<'py, PyArray1<bool>>, Bound<'py, PyDict>)> {
+    ) -> PyResult<(
+        Bound<'py, PyDict>,
+        Bound<'py, PyArray1<f32>>,
+        Bound<'py, PyArray1<bool>>,
+        Bound<'py, PyArray1<bool>>,
+        Bound<'py, PyDict>,
+    )> {
         let acts: Vec<u32> = actions.as_array().iter().map(|x| *x as u32).collect();
-        py.detach(|| self.v.step(&acts)).map_err(PyValueError::new_err)?;
+        py.detach(|| self.v.step(&acts))
+            .map_err(PyValueError::new_err)?;
         let o = &self.v.out;
         let n = self.v.len();
         let g = furrow::obs::obs_global_dim();
@@ -325,8 +403,14 @@ impl PyVecEnv {
         info.set_item("outcome", PyArray1::from_slice(py, &o.outcome))?;
         info.set_item("_final_obs", PyArray1::from_slice(py, &done))?;
         let fo = PyDict::new(py);
-        fo.set_item("global_", PyArray1::from_slice(py, &o.final_obs).reshape([n, g])?)?;
-        fo.set_item("action_mask", PyArray1::from_slice(py, &o.final_mask).reshape([n, a])?)?;
+        fo.set_item(
+            "global_",
+            PyArray1::from_slice(py, &o.final_obs).reshape([n, g])?,
+        )?;
+        fo.set_item(
+            "action_mask",
+            PyArray1::from_slice(py, &o.final_mask).reshape([n, a])?,
+        )?;
         info.set_item("final_obs", fo)?;
         info.set_item("episode_return", PyArray1::from_slice(py, &o.ep_return))?;
         info.set_item("episode_days", PyArray1::from_slice(py, &o.ep_days))?;
@@ -350,14 +434,22 @@ impl PyVecEnv {
 
     /// Clean expert labels for every env (computed in parallel).
     #[pyo3(signature = (styles=None))]
-    fn expert_actions<'py>(&self, py: Python<'py>, styles: Option<Vec<u32>>) -> Bound<'py, PyArray1<i64>> {
+    fn expert_actions<'py>(
+        &self,
+        py: Python<'py>,
+        styles: Option<Vec<u32>>,
+    ) -> Bound<'py, PyArray1<i64>> {
         let v = py.detach(|| {
             self.v.map_envs(|i, e| {
                 let style = styles.as_ref().map(|s| s[i % s.len()]).unwrap_or(0);
                 if e.is_done() {
                     0
                 } else {
-                    Expert::new(ExpertConfig { style, ..Default::default() }).act(e) as i64
+                    Expert::new(ExpertConfig {
+                        style,
+                        ..Default::default()
+                    })
+                    .act(e) as i64
                 }
             })
         });
@@ -367,7 +459,13 @@ impl PyVecEnv {
     /// `(executed, clean)` noisy expert actions.
     #[pyo3(signature = (noise, styles=None, seed=0))]
     #[allow(clippy::type_complexity)]
-    fn noisy_expert_actions<'py>(&self, py: Python<'py>, noise: f64, styles: Option<Vec<u32>>, seed: u64) -> (Bound<'py, PyArray1<i64>>, Bound<'py, PyArray1<i64>>) {
+    fn noisy_expert_actions<'py>(
+        &self,
+        py: Python<'py>,
+        noise: f64,
+        styles: Option<Vec<u32>>,
+        seed: u64,
+    ) -> (Bound<'py, PyArray1<i64>>, Bound<'py, PyArray1<i64>>) {
         let ppm = (noise.clamp(0.0, 1.0) * 1e6) as u32;
         let v = py.detach(|| {
             self.v.map_envs(|i, e| {
@@ -375,7 +473,12 @@ impl PyVecEnv {
                 if e.is_done() {
                     (0, 0)
                 } else {
-                    let (x, c) = Expert::new(ExpertConfig { style, noise_ppm: ppm, seed: seed ^ i as u64 }).noisy_act(e);
+                    let (x, c) = Expert::new(ExpertConfig {
+                        style,
+                        noise_ppm: ppm,
+                        seed: seed ^ i as u64,
+                    })
+                    .noisy_act(e);
                     (x as i64, c as i64)
                 }
             })
@@ -398,7 +501,11 @@ impl PyVecEnv {
     }
     /// Action names.
     fn action_names(&self) -> Vec<String> {
-        self.v.envs().first().map(|e| e.action_names()).unwrap_or_default()
+        self.v
+            .envs()
+            .first()
+            .map(|e| e.action_names())
+            .unwrap_or_default()
     }
     #[getter]
     fn num_envs(&self) -> usize {
@@ -414,7 +521,11 @@ impl PyVecEnv {
     }
     #[getter]
     fn grid_shape(&self) -> Option<(usize, usize, usize)> {
-        self.v.envs().first().filter(|e| !e.obs_grid().is_empty()).map(|e| e.grid_shape())
+        self.v
+            .envs()
+            .first()
+            .filter(|e| !e.obs_grid().is_empty())
+            .map(|e| e.grid_shape())
     }
     fn __len__(&self) -> usize {
         self.v.len()
@@ -446,7 +557,9 @@ fn generate_demos<'py>(
         num_threads: num_threads.unwrap_or(0),
     };
     let path = std::path::PathBuf::from(out_dir);
-    let s = py.detach(|| furrow_gen::generate(&path, &g)).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let s = py
+        .detach(|| furrow_gen::generate(&path, &g))
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
     let d = PyDict::new(py);
     d.set_item("episodes", s.episodes)?;
     d.set_item("steps", s.steps)?;
@@ -482,13 +595,20 @@ fn obs_layout<'py>(py: Python<'py>) -> PyResult<Bound<'py, PyList>> {
 /// Macro action names (index = id).
 #[pyfunction]
 fn macro_action_names() -> Vec<String> {
-    furrow::macro_action::macro_actions().iter().map(|m| m.name()).collect()
+    furrow::macro_action::macro_actions()
+        .iter()
+        .map(|m| m.name())
+        .collect()
 }
 
 /// Item keys (index = item id).
 #[pyfunction]
 fn item_keys() -> Vec<String> {
-    furrow::content::content().items.iter().map(|i| i.key.clone()).collect()
+    furrow::content::content()
+        .items
+        .iter()
+        .map(|i| i.key.clone())
+        .collect()
 }
 
 #[pymodule]

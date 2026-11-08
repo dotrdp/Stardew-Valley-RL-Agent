@@ -60,7 +60,12 @@ pub enum Season {
 
 impl Season {
     /// All seasons in order.
-    pub const ALL: [Season; 4] = [Season::Spring, Season::Summer, Season::Autumn, Season::Winter];
+    pub const ALL: [Season; 4] = [
+        Season::Spring,
+        Season::Summer,
+        Season::Autumn,
+        Season::Winter,
+    ];
     /// From index 0..4.
     pub fn from_index(i: u8) -> Season {
         Season::ALL[(i & 3) as usize]
@@ -365,7 +370,12 @@ pub enum Skill {
 
 impl Skill {
     /// All skills.
-    pub const ALL: [Skill; 4] = [Skill::Farming, Skill::Foraging, Skill::Fishing, Skill::Mining];
+    pub const ALL: [Skill; 4] = [
+        Skill::Farming,
+        Skill::Foraging,
+        Skill::Fishing,
+        Skill::Mining,
+    ];
     /// Name.
     pub fn name(self) -> &'static str {
         ["farming", "foraging", "fishing", "mining"][self as usize]
@@ -509,7 +519,11 @@ pub enum Feature {
 
 impl Feature {
     /// All features.
-    pub const ALL: [Feature; 3] = [Feature::Greenhouse, Feature::Minecart, Feature::MerchantDaily];
+    pub const ALL: [Feature; 3] = [
+        Feature::Greenhouse,
+        Feature::Minecart,
+        Feature::MerchantDaily,
+    ];
     /// Name.
     pub fn name(self) -> &'static str {
         ["greenhouse", "minecart", "merchant_daily"][self as usize]
@@ -1070,7 +1084,11 @@ impl Resolver<'_> {
     }
 }
 
-fn parse<T: for<'de> Deserialize<'de>>(name: &str, src: &str, errors: &mut Vec<String>) -> Option<T> {
+fn parse<T: for<'de> Deserialize<'de>>(
+    name: &str,
+    src: &str,
+    errors: &mut Vec<String>,
+) -> Option<T> {
     match toml::from_str::<T>(src) {
         Ok(v) => Some(v),
         Err(e) => {
@@ -1088,7 +1106,9 @@ where
     v.sort_unstable();
     for (i, id) in v.iter().enumerate() {
         if *id != i as u32 {
-            errors.push(format!("{name}: ids must be dense 0..n and unique (got {id} at position {i})"));
+            errors.push(format!(
+                "{name}: ids must be dense 0..n and unique (got {id} at position {i})"
+            ));
             return;
         }
     }
@@ -1106,14 +1126,39 @@ fn load() -> Result<Content, ContentError> {
     let skills_raw: Option<RawSkillsFile> = parse("skills.toml", SOURCES[7].1, &mut errors);
     let rest_raw: Option<RawRestorationFile> = parse("restoration.toml", SOURCES[8].1, &mut errors);
     let world_raw: Option<RawWorldFile> = parse("world.toml", SOURCES[9].1, &mut errors);
-    let (Some(items_raw), Some(crops_raw), Some(forage_raw), Some(fish_raw), Some(mining_raw), Some(recipes_raw), Some(shops_raw), Some(skills_raw), Some(rest_raw), Some(world_raw)) = (
-        items_raw, crops_raw, forage_raw, fish_raw, mining_raw, recipes_raw, shops_raw, skills_raw, rest_raw, world_raw,
-    ) else {
+    let (
+        Some(items_raw),
+        Some(crops_raw),
+        Some(forage_raw),
+        Some(fish_raw),
+        Some(mining_raw),
+        Some(recipes_raw),
+        Some(shops_raw),
+        Some(skills_raw),
+        Some(rest_raw),
+        Some(world_raw),
+    ) = (
+        items_raw,
+        crops_raw,
+        forage_raw,
+        fish_raw,
+        mining_raw,
+        recipes_raw,
+        shops_raw,
+        skills_raw,
+        rest_raw,
+        world_raw,
+    )
+    else {
         return Err(ContentError(errors));
     };
 
     // ---- items
-    check_dense("items", items_raw.item.iter().map(|i| i.id as u32), &mut errors);
+    check_dense(
+        "items",
+        items_raw.item.iter().map(|i| i.id as u32),
+        &mut errors,
+    );
     let mut items: Vec<Item> = Vec::with_capacity(items_raw.item.len());
     let mut sorted = items_raw.item;
     sorted.sort_by_key(|i| i.id);
@@ -1122,7 +1167,10 @@ fn load() -> Result<Content, ContentError> {
         let category = match Category::parse(&r.category) {
             Some(c) => c,
             None => {
-                errors.push(format!("items: unknown category '{}' on {}", r.category, r.key));
+                errors.push(format!(
+                    "items: unknown category '{}' on {}",
+                    r.category, r.key
+                ));
                 Category::Junk
             }
         };
@@ -1144,7 +1192,11 @@ fn load() -> Result<Content, ContentError> {
     };
 
     // ---- locations / pois / warps (needed by other tables)
-    check_dense("locations", world_raw.location.iter().map(|l| l.id as u32), &mut errors);
+    check_dense(
+        "locations",
+        world_raw.location.iter().map(|l| l.id as u32),
+        &mut errors,
+    );
     let mut locs = world_raw.location;
     locs.sort_by_key(|l| l.id);
     let mut loc_by_key = BTreeMap::new();
@@ -1182,7 +1234,11 @@ fn load() -> Result<Content, ContentError> {
             }
         }
     };
-    check_dense("pois", world_raw.poi.iter().map(|p| p.id as u32), &mut errors);
+    check_dense(
+        "pois",
+        world_raw.poi.iter().map(|p| p.id as u32),
+        &mut errors,
+    );
     let mut pois_raw = world_raw.poi;
     pois_raw.sort_by_key(|p| p.id);
     let mut poi_by_key = BTreeMap::new();
@@ -1274,7 +1330,11 @@ fn load() -> Result<Content, ContentError> {
     };
 
     // ---- crops
-    check_dense("crops", crops_raw.crop.iter().map(|c| c.id as u32), &mut errors);
+    check_dense(
+        "crops",
+        crops_raw.crop.iter().map(|c| c.id as u32),
+        &mut errors,
+    );
     let mut craw = crops_raw.crop;
     craw.sort_by_key(|c| c.id);
     let crops: Vec<Crop> = craw
@@ -1295,7 +1355,11 @@ fn load() -> Result<Content, ContentError> {
         .collect();
 
     // ---- forage
-    check_dense("forage", forage_raw.forage_location.iter().map(|f| f.id as u32), &mut errors);
+    check_dense(
+        "forage",
+        forage_raw.forage_location.iter().map(|f| f.id as u32),
+        &mut errors,
+    );
     let mut fraw = forage_raw.forage_location;
     fraw.sort_by_key(|f| f.id);
     let mut forage = Vec::new();
@@ -1306,7 +1370,11 @@ fn load() -> Result<Content, ContentError> {
                 errors.push(format!("forage: bad season {}", s.season));
                 continue;
             };
-            tables[se as usize] = s.items.iter().map(|w| (rs.item(&w.item, "forage"), w.weight)).collect();
+            tables[se as usize] = s
+                .items
+                .iter()
+                .map(|w| (rs.item(&w.item, "forage"), w.weight))
+                .collect();
         }
         forage.push(ForageLocation {
             id: f.id,
@@ -1317,7 +1385,11 @@ fn load() -> Result<Content, ContentError> {
     }
 
     // ---- fish
-    check_dense("fish", fish_raw.fish.iter().map(|f| f.id as u32), &mut errors);
+    check_dense(
+        "fish",
+        fish_raw.fish.iter().map(|f| f.id as u32),
+        &mut errors,
+    );
     let mut fish_sorted = fish_raw.fish;
     fish_sorted.sort_by_key(|f| f.id);
     let fish: Vec<Fish> = fish_sorted
@@ -1342,10 +1414,19 @@ fn load() -> Result<Content, ContentError> {
             weight: f.weight,
         })
         .collect();
-    let junk: Vec<ItemId> = fish_raw.junk.items.iter().map(|k| rs.item(k, "junk")).collect();
+    let junk: Vec<ItemId> = fish_raw
+        .junk
+        .items
+        .iter()
+        .map(|k| rs.item(k, "junk"))
+        .collect();
 
     // ---- mining
-    check_dense("rocks", mining_raw.rock.iter().map(|r| r.id as u32), &mut errors);
+    check_dense(
+        "rocks",
+        mining_raw.rock.iter().map(|r| r.id as u32),
+        &mut errors,
+    );
     let mut rraw = mining_raw.rock;
     rraw.sort_by_key(|r| r.id);
     let mut rock_by_key = BTreeMap::new();
@@ -1385,7 +1466,11 @@ fn load() -> Result<Content, ContentError> {
         .iter()
         .map(|b| Band {
             floors: (b.floors[0], b.floors[1]),
-            rocks: b.rocks.iter().map(|w| (rock(&w.rock, &mut errors), w.weight)).collect(),
+            rocks: b
+                .rocks
+                .iter()
+                .map(|w| (rock(&w.rock, &mut errors), w.weight))
+                .collect(),
         })
         .collect();
     let surface = Surface {
@@ -1399,8 +1484,16 @@ fn load() -> Result<Content, ContentError> {
     };
 
     // ---- wings / requests
-    check_dense("wings", rest_raw.wing.iter().map(|w| w.id as u32), &mut errors);
-    check_dense("requests", rest_raw.request.iter().map(|r| r.id as u32), &mut errors);
+    check_dense(
+        "wings",
+        rest_raw.wing.iter().map(|w| w.id as u32),
+        &mut errors,
+    );
+    check_dense(
+        "requests",
+        rest_raw.request.iter().map(|r| r.id as u32),
+        &mut errors,
+    );
     let mut wraw = rest_raw.wing;
     wraw.sort_by_key(|w| w.id);
     let mut wing_by_key = BTreeMap::new();
@@ -1456,7 +1549,12 @@ fn load() -> Result<Content, ContentError> {
             }
         };
         if r.need as usize > r.slots.len() {
-            errors.push(format!("request {}: need {} > {} slots", r.key, r.need, r.slots.len()));
+            errors.push(format!(
+                "request {}: need {} > {} slots",
+                r.key,
+                r.need,
+                r.slots.len()
+            ));
         }
         if r.coins == 0 && r.need == 0 {
             errors.push(format!("request {}: needs either coins or need>0", r.key));
@@ -1474,8 +1572,16 @@ fn load() -> Result<Content, ContentError> {
                     count: s.count,
                 })
                 .collect(),
-            pool_train: r.pool_train.iter().map(|k| rs.item(k, "pool_train")).collect(),
-            pool_test: r.pool_test.iter().map(|k| rs.item(k, "pool_test")).collect(),
+            pool_train: r
+                .pool_train
+                .iter()
+                .map(|k| rs.item(k, "pool_train"))
+                .collect(),
+            pool_test: r
+                .pool_test
+                .iter()
+                .map(|k| rs.item(k, "pool_test"))
+                .collect(),
             key: r.key,
             name: r.name,
         };
@@ -1486,8 +1592,16 @@ fn load() -> Result<Content, ContentError> {
     }
 
     // ---- recipes / machines
-    check_dense("recipes", recipes_raw.recipe.iter().map(|r| r.id as u32), &mut errors);
-    check_dense("machines", recipes_raw.machine.iter().map(|m| m.id as u32), &mut errors);
+    check_dense(
+        "recipes",
+        recipes_raw.recipe.iter().map(|r| r.id as u32),
+        &mut errors,
+    );
+    check_dense(
+        "machines",
+        recipes_raw.machine.iter().map(|m| m.id as u32),
+        &mut errors,
+    );
     let mut rcraw = recipes_raw.recipe;
     rcraw.sort_by_key(|r| r.id);
     let recipes: Vec<Recipe> = rcraw
@@ -1517,7 +1631,11 @@ fn load() -> Result<Content, ContentError> {
                 id: r.id,
                 output: rs.item(&r.output, "recipes"),
                 count: r.count,
-                inputs: r.inputs.iter().map(|i| (rs.item(&i.item, "recipe inputs"), i.count)).collect(),
+                inputs: r
+                    .inputs
+                    .iter()
+                    .map(|i| (rs.item(&i.item, "recipe inputs"), i.count))
+                    .collect(),
                 unlock,
                 key: r.key,
             }
@@ -1536,10 +1654,12 @@ fn load() -> Result<Content, ContentError> {
                 .map(|r| {
                     let input = match (&r.input, &r.input_category) {
                         (Some(i), _) => InputSel::Item(rs.item(i, "machine rule")),
-                        (None, Some(c)) => InputSel::Category(Category::parse(c).unwrap_or_else(|| {
-                            errors.push(format!("machine {}: bad category {c}", m.key));
-                            Category::Junk
-                        })),
+                        (None, Some(c)) => {
+                            InputSel::Category(Category::parse(c).unwrap_or_else(|| {
+                                errors.push(format!("machine {}: bad category {c}", m.key));
+                                Category::Junk
+                            }))
+                        }
                         (None, None) => {
                             errors.push(format!("machine {}: rule has no input", m.key));
                             InputSel::Category(Category::Junk)
@@ -1548,7 +1668,10 @@ fn load() -> Result<Content, ContentError> {
                     Rule {
                         input,
                         input_count: r.input_count,
-                        fuel: r.fuel.as_ref().map(|f| (rs.item(f, "machine fuel"), r.fuel_count.unwrap_or(1))),
+                        fuel: r
+                            .fuel
+                            .as_ref()
+                            .map(|f| (rs.item(f, "machine fuel"), r.fuel_count.unwrap_or(1))),
                         output: rs.item(&r.output, "machine output"),
                         output_count: r.output_count,
                         minutes: r.minutes,
@@ -1560,7 +1683,11 @@ fn load() -> Result<Content, ContentError> {
         .collect();
 
     // ---- shops / merchant / upgrades
-    check_dense("shops", shops_raw.shop.iter().map(|s| s.id as u32), &mut errors);
+    check_dense(
+        "shops",
+        shops_raw.shop.iter().map(|s| s.id as u32),
+        &mut errors,
+    );
     let mut sraw = shops_raw.shop;
     sraw.sort_by_key(|s| s.id);
     let shops: Vec<Shop> = sraw
@@ -1594,7 +1721,12 @@ fn load() -> Result<Content, ContentError> {
         slots: shops_raw.merchant.slots,
         price_mult_ppm: shops_raw.merchant.price_mult_ppm,
         floor_price: shops_raw.merchant.floor_price,
-        pool: shops_raw.merchant.pool.iter().map(|k| rs.item(k, "merchant pool")).collect(),
+        pool: shops_raw
+            .merchant
+            .pool
+            .iter()
+            .map(|k| rs.item(k, "merchant pool"))
+            .collect(),
     };
     let upgrades: Vec<UpgradeLevel> = shops_raw
         .upgrades
@@ -1619,14 +1751,29 @@ fn load() -> Result<Content, ContentError> {
     for m in &machines {
         machine_by_item[m.item as usize] = Some(m.id);
     }
-    let mut buyable: Vec<ItemId> = shops.iter().flat_map(|s| s.stock.iter().map(|r| r.item)).collect();
+    let mut buyable: Vec<ItemId> = shops
+        .iter()
+        .flat_map(|s| s.stock.iter().map(|r| r.item))
+        .collect();
     buyable.extend(merchant.pool.iter().copied());
     buyable.sort_unstable();
     buyable.dedup();
-    let fishing_spots: Vec<PoiId> = pois.iter().filter(|p| p.kind == PoiKind::FishingSpot).map(|p| p.id).collect();
+    let fishing_spots: Vec<PoiId> = pois
+        .iter()
+        .filter(|p| p.kind == PoiKind::FishingSpot)
+        .map(|p| p.id)
+        .collect();
     let total_slots: u16 = requests.iter().map(|r| r.slots.len() as u16).sum();
-    let max_slot_count = requests.iter().flat_map(|r| r.slots.iter().map(|s| s.count)).max().unwrap_or(1);
-    let coin_requests: Vec<RequestId> = requests.iter().filter(|r| r.coins > 0).map(|r| r.id).collect();
+    let max_slot_count = requests
+        .iter()
+        .flat_map(|r| r.slots.iter().map(|s| s.count))
+        .max()
+        .unwrap_or(1);
+    let coin_requests: Vec<RequestId> = requests
+        .iter()
+        .filter(|r| r.coins > 0)
+        .map(|r| r.id)
+        .collect();
 
     let content = Content {
         items,
@@ -1712,26 +1859,44 @@ pub fn content_hash() -> u64 {
 impl Content {
     /// Item by key (panics if unknown — content keys are compile-time constants in callers).
     pub fn item_id(&self, key: &str) -> ItemId {
-        *self.item_by_key.get(key).unwrap_or_else(|| panic!("unknown item key {key}"))
+        *self
+            .item_by_key
+            .get(key)
+            .unwrap_or_else(|| panic!("unknown item key {key}"))
     }
     /// Location by key.
     pub fn loc_id(&self, key: &str) -> LocId {
-        *self.loc_by_key.get(key).unwrap_or_else(|| panic!("unknown location key {key}"))
+        *self
+            .loc_by_key
+            .get(key)
+            .unwrap_or_else(|| panic!("unknown location key {key}"))
     }
     /// POI by key.
     pub fn poi_id(&self, key: &str) -> PoiId {
-        *self.poi_by_key.get(key).unwrap_or_else(|| panic!("unknown poi key {key}"))
+        *self
+            .poi_by_key
+            .get(key)
+            .unwrap_or_else(|| panic!("unknown poi key {key}"))
     }
     /// Regions of a location with a given kind.
-    pub fn regions_of<'a>(&'a self, loc: LocId, kind: &'a str) -> impl Iterator<Item = &'a Region> + 'a {
-        self.regions.iter().filter(move |r| r.location == loc && r.kind == kind)
+    pub fn regions_of<'a>(
+        &'a self,
+        loc: LocId,
+        kind: &'a str,
+    ) -> impl Iterator<Item = &'a Region> + 'a {
+        self.regions
+            .iter()
+            .filter(move |r| r.location == loc && r.kind == kind)
     }
     /// The shop selling an item today (cheapest), ignoring the merchant.
     pub fn shop_row(&self, item: ItemId, season: Season) -> Option<(ShopId, usize)> {
         let mut best: Option<(u32, ShopId, usize)> = None;
         for s in &self.shops {
             for (i, r) in s.stock.iter().enumerate() {
-                if r.item == item && season_in(r.seasons, season) && best.is_none_or(|b| r.price < b.0) {
+                if r.item == item
+                    && season_in(r.seasons, season)
+                    && best.is_none_or(|b| r.price < b.0)
+                {
                     best = Some((r.price, s.id, i));
                 }
             }
@@ -1746,7 +1911,9 @@ impl Content {
     }
     /// Band for a floor.
     pub fn band_for_floor(&self, floor: u8) -> Option<&Band> {
-        self.bands.iter().find(|b| floor >= b.floors.0 && floor <= b.floors.1)
+        self.bands
+            .iter()
+            .find(|b| floor >= b.floors.0 && floor <= b.floors.1)
     }
 
     /// Validate cross-table invariants. Returns all problems found.
@@ -1800,12 +1967,18 @@ impl Content {
         for r in &self.requests {
             for s in &r.slots {
                 if src[s.item as usize].is_empty() {
-                    e.push(format!("request {}: slot item {} has no source", r.key, self.items[s.item as usize].key));
+                    e.push(format!(
+                        "request {}: slot item {} has no source",
+                        r.key, self.items[s.item as usize].key
+                    ));
                 }
             }
             for i in r.pool_train.iter().chain(r.pool_test.iter()) {
                 if src[*i as usize].is_empty() {
-                    e.push(format!("request {}: pool item {} has no source", r.key, self.items[*i as usize].key));
+                    e.push(format!(
+                        "request {}: pool item {} has no source",
+                        r.key, self.items[*i as usize].key
+                    ));
                 }
             }
             if r.pool_train.len() < r.slots.len() && !r.slots.is_empty() {
@@ -1815,7 +1988,10 @@ impl Content {
         for r in &self.recipes {
             for (i, _) in &r.inputs {
                 if src[*i as usize].is_empty() {
-                    e.push(format!("recipe {}: input {} has no source", r.key, self.items[*i as usize].key));
+                    e.push(format!(
+                        "recipe {}: input {} has no source",
+                        r.key, self.items[*i as usize].key
+                    ));
                 }
             }
         }
@@ -1915,6 +2091,9 @@ mod tests {
             assert_eq!(c.item_id(&it.key), it.id);
         }
         assert_eq!(c.loc_id("homestead"), 0);
-        assert_eq!(c.pois[c.poi_id("mill_board") as usize].kind, PoiKind::MillBoard);
+        assert_eq!(
+            c.pois[c.poi_id("mill_board") as usize].kind,
+            PoiKind::MillBoard
+        );
     }
 }

@@ -40,7 +40,12 @@ impl Terrain {
     pub fn walkable(self) -> bool {
         matches!(
             self,
-            Terrain::Grass | Terrain::Dirt | Terrain::Path | Terrain::Sand | Terrain::Floor | Terrain::Bridge
+            Terrain::Grass
+                | Terrain::Dirt
+                | Terrain::Path
+                | Terrain::Sand
+                | Terrain::Floor
+                | Terrain::Bridge
         )
     }
 }
@@ -120,13 +125,22 @@ impl Obj {
     /// Does this object block movement?
     #[inline]
     pub fn blocks(self) -> bool {
-        !matches!(self, Obj::None | Obj::Warp | Obj::Ladder | Obj::MachinePad | Obj::Forage)
+        !matches!(
+            self,
+            Obj::None | Obj::Warp | Obj::Ladder | Obj::MachinePad | Obj::Forage
+        )
     }
     /// Is this a debris/tree/rock-like breakable?
     pub fn breakable(self) -> bool {
         matches!(
             self,
-            Obj::Weeds | Obj::Twig | Obj::StoneDebris | Obj::Tree | Obj::Stump | Obj::Boulder | Obj::Rock
+            Obj::Weeds
+                | Obj::Twig
+                | Obj::StoneDebris
+                | Obj::Tree
+                | Obj::Stump
+                | Obj::Boulder
+                | Obj::Rock
         )
     }
 }
@@ -236,7 +250,12 @@ impl Grid {
     /// Hash all planes.
     pub fn hash_into(&self, h: &mut StableHasher) {
         h.u8(self.w).u8(self.h);
-        h.u8s(&self.terrain).u8s(&self.obj).u16s(&self.data).u8s(&self.soil).u8s(&self.crop).u8s(&self.crop_days);
+        h.u8s(&self.terrain)
+            .u8s(&self.obj)
+            .u16s(&self.data)
+            .u8s(&self.soil)
+            .u8s(&self.crop)
+            .u8s(&self.crop_days);
     }
 }
 
@@ -340,7 +359,9 @@ impl PathScratch {
                 self.dist[ni] = d + 1;
                 self.parent[ni] = cur as u16;
                 // warps and ladders are destinations only: never path *through* them
-                if g.passable(nx, ny) && !matches!(g.obj(nx as u8, ny as u8), Obj::Warp | Obj::Ladder) {
+                if g.passable(nx, ny)
+                    && !matches!(g.obj(nx as u8, ny as u8), Obj::Warp | Obj::Ladder)
+                {
                     self.queue[tail] = ni as u16;
                     tail += 1;
                 }
@@ -404,7 +425,12 @@ impl PathScratch {
         true
     }
     /// Nearest tile (by BFS distance) among `cands` satisfying `pred`; returns (x, y, dist).
-    pub fn nearest<F: Fn(u8, u8) -> bool>(&self, g: &Grid, cands: impl Iterator<Item = (u8, u8)>, pred: F) -> Option<(u8, u8, u16)> {
+    pub fn nearest<F: Fn(u8, u8) -> bool>(
+        &self,
+        g: &Grid,
+        cands: impl Iterator<Item = (u8, u8)>,
+        pred: F,
+    ) -> Option<(u8, u8, u16)> {
         let mut best: Option<(u8, u8, u16)> = None;
         for (x, y) in cands {
             if !pred(x, y) {
@@ -456,10 +482,8 @@ impl Routes {
                     }
                 }
             }
-            for to in 0..n {
-                next[from][to] = first[to];
-                hops[from][to] = dist[to];
-            }
+            next[from][..n].copy_from_slice(&first[..n]);
+            hops[from][..n].copy_from_slice(&dist[..n]);
         }
         Routes { next, hops }
     }
@@ -477,8 +501,15 @@ pub struct World {
 impl World {
     /// Build the world for an episode seed (procedural layout).
     pub fn generate(c: &Content, seed: u64) -> World {
-        let grids = c.locations.iter().map(|l| layout_location(c, seed, l.id)).collect();
-        World { grids, mine_floor: 0 }
+        let grids = c
+            .locations
+            .iter()
+            .map(|l| layout_location(c, seed, l.id))
+            .collect();
+        World {
+            grids,
+            mine_floor: 0,
+        }
     }
     /// Grid of a location.
     #[inline]
@@ -528,23 +559,38 @@ pub fn layout_location(c: &Content, seed: u64, loc: LocId) -> Grid {
     for r in c.regions.iter().filter(|r| r.location == loc) {
         let rect = Rect::from_arr(r.rect);
         match r.kind.as_str() {
-            "house_floor" => rect.tiles().for_each(|(x, y)| g.set_terrain(x, y, Terrain::Floor)),
-            "field" => rect.tiles().for_each(|(x, y)| g.set_terrain(x, y, Terrain::Dirt)),
+            "house_floor" => rect
+                .tiles()
+                .for_each(|(x, y)| g.set_terrain(x, y, Terrain::Floor)),
+            "field" => rect
+                .tiles()
+                .for_each(|(x, y)| g.set_terrain(x, y, Terrain::Dirt)),
             "pads" => rect.tiles().for_each(|(x, y)| {
                 g.set_terrain(x, y, Terrain::Floor);
                 g.set_obj(x, y, Obj::MachinePad, 0);
             }),
-            "water" => rect.tiles().for_each(|(x, y)| g.set_terrain(x, y, Terrain::Water)),
-            "sand" => rect.tiles().for_each(|(x, y)| g.set_terrain(x, y, Terrain::Sand)),
-            "path" => rect.tiles().for_each(|(x, y)| g.set_terrain(x, y, Terrain::Path)),
-            "bridge" => rect.tiles().for_each(|(x, y)| g.set_terrain(x, y, Terrain::Bridge)),
+            "water" => rect
+                .tiles()
+                .for_each(|(x, y)| g.set_terrain(x, y, Terrain::Water)),
+            "sand" => rect
+                .tiles()
+                .for_each(|(x, y)| g.set_terrain(x, y, Terrain::Sand)),
+            "path" => rect
+                .tiles()
+                .for_each(|(x, y)| g.set_terrain(x, y, Terrain::Path)),
+            "bridge" => rect
+                .tiles()
+                .for_each(|(x, y)| g.set_terrain(x, y, Terrain::Bridge)),
             _ => {}
         }
     }
     // trees
     for r in c.regions_of(loc, "trees") {
         for (x, y) in Rect::from_arr(r.rect).tiles() {
-            if g.terrain(x, y) == Terrain::Grass && g.obj(x, y) == Obj::None && rng.chance_ppm(c.density.tree_region_ppm) {
+            if g.terrain(x, y) == Terrain::Grass
+                && g.obj(x, y) == Obj::None
+                && rng.chance_ppm(c.density.tree_region_ppm)
+            {
                 g.set_obj(x, y, Obj::Tree, c.tools.tree_hits[0] as u16);
             }
         }
@@ -593,7 +639,9 @@ pub fn layout_location(c: &Content, seed: u64, loc: LocId) -> Grid {
                 g.set_obj(x, y, Obj::Twig, 0);
             } else if roll < d.field_weeds_ppm + d.field_twig_ppm + d.field_stone_ppm {
                 g.set_obj(x, y, Obj::StoneDebris, 0);
-            } else if roll < d.field_weeds_ppm + d.field_twig_ppm + d.field_stone_ppm + d.field_tree_ppm {
+            } else if roll
+                < d.field_weeds_ppm + d.field_twig_ppm + d.field_stone_ppm + d.field_tree_ppm
+            {
                 g.set_obj(x, y, Obj::Tree, c.tools.tree_hits[0] as u16);
             }
         }
@@ -601,7 +649,10 @@ pub fn layout_location(c: &Content, seed: u64, loc: LocId) -> Grid {
     // wild fiber
     for r in c.regions_of(loc, "forage") {
         for (x, y) in Rect::from_arr(r.rect).tiles() {
-            if g.obj(x, y) == Obj::None && g.terrain(x, y).walkable() && rng.chance_ppm(c.density.wild_fiber_ppm) {
+            if g.obj(x, y) == Obj::None
+                && g.terrain(x, y).walkable()
+                && rng.chance_ppm(c.density.wild_fiber_ppm)
+            {
                 g.set_obj(x, y, Obj::Weeds, 0);
             }
         }
@@ -623,7 +674,12 @@ pub fn layout_location(c: &Content, seed: u64, loc: LocId) -> Grid {
             PoiKind::MineExit => Obj::MineExit,
         };
         let data = match p.kind {
-            PoiKind::Counter => c.shops.iter().find(|s| s.poi == p.id).map(|s| s.id as u16).unwrap_or(0),
+            PoiKind::Counter => c
+                .shops
+                .iter()
+                .find(|s| s.poi == p.id)
+                .map(|s| s.id as u16)
+                .unwrap_or(0),
             _ => p.id as u16,
         };
         if p.kind == PoiKind::FishingSpot {
@@ -663,7 +719,12 @@ pub fn layout_location(c: &Content, seed: u64, loc: LocId) -> Grid {
         .map(|w| w.to_tile)
         .or_else(|| c.pois.iter().find(|p| p.location == loc).map(|p| p.stand))
         .unwrap_or((1, 1));
-    let mut targets: Vec<(u8, u8)> = c.pois.iter().filter(|p| p.location == loc).map(|p| p.stand).collect();
+    let mut targets: Vec<(u8, u8)> = c
+        .pois
+        .iter()
+        .filter(|p| p.location == loc)
+        .map(|p| p.stand)
+        .collect();
     targets.extend(c.warps.iter().filter(|w| w.from == loc).map(|w| w.tile));
     targets.extend(c.warps.iter().filter(|w| w.to == loc).map(|w| w.to_tile));
     if c.world.start_location == loc {
@@ -701,9 +762,8 @@ fn carve(g: &mut Grid, a: (u8, u8), b: (u8, u8)) {
             Terrain::Wall | Terrain::Void => g.set_terrain(ux, uy, Terrain::Path),
             _ => {}
         }
-        if g.obj(ux, uy).blocks() && g.obj(ux, uy).breakable() {
-            g.clear_obj(ux, uy);
-        } else if matches!(g.obj(ux, uy), Obj::Building) {
+        let o = g.obj(ux, uy);
+        if (o.blocks() && o.breakable()) || o == Obj::Building {
             g.clear_obj(ux, uy);
         }
     };
@@ -746,7 +806,10 @@ pub fn generate_mine_floor(c: &Content, seed: u64, day: u32, floor: u8, grid: &m
     let mut rng = stream(seed, Domain::Mine, day, floor as u32);
     let band = c.band_for_floor(floor).expect("band");
     let weights: Vec<u32> = band.rocks.iter().map(|r| r.1).collect();
-    let n = rng.range(c.mining.rocks_per_floor_min as u32, c.mining.rocks_per_floor_max as u32);
+    let n = rng.range(
+        c.mining.rocks_per_floor_min as u32,
+        c.mining.rocks_per_floor_max as u32,
+    );
     let mut placed: Vec<(u8, u8)> = Vec::new();
     let mut tries = 0;
     while (placed.len() as u32) < n && tries < 2000 {
@@ -778,7 +841,12 @@ pub fn generate_mine_floor(c: &Content, seed: u64, day: u32, floor: u8, grid: &m
         }
     }
     // repair reachability of all rocks from the exit stand
-    let exit = c.pois.iter().find(|p| p.location == l.id && p.kind == PoiKind::MineExit).map(|p| p.stand).unwrap_or((12, 22));
+    let exit = c
+        .pois
+        .iter()
+        .find(|p| p.location == l.id && p.kind == PoiKind::MineExit)
+        .map(|p| p.stand)
+        .unwrap_or((12, 22));
     let mut scratch = PathScratch::default();
     scratch.bfs(grid, exit.0, exit.1);
     for (x, y) in placed {
@@ -795,7 +863,10 @@ pub fn respawn_surface_rocks(c: &Content, seed: u64, day: u32, grid: &mut Grid, 
     let weights: Vec<u32> = c.surface.quarry_rock_kinds.iter().map(|r| r.1).collect();
     for r in c.regions_of(loc, "rocks") {
         let rect = Rect::from_arr(r.rect);
-        let existing = rect.tiles().filter(|(x, y)| grid.obj(*x, *y) == Obj::Rock).count() as u32;
+        let existing = rect
+            .tiles()
+            .filter(|(x, y)| grid.obj(*x, *y) == Obj::Rock)
+            .count() as u32;
         let mut need = (c.surface.quarry_rocks as u32).saturating_sub(existing);
         let mut tries = 0;
         while need > 0 && tries < 400 {
@@ -814,20 +885,35 @@ pub fn respawn_surface_rocks(c: &Content, seed: u64, day: u32, grid: &mut Grid, 
 
 /// Daily forage spawn: top up a location's forage to its cap from the seasonal table.
 /// Returns the number of forage objects now present.
-pub fn spawn_forage(c: &Content, seed: u64, day: u32, season: Season, grid: &mut Grid, fl: &content::ForageLocation) -> u32 {
+pub fn spawn_forage(
+    c: &Content,
+    seed: u64,
+    day: u32,
+    season: Season,
+    grid: &mut Grid,
+    fl: &content::ForageLocation,
+) -> u32 {
     let mut rng = stream(seed, Domain::Forage, day, fl.location as u32);
     let table = &fl.tables[season as usize];
     if table.is_empty() {
         return grid.count_obj(Obj::Forage);
     }
     let weights: Vec<u32> = table.iter().map(|t| t.1).collect();
-    let rects: Vec<Rect> = c.regions_of(fl.location, "forage").map(|r| Rect::from_arr(r.rect)).collect();
+    let rects: Vec<Rect> = c
+        .regions_of(fl.location, "forage")
+        .map(|r| Rect::from_arr(r.rect))
+        .collect();
     if rects.is_empty() {
         return 0;
     }
     let mut count = grid.count_obj(Obj::Forage);
     // only spawn on tiles reachable from the location's entrance
-    let hub = c.warps.iter().find(|w| w.to == fl.location).map(|w| w.to_tile).unwrap_or(c.world.start_tile);
+    let hub = c
+        .warps
+        .iter()
+        .find(|w| w.to == fl.location)
+        .map(|w| w.to_tile)
+        .unwrap_or(c.world.start_tile);
     let mut scratch = PathScratch::default();
     scratch.bfs(grid, hub.0, hub.1);
     let mut tries = 0;
@@ -836,7 +922,10 @@ pub fn spawn_forage(c: &Content, seed: u64, day: u32, season: Season, grid: &mut
         let r = &rects[rng.below(rects.len() as u32) as usize];
         let x = rng.range(r.x0 as u32, r.x1 as u32) as u8;
         let y = rng.range(r.y0 as u32, r.y1 as u32) as u8;
-        if grid.obj(x, y) == Obj::None && grid.terrain(x, y).walkable() && scratch.dist(grid, x, y) != UNREACHABLE {
+        if grid.obj(x, y) == Obj::None
+            && grid.terrain(x, y).walkable()
+            && scratch.dist(grid, x, y) != UNREACHABLE
+        {
             let item: ItemId = table[rng.weighted(&weights)].0;
             grid.set_obj(x, y, Obj::Forage, item);
             count += 1;
@@ -850,7 +939,11 @@ pub fn remix_slots(c: &Content, seed: u64, test_partition: bool) -> Vec<ItemId> 
     let mut rng = stream(seed, Domain::Remix, 0, test_partition as u32);
     let mut out = Vec::with_capacity(c.total_slots as usize);
     for r in &c.requests {
-        let pool = if test_partition { &r.pool_test } else { &r.pool_train };
+        let pool = if test_partition {
+            &r.pool_test
+        } else {
+            &r.pool_train
+        };
         if r.slots.is_empty() {
             continue;
         }
@@ -899,13 +992,28 @@ mod tests {
                 continue;
             }
             let g = a.grid(l.id);
-            let hub = c.warps.iter().find(|w| w.to == l.id).map(|w| w.to_tile).unwrap_or(c.world.start_tile);
+            let hub = c
+                .warps
+                .iter()
+                .find(|w| w.to == l.id)
+                .map(|w| w.to_tile)
+                .unwrap_or(c.world.start_tile);
             s.bfs(g, hub.0, hub.1);
             for p in c.pois.iter().filter(|p| p.location == l.id) {
-                assert_ne!(s.dist(g, p.stand.0, p.stand.1), UNREACHABLE, "poi {} unreachable", p.key);
+                assert_ne!(
+                    s.dist(g, p.stand.0, p.stand.1),
+                    UNREACHABLE,
+                    "poi {} unreachable",
+                    p.key
+                );
             }
             for w in c.warps.iter().filter(|w| w.from == l.id) {
-                assert_ne!(s.dist(g, w.tile.0, w.tile.1), UNREACHABLE, "warp {} unreachable", w.id);
+                assert_ne!(
+                    s.dist(g, w.tile.0, w.tile.1),
+                    UNREACHABLE,
+                    "warp {} unreachable",
+                    w.id
+                );
             }
         }
     }
@@ -919,7 +1027,11 @@ mod tests {
             if l.kind == LocKind::Mines {
                 continue;
             }
-            assert_ne!(r.hops[home as usize][l.id as usize], 255, "no route to {}", l.key);
+            assert_ne!(
+                r.hops[home as usize][l.id as usize], 255,
+                "no route to {}",
+                l.key
+            );
         }
     }
 
@@ -929,7 +1041,12 @@ mod tests {
         let l = &c.locations[c.loc_id("mines") as usize];
         let mut g = Grid::filled(l.width, l.height, Terrain::Floor);
         generate_mine_floor(c, 5, 3, 7, &mut g);
-        let ladders = g.data.iter().zip(g.obj_plane()).filter(|(d, o)| **o == Obj::Rock as u8 && (**d & (1 << 15)) != 0).count();
+        let ladders = g
+            .data
+            .iter()
+            .zip(g.obj_plane())
+            .filter(|(d, o)| **o == Obj::Rock as u8 && (**d & (1 << 15)) != 0)
+            .count();
         assert!(ladders >= 1);
         assert!(g.count_obj(Obj::Rock) >= c.mining.rocks_per_floor_min as u32);
     }

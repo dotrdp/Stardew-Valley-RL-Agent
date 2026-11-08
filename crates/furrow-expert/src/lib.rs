@@ -23,8 +23,8 @@
 use std::sync::OnceLock;
 
 use furrow::content::{
-    content, season_in, Category, Content, CropId, InputSel, ItemId, PoiKind, RequestId, Season, SeasonMask,
-    Tool, WeatherReq,
+    content, season_in, Category, Content, CropId, InputSel, ItemId, PoiKind, RequestId, Season,
+    SeasonMask, Tool, WeatherReq,
 };
 use furrow::macro_action::{macro_actions, Macro};
 use furrow::rng::{stream, Domain};
@@ -164,7 +164,13 @@ fn sources() -> &'static Sources {
 
 fn macro_index() -> &'static std::collections::BTreeMap<String, u32> {
     static M: OnceLock<std::collections::BTreeMap<String, u32>> = OnceLock::new();
-    M.get_or_init(|| macro_actions().iter().enumerate().map(|(i, m)| (m.name(), i as u32)).collect())
+    M.get_or_init(|| {
+        macro_actions()
+            .iter()
+            .enumerate()
+            .map(|(i, m)| (m.name(), i as u32))
+            .collect()
+    })
 }
 
 /// Macro id of a macro.
@@ -212,12 +218,18 @@ impl<'a> Planner<'a> {
         if cur == s as u32 {
             0
         } else {
-            ((s as u32 + 4 - cur) % 4) * self.c.world.season_days as u32 - self.st.day_of_season() as u32
+            ((s as u32 + 4 - cur) % 4) * self.c.world.season_days as u32
+                - self.st.day_of_season() as u32
         }
     }
     /// Earliest wait (days) until a season in `mask` (0 if now).
     fn wait_mask(&self, mask: SeasonMask) -> u32 {
-        Season::ALL.iter().filter(|s| season_in(mask, **s)).map(|s| self.days_until(*s)).min().unwrap_or(FAR)
+        Season::ALL
+            .iter()
+            .filter(|s| season_in(mask, **s))
+            .map(|s| self.days_until(*s))
+            .min()
+            .unwrap_or(FAR)
     }
     /// Days remaining in the contiguous growing window of a crop starting today (0 if out of season).
     pub fn crop_window(&self, cr: CropId) -> u32 {
@@ -255,7 +267,10 @@ impl<'a> Planner<'a> {
         // shop now / later
         if s.shop_seasons[item as usize] != 0 {
             let w = self.wait_mask(s.shop_seasons[item as usize]);
-            let price = c.shop_row(item, Season::from_index(st.season() as u8 + 0)).map(|(sh, r)| c.shops[sh as usize].stock[r].price).unwrap_or(200);
+            let price = c
+                .shop_row(item, Season::from_index(st.season() as u8))
+                .map(|(sh, r)| c.shops[sh as usize].stock[r].price)
+                .unwrap_or(200);
             best = best.min(w + 1 + (price * missing) / 800);
         }
         if s.merchant[item as usize] && st.merchant_today() && st.merchant_stock.contains(&item) {
@@ -266,8 +281,14 @@ impl<'a> Planner<'a> {
             let crop = &c.crops[cr as usize];
             let gh = st.has_feature(furrow::content::Feature::Greenhouse);
             let window = self.crop_window(cr);
-            let now = if window >= crop.grow_days as u32 { crop.grow_days as u32 + 1 } else { FAR };
-            let later = self.wait_mask(crop.seasons & !(1 << st.season() as u8)).saturating_add(crop.grow_days as u32 + 1);
+            let now = if window >= crop.grow_days as u32 {
+                crop.grow_days as u32 + 1
+            } else {
+                FAR
+            };
+            let later = self
+                .wait_mask(crop.seasons & !(1 << st.season() as u8))
+                .saturating_add(crop.grow_days as u32 + 1);
             let ghc = if gh { crop.grow_days as u32 + 1 } else { FAR };
             best = best.min(now.min(later).min(ghc));
         }
@@ -280,7 +301,11 @@ impl<'a> Planner<'a> {
         for f in &s.fish_of[item as usize] {
             let fish = &c.fish[*f as usize];
             let rod = st.player.tool_level[Tool::Rod as usize];
-            let gate = if rod >= fish.min_rod { 0 } else { 8 * (fish.min_rod - rod) as u32 };
+            let gate = if rod >= fish.min_rod {
+                0
+            } else {
+                8 * (fish.min_rod - rod) as u32
+            };
             let weather = match fish.weather {
                 WeatherReq::Rain => 4,
                 _ => 0,
@@ -291,7 +316,11 @@ impl<'a> Planner<'a> {
         // mining
         if let Some((floor, pick)) = s.mine_of[item as usize] {
             let pl = st.player.tool_level[Tool::Pickaxe as usize];
-            let gate = if pl >= pick { 0 } else { 6 * (pick - pl) as u32 };
+            let gate = if pl >= pick {
+                0
+            } else {
+                6 * (pick - pl) as u32
+            };
             let depth_cost = (floor as u32).saturating_sub(st.mine.deepest as u32) / 6;
             let rarity = match c.items[item as usize].category {
                 Category::Gem => 2 + missing * 2,
@@ -308,7 +337,11 @@ impl<'a> Planner<'a> {
             "resin" => best = best.min(2 + missing / 3),
             "hardwood" => {
                 let axe = st.player.tool_level[Tool::Axe as usize];
-                best = best.min(if axe >= 1 { 2 + missing / 8 } else { 9 + missing / 8 });
+                best = best.min(if axe >= 1 {
+                    2 + missing / 8
+                } else {
+                    9 + missing / 8
+                });
             }
             _ => {}
         }
@@ -332,15 +365,25 @@ impl<'a> Planner<'a> {
                 let rule = &m.rules[ri];
                 let batches = missing.div_ceil(rule.output_count as u32);
                 let input_cost = match rule.input {
-                    InputSel::Item(i) => self.item_cost(i, rule.input_count as u32 * batches, depth + 1),
+                    InputSel::Item(i) => {
+                        self.item_cost(i, rule.input_count as u32 * batches, depth + 1)
+                    }
                     InputSel::Category(Category::Crop) => 4,
                     InputSel::Category(Category::Fish) => 3 + batches,
                     InputSel::Category(_) => 6,
                 };
                 let have_machine = st.machines.iter().any(|x| x.kind == mk) || st.count(m.item) > 0;
-                let machine_cost = if have_machine { 0 } else { self.item_cost(m.item, 1, depth + 1) };
+                let machine_cost = if have_machine {
+                    0
+                } else {
+                    self.item_cost(m.item, 1, depth + 1)
+                };
                 let days = (rule.minutes / 1440) * batches.div_ceil(2) + 1;
-                best = best.min(1u32.saturating_add(input_cost).saturating_add(machine_cost).saturating_add(days));
+                best = best.min(
+                    1u32.saturating_add(input_cost)
+                        .saturating_add(machine_cost)
+                        .saturating_add(days),
+                );
             }
         }
         best
@@ -399,10 +442,12 @@ impl<'a> Planner<'a> {
             for f in &s.fish_of[i] {
                 let fish = &c.fish[*f as usize];
                 // only count fish that are the cheapest way to get the item
-                self.need_tool[Tool::Rod as usize] = self.need_tool[Tool::Rod as usize].max(fish.min_rod.min(1));
+                self.need_tool[Tool::Rod as usize] =
+                    self.need_tool[Tool::Rod as usize].max(fish.min_rod.min(1));
             }
             if let Some((_, pick)) = s.mine_of[i] {
-                self.need_tool[Tool::Pickaxe as usize] = self.need_tool[Tool::Pickaxe as usize].max(pick);
+                self.need_tool[Tool::Pickaxe as usize] =
+                    self.need_tool[Tool::Pickaxe as usize].max(pick);
             }
             if c.items[i].key == "hardwood" {
                 self.need_tool[Tool::Axe as usize] = 1;
@@ -413,7 +458,10 @@ impl<'a> Planner<'a> {
             if self.want[i] == 0 || st.count(i as ItemId) >= self.want[i] {
                 continue;
             }
-            let min_rod = s.fish_of[i].iter().map(|f| c.fish[*f as usize].min_rod).min();
+            let min_rod = s.fish_of[i]
+                .iter()
+                .map(|f| c.fish[*f as usize].min_rod)
+                .min();
             if let Some(mr) = min_rod {
                 self.need_tool[Tool::Rod as usize] = self.need_tool[Tool::Rod as usize].max(mr);
             }
@@ -433,7 +481,8 @@ impl<'a> Planner<'a> {
         // machine outputs → inputs (two passes so bars → ore resolves)
         for _pass in 0..2 {
             for i in 0..c.items.len() {
-                let deficit = self.want[i].saturating_sub(st.count(i as ItemId) + self.pending_output(i as ItemId));
+                let deficit = self.want[i]
+                    .saturating_sub(st.count(i as ItemId) + self.pending_output(i as ItemId));
                 if deficit == 0 {
                     continue;
                 }
@@ -444,7 +493,8 @@ impl<'a> Planner<'a> {
                     }
                     let batches = deficit.div_ceil(rule.output_count as u32);
                     if let InputSel::Item(inp) = rule.input {
-                        self.want[inp as usize] = self.want[inp as usize].max(batches * rule.input_count as u32 + 0);
+                        self.want[inp as usize] =
+                            self.want[inp as usize].max(batches * rule.input_count as u32);
                     }
                     if let Some((f, fc)) = rule.fuel {
                         self.want[f as usize] = self.want[f as usize].max(batches * fc as u32);
@@ -456,7 +506,12 @@ impl<'a> Planner<'a> {
                     }
                 } else if let Some(r) = s.recipe_of[i] {
                     let rc = &c.recipes[r as usize];
-                    if c.items[i].category == Category::Machine && st.machines.iter().any(|x| c.machines[x.kind as usize].item == i as ItemId) {
+                    if c.items[i].category == Category::Machine
+                        && st
+                            .machines
+                            .iter()
+                            .any(|x| c.machines[x.kind as usize].item == i as ItemId)
+                    {
                         continue;
                     }
                     let batches = deficit.div_ceil(rc.count as u32);
@@ -465,7 +520,8 @@ impl<'a> Planner<'a> {
                         continue;
                     }
                     for (inp, n) in &rc.inputs {
-                        self.want[*inp as usize] = self.want[*inp as usize].max(batches * *n as u32);
+                        self.want[*inp as usize] =
+                            self.want[*inp as usize].max(batches * *n as u32);
                     }
                 }
             }
@@ -474,7 +530,12 @@ impl<'a> Planner<'a> {
 
     /// Units of an item that machines are currently producing.
     pub fn pending_output(&self, item: ItemId) -> u32 {
-        self.st.machines.iter().filter(|m| m.output == item && (m.ready_at != 0 || m.has_output)).map(|m| m.out_count as u32).sum()
+        self.st
+            .machines
+            .iter()
+            .filter(|m| m.output == item && (m.ready_at != 0 || m.has_output))
+            .map(|m| m.out_count as u32)
+            .sum()
     }
     /// Units still missing for an item (want − held − in machines).
     pub fn deficit(&self, item: ItemId) -> u32 {
@@ -515,8 +576,13 @@ impl Expert {
             return (clean, clean);
         }
         let st = env.state();
-        let key = (st.steps as u32).wrapping_mul(2654435761) ^ (self.cfg.style << 20);
-        let mut r = stream(self.cfg.seed ^ st.seed.rotate_left(17), Domain::Expert, st.day as u32, key ^ st.decisions_today as u32);
+        let key = st.steps.wrapping_mul(2654435761) ^ (self.cfg.style << 20);
+        let mut r = stream(
+            self.cfg.seed ^ st.seed.rotate_left(17),
+            Domain::Expert,
+            st.day as u32,
+            key ^ st.decisions_today as u32,
+        );
         if !r.chance_ppm(self.cfg.noise_ppm) {
             return (clean, clean);
         }
@@ -583,7 +649,8 @@ impl Expert {
         // ---- coins
         for r in &c.coin_requests {
             let m = Macro::PayCoins(*r);
-            if valid(m) && st.player.money >= c.requests[*r as usize].coins + upgrade_coins(st, &p) {
+            if valid(m) && st.player.money >= c.requests[*r as usize].coins + upgrade_coins(st, &p)
+            {
                 return (mid(m), Intent::Deliver);
             }
         }
@@ -610,7 +677,17 @@ impl Expert {
             let machine_useful = is_machine && machine_wanted(st, &p, out);
             if (wanted && !is_machine) || machine_useful {
                 // do not consume inputs that are themselves targets (unless the output is targeted)
-                if rc.inputs.iter().all(|(i, n)| st.count(*i) >= *n as u32 + p.want[*i as usize].saturating_sub(if is_machine { p.want[*i as usize] } else { 0 }) || is_machine || wanted) {
+                if rc.inputs.iter().all(|(i, n)| {
+                    st.count(*i)
+                        >= *n as u32
+                            + p.want[*i as usize].saturating_sub(if is_machine {
+                                p.want[*i as usize]
+                            } else {
+                                0
+                            })
+                        || is_machine
+                        || wanted
+                }) {
                     return (mid(m), Intent::Craft);
                 }
             }
@@ -648,7 +725,10 @@ impl Expert {
         // ---- upgrades
         for t in [Tool::Pickaxe, Tool::Rod, Tool::Axe] {
             let lvl = st.player.tool_level[t as usize];
-            if lvl < p.need_tool[t as usize] && valid(Macro::UpgradeTool(t)) && !upgrade_blocks_now(st, t) {
+            if lvl < p.need_tool[t as usize]
+                && valid(Macro::UpgradeTool(t))
+                && !upgrade_blocks_now(st, t)
+            {
                 return (mid(Macro::UpgradeTool(t)), Intent::Upgrade);
             }
         }
@@ -741,7 +821,11 @@ impl Expert {
                 continue;
             }
             let avg = (cr.yield_min as u32 + cr.yield_max as u32).div_ceil(2);
-            let harvests = if cr.regrow_days > 0 { 1 + window.saturating_sub(cr.grow_days as u32) / cr.regrow_days as u32 } else { 1 };
+            let harvests = if cr.regrow_days > 0 {
+                1 + window.saturating_sub(cr.grow_days as u32) / cr.regrow_days as u32
+            } else {
+                1
+            };
             let per_seed = avg * harvests.max(1);
             let expect = p.planted_output(cr.id);
             let need_left = need.saturating_sub(expect);
@@ -763,9 +847,13 @@ impl Expert {
             if d == 0 || it.category == Category::Seed {
                 continue;
             }
-            let Some((price, seller)) = st.best_seller(i as ItemId) else { continue };
+            let Some((price, seller)) = st.best_seller(i as ItemId) else {
+                continue;
+            };
             // merchant: buy targeted rarities; shops: buy only cheap items or food/fertilizer
-            let worth = seller.is_none() || price <= 60 || matches!(it.category, Category::Food | Category::Fertilizer);
+            let worth = seller.is_none()
+                || price <= 60
+                || matches!(it.category, Category::Food | Category::Fertilizer);
             if !worth {
                 continue;
             }
@@ -779,7 +867,12 @@ impl Expert {
         None
     }
 
-    fn money_crop_rule(&self, st: &GameState, p: &Planner, valid: &dyn Fn(Macro) -> bool) -> Option<u32> {
+    fn money_crop_rule(
+        &self,
+        st: &GameState,
+        p: &Planner,
+        valid: &dyn Fn(Macro) -> bool,
+    ) -> Option<u32> {
         let c = content();
         // planted tile budget for money crops
         let budget = 24 + (self.cfg.style % 3) * 8;
@@ -796,11 +889,17 @@ impl Expert {
             if window < cr.grow_days as u32 {
                 continue;
             }
-            let Some((sh, row)) = c.shop_row(cr.seed, st.season()) else { continue };
+            let Some((sh, row)) = c.shop_row(cr.seed, st.season()) else {
+                continue;
+            };
             let price = c.shops[sh as usize].stock[row].price as i64;
             let avg = (cr.yield_min as i64 + cr.yield_max as i64 + 1) / 2;
             let sell = c.items[cr.produce as usize].sell as i64;
-            let harvests = if cr.regrow_days > 0 { 1 + (window as i64 - cr.grow_days as i64) / cr.regrow_days as i64 } else { 1 };
+            let harvests = if cr.regrow_days > 0 {
+                1 + (window as i64 - cr.grow_days as i64) / cr.regrow_days as i64
+            } else {
+                1
+            };
             let profit = (sell * avg * harvests - price) * 100 / (window.min(30) as i64).max(1);
             if best.is_none_or(|b| profit > b.0) {
                 best = Some((profit, cr.id));
@@ -865,7 +964,9 @@ fn deliverable(st: &GameState, p: &Planner) -> (bool, u32) {
         let range = st.slots_of(r.id);
         let mut f = 0;
         for (k, i) in range.enumerate() {
-            if !st.restoration.slot_filled[i] && st.count(st.restoration.slot_item[i]) >= r.slots[k].count as u32 {
+            if !st.restoration.slot_filled[i]
+                && st.count(st.restoration.slot_item[i]) >= r.slots[k].count as u32
+            {
                 f += 1;
                 if p.targets.contains(&i) {
                     fillable += 1;
@@ -904,27 +1005,54 @@ fn upgrade_blocks_now(st: &GameState, t: Tool) -> bool {
 
 fn machine_wanted(st: &GameState, p: &Planner, machine_item: ItemId) -> bool {
     let c = content();
-    if st.machines.iter().any(|m| c.machines[m.kind as usize].item == machine_item) {
+    if st
+        .machines
+        .iter()
+        .any(|m| c.machines[m.kind as usize].item == machine_item)
+    {
         return false;
     }
     if p.want[machine_item as usize] > st.count(machine_item) {
         return true;
     }
-    let Some(mk) = c.machine_by_item[machine_item as usize] else { return false };
-    c.machines[mk as usize].rules.iter().any(|r| p.deficit(r.output) > 0)
+    let Some(mk) = c.machine_by_item[machine_item as usize] else {
+        return false;
+    };
+    c.machines[mk as usize]
+        .rules
+        .iter()
+        .any(|r| p.deficit(r.output) > 0)
 }
 
 fn load_useful(st: &GameState, p: &Planner) -> bool {
     let c = content();
     st.machines.iter().any(|m| {
-        m.ready_at == 0 && !m.has_output && c.machines[m.kind as usize].rules.iter().any(|r| p.deficit(r.output) > 0)
-    }) && st.machines.iter().any(|m| m.ready_at == 0 && !m.has_output && st.any_input_for(m.kind))
+        m.ready_at == 0
+            && !m.has_output
+            && c.machines[m.kind as usize]
+                .rules
+                .iter()
+                .any(|r| p.deficit(r.output) > 0)
+    }) && st
+        .machines
+        .iter()
+        .any(|m| m.ready_at == 0 && !m.has_output && st.any_input_for(m.kind))
 }
 
-fn fish_rule(st: &GameState, p: &Planner, valid: &dyn Fn(Macro) -> bool, gated_only: bool) -> Option<u32> {
+fn fish_rule(
+    st: &GameState,
+    p: &Planner,
+    valid: &dyn Fn(Macro) -> bool,
+    gated_only: bool,
+) -> Option<u32> {
     let c = content();
     let rod = st.player.tool_level[Tool::Rod as usize];
-    if st.player.upgrading.map(|(u, _)| u == Tool::Rod).unwrap_or(false) {
+    if st
+        .player
+        .upgrading
+        .map(|(u, _)| u == Tool::Rod)
+        .unwrap_or(false)
+    {
         return None;
     }
     let mut best: Option<(u32, u8)> = None;
@@ -955,14 +1083,19 @@ fn fish_rule(st: &GameState, p: &Planner, valid: &dyn Fn(Macro) -> bool, gated_o
             if d == 0 {
                 continue;
             }
-            let gated = f.weather != WeatherReq::Any || f.time.1 < c.world.day_end || f.seasons.count_ones() <= 1;
+            let gated = f.weather != WeatherReq::Any
+                || f.time.1 < c.world.day_end
+                || f.seasons.count_ones() <= 1;
             if gated_only && !gated {
                 continue;
             }
             score += 10 + if gated { 20 } else { 0 } + (100 - f.difficulty as u32) / 10;
         }
         let rack = c.item_id("drying_rack");
-        let have_rack = st.machines.iter().any(|m| c.machines[m.kind as usize].item == rack);
+        let have_rack = st
+            .machines
+            .iter()
+            .any(|m| c.machines[m.kind as usize].item == rack);
         if !gated_only && generic_fish > 0 && have_rack {
             score += 5;
         }
@@ -985,9 +1118,15 @@ fn money_fish(st: &GameState, valid: &dyn Fn(Macro) -> bool) -> Option<u32> {
         let mut wsum = 0u32;
         let mut vsum = 0u32;
         for f in &c.fish {
-            if f.spots.contains(spot) && rod >= f.min_rod && season_in(f.seasons, st.season()) && st.minute >= f.time.0 && st.minute < f.time.1 {
+            if f.spots.contains(spot)
+                && rod >= f.min_rod
+                && season_in(f.seasons, st.season())
+                && st.minute >= f.time.0
+                && st.minute < f.time.1
+            {
                 wsum += f.weight;
-                vsum += f.weight * c.items[f.item as usize].sell * (100 - f.difficulty as u32) / 100;
+                vsum +=
+                    f.weight * c.items[f.item as usize].sell * (100 - f.difficulty as u32) / 100;
             }
         }
         if wsum == 0 {
@@ -1030,7 +1169,12 @@ fn mine_rule(st: &GameState, p: &Planner, valid: &dyn Fn(Macro) -> bool) -> Opti
     let c = content();
     let s = sources();
     let pick = st.player.tool_level[Tool::Pickaxe as usize];
-    if st.player.upgrading.map(|(u, _)| u == Tool::Pickaxe).unwrap_or(false) {
+    if st
+        .player
+        .upgrading
+        .map(|(u, _)| u == Tool::Pickaxe)
+        .unwrap_or(false)
+    {
         return None;
     }
     let mut need_floor: Option<u8> = None;
@@ -1042,11 +1186,16 @@ fn mine_rule(st: &GameState, p: &Planner, valid: &dyn Fn(Macro) -> bool) -> Opti
         if s.crop_of[i].is_some() {
             continue;
         }
-        let Some((floor, min_pick)) = s.mine_of[i] else { continue };
+        let Some((floor, min_pick)) = s.mine_of[i] else {
+            continue;
+        };
         if min_pick > pick {
             continue;
         }
-        if matches!(it.key.as_str(), "stone") && st.field_debris() > 20 && st.player.loc != c.loc_id("mines") {
+        if matches!(it.key.as_str(), "stone")
+            && st.field_debris() > 20
+            && st.player.loc != c.loc_id("mines")
+        {
             // stone is also on the farm; still allow mining
         }
         need_floor = Some(need_floor.map_or(floor, |f| f.max(floor)));
@@ -1061,7 +1210,12 @@ fn mine_rule(st: &GameState, p: &Planner, valid: &dyn Fn(Macro) -> bool) -> Opti
         let mines = c.loc_id("mines");
         if st.player.loc == mines {
             let g = st.world.grid(mines);
-            let rocks = (0..g.obj_plane().len()).filter(|i| g.obj_plane()[*i] == Obj::Rock as u8 && c.rocks[(g.data[*i] & 0xff) as usize].min_pick <= pick).count();
+            let rocks = (0..g.obj_plane().len())
+                .filter(|i| {
+                    g.obj_plane()[*i] == Obj::Rock as u8
+                        && c.rocks[(g.data[*i] & 0xff) as usize].min_pick <= pick
+                })
+                .count();
             if rocks == 0 && valid(Macro::MineDescend) {
                 return Some(mid(Macro::MineDescend));
             }
@@ -1076,7 +1230,12 @@ fn mine_rule(st: &GameState, p: &Planner, valid: &dyn Fn(Macro) -> bool) -> Opti
 
 /// Helper used by tests/CLI: the request ids still open.
 pub fn open_requests(st: &GameState) -> Vec<RequestId> {
-    content().requests.iter().filter(|r| !st.restoration.request_done[r.id as usize]).map(|r| r.id).collect()
+    content()
+        .requests
+        .iter()
+        .filter(|r| !st.restoration.request_done[r.id as usize])
+        .map(|r| r.id)
+        .collect()
 }
 
 /// Helper: does a POI kind exist (sanity for tests).
@@ -1098,7 +1257,10 @@ mod tests {
 
     #[test]
     fn expert_is_stateless_and_deterministic() {
-        let mut env = Env::new(EnvConfig { seed: 3, ..Default::default() });
+        let mut env = Env::new(EnvConfig {
+            seed: 3,
+            ..Default::default()
+        });
         let e = Expert::new(ExpertConfig::default());
         for _ in 0..200 {
             if env.is_done() {

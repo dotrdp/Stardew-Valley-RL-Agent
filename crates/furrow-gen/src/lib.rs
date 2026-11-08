@@ -36,13 +36,21 @@ pub struct GenSummary {
 /// Run one expert episode and record it.
 pub fn run_episode(cfg: &EnvConfig, seed: u64, style: u32, noise_ppm: u32) -> EpisodeBuf {
     let mut env = Env::new(EnvConfig { seed, ..*cfg });
-    let ex = Expert::new(ExpertConfig { style, noise_ppm, seed: seed ^ 0xE4E4 });
+    let ex = Expert::new(ExpertConfig {
+        style,
+        noise_ppm,
+        seed: seed ^ 0xE4E4,
+    });
     let g = env.obs_global().len();
     let a = env.num_actions();
     let mut ep = EpisodeBuf::new(g, a);
     while !env.is_done() {
         let (clean, intent) = ex.act_with_intent(&env);
-        let (exec, _) = if noise_ppm > 0 { ex.noisy_act(&env) } else { (clean, clean) };
+        let (exec, _) = if noise_ppm > 0 {
+            ex.noisy_act(&env)
+        } else {
+            (clean, clean)
+        };
         let obs = env.obs_global().to_vec();
         let mask = env.action_mask().to_vec();
         let s = env.step(exec);
@@ -97,10 +105,28 @@ pub fn generate(out_dir: &Path, g: &GenConfig) -> std::io::Result<GenSummary> {
         "action_names": macro_actions().iter().map(|m| m.name()).collect::<Vec<_>>(),
         "generator": {"kind": "expert", "noise_ppm": g.noise_ppm, "styles": g.styles},
     });
-    let mut w = DatasetWriter::create(out_dir, &meta, probe.obs_global().len(), probe.num_actions())?;
-    let threads = if g.num_threads == 0 { std::thread::available_parallelism().map(|x| x.get()).unwrap_or(4) } else { g.num_threads };
-    let pool = rayon::ThreadPoolBuilder::new().num_threads(threads).build().expect("pool");
-    let styles = if g.styles.is_empty() { vec![0] } else { g.styles.clone() };
+    let mut w = DatasetWriter::create(
+        out_dir,
+        &meta,
+        probe.obs_global().len(),
+        probe.num_actions(),
+    )?;
+    let threads = if g.num_threads == 0 {
+        std::thread::available_parallelism()
+            .map(|x| x.get())
+            .unwrap_or(4)
+    } else {
+        g.num_threads
+    };
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(threads)
+        .build()
+        .expect("pool");
+    let styles = if g.styles.is_empty() {
+        vec![0]
+    } else {
+        g.styles.clone()
+    };
     let mut sum = GenSummary::default();
     let chunk = (threads * 4) as u64;
     let mut start = 0u64;
@@ -141,14 +167,22 @@ mod tests {
     fn generation_is_thread_count_independent() {
         let d1 = tempfile::tempdir().unwrap();
         let d2 = tempfile::tempdir().unwrap();
-        let mk = |t| GenConfig { env: EnvConfig::default(), episodes: 3, seed_range: (0, 100), noise_ppm: 50_000, styles: vec![0, 1], num_threads: t };
+        let mk = |t| GenConfig {
+            env: EnvConfig::default(),
+            episodes: 3,
+            seed_range: (0, 100),
+            noise_ppm: 50_000,
+            styles: vec![0, 1],
+            num_threads: t,
+        };
         let s1 = generate(d1.path(), &mk(1)).unwrap();
         let s2 = generate(d2.path(), &mk(3)).unwrap();
         assert_eq!(s1.steps, s2.steps);
         let a = std::fs::read(d1.path().join("episodes.jsonl")).unwrap();
         let b = std::fs::read(d2.path().join("episodes.jsonl")).unwrap();
         assert_eq!(a, b);
-        let shard = |d: &std::path::Path| std::fs::read(d.join("shards/w0-00000/action.npy")).unwrap();
+        let shard =
+            |d: &std::path::Path| std::fs::read(d.join("shards/w0-00000/action.npy")).unwrap();
         assert_eq!(shard(d1.path()), shard(d2.path()));
     }
 }

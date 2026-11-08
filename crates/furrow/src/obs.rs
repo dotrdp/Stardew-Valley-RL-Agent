@@ -74,7 +74,10 @@ impl GameState {
         out[o + 6 + self.weekday() as usize] = 1.0;
         out[o + 13] = frac(self.minute as u32, c.world.day_end as u32);
         out[o + 14] = frac(self.day as u32, 384);
-        out[o + 15] = frac(self.days_left_in_season() as u32, c.world.season_days as u32 - 1);
+        out[o + 15] = frac(
+            self.days_left_in_season() as u32,
+            c.world.season_days as u32 - 1,
+        );
         // weather
         o = g("weather");
         out[o + self.weather as usize] = 1.0;
@@ -126,9 +129,15 @@ impl GameState {
             out[b] = frac(held, 200);
             out[b + 1] = (held > 0) as u8 as f32;
             out[b + 2] = frac(need, 16);
-            out[b + 3] = if need > 0 { frac(held.min(need), need) } else { 0.0 };
+            out[b + 3] = if need > 0 {
+                frac(held.min(need), need)
+            } else {
+                0.0
+            };
             out[b + 4] = frac(self.open_slots_for(it.id), 8);
-            let mut price = c.shop_row(it.id, season).map(|(s, row)| c.shops[s as usize].stock[row].price);
+            let mut price = c
+                .shop_row(it.id, season)
+                .map(|(s, row)| c.shops[s as usize].stock[row].price);
             if merchant_today && self.merchant_stock.contains(&it.id) {
                 let mp = c.merchant_price(it.id);
                 price = Some(price.map(|p| p.min(mp)).unwrap_or(mp));
@@ -139,9 +148,17 @@ impl GameState {
         o = g("requests");
         for r in &c.requests {
             let b = o + r.id as usize * 3;
-            out[b] = if r.need > 0 { frac(self.filled_in(r.id) as u32, r.need as u32) } else { 0.0 };
+            out[b] = if r.need > 0 {
+                frac(self.filled_in(r.id) as u32, r.need as u32)
+            } else {
+                0.0
+            };
             out[b + 1] = self.restoration.request_done[r.id as usize] as u8 as f32;
-            out[b + 2] = if r.coins > 0 && !self.restoration.request_done[r.id as usize] { frac(r.coins, 10_000) } else { 0.0 };
+            out[b + 2] = if r.coins > 0 && !self.restoration.request_done[r.id as usize] {
+                frac(r.coins, 10_000)
+            } else {
+                0.0
+            };
         }
         o = g("wings");
         for w in &c.wings {
@@ -189,9 +206,17 @@ impl GameState {
                 }
             }
             out[b] = frac(planted, 64);
-            out[b + 1] = if planted > 0 { frac(watered, planted) } else { 0.0 };
+            out[b + 1] = if planted > 0 {
+                frac(watered, planted)
+            } else {
+                0.0
+            };
             out[b + 2] = frac(ready, 64);
-            out[b + 3] = if min_days == u32::MAX { 1.0 } else { frac(min_days, 24) };
+            out[b + 3] = if min_days == u32::MAX {
+                1.0
+            } else {
+                frac(min_days, 24)
+            };
             out[b + 4] = frac(maturing, 64);
         }
         // machines
@@ -212,7 +237,10 @@ impl GameState {
         // world
         o = g("world");
         for (i, fl) in c.forage.iter().enumerate() {
-            out[o + i] = frac(self.count_kind(fl.location, Obj::Forage), fl.daily_cap as u32);
+            out[o + i] = frac(
+                self.count_kind(fl.location, Obj::Forage),
+                fl.daily_cap as u32,
+            );
         }
         let b = o + c.forage.len();
         for s in &c.shops {

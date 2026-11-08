@@ -136,13 +136,20 @@ impl GameState {
         match p {
             Primitive::Wait => true,
             Primitive::Move(_) => !in_menu,
-            Primitive::UseTool => !in_menu && self.player.energy > 0 && self.use_tool_target().is_some(),
+            Primitive::UseTool => {
+                !in_menu && self.player.energy > 0 && self.use_tool_target().is_some()
+            }
             Primitive::Interact => !in_menu && self.interact_target(),
-            Primitive::SelectSlot(i) => (i as usize) < crate::state::BAG && self.player.bag[i as usize].1 > 0,
+            Primitive::SelectSlot(i) => {
+                (i as usize) < crate::state::BAG && self.player.bag[i as usize].1 > 0
+            }
             Primitive::SelectTool(t) => self.player.upgrading.map(|(u, _)| u != t).unwrap_or(true),
             Primitive::Eat => self
                 .selected_item()
-                .map(|(it, _)| c.items[it as usize].energy > 0 && self.player.energy < self.player.energy_max as i32)
+                .map(|(it, _)| {
+                    c.items[it as usize].energy > 0
+                        && self.player.energy < self.player.energy_max as i32
+                })
                 .unwrap_or(false),
             Primitive::OpenCraft => !in_menu,
             Primitive::MenuOption(k) => self.menu_option_valid(k),
@@ -177,7 +184,8 @@ impl GameState {
             Menu::Elevator => {
                 let max = self.elevator_max();
                 (k as usize) <= (max / c.mining.elevator_step) as usize
-                    && !(self.player.loc == c.loc_id("mines") && k as u8 * c.mining.elevator_step == self.mine.floor)
+                    && !(self.player.loc == c.loc_id("mines")
+                        && k * c.mining.elevator_step == self.mine.floor)
             }
         }
     }
@@ -206,7 +214,8 @@ impl GameState {
         }
         let range = self.slots_of(r);
         range.enumerate().any(|(k, i)| {
-            !self.restoration.slot_filled[i] && self.count(self.restoration.slot_item[i]) >= req.slots[k].count as u32
+            !self.restoration.slot_filled[i]
+                && self.count(self.restoration.slot_item[i]) >= req.slots[k].count as u32
         })
     }
 
@@ -232,7 +241,10 @@ impl GameState {
                         if obj == Obj::Weeds {
                             return Some(ToolUse::ClearWeeds);
                         }
-                        if terrain == Terrain::Dirt && obj == Obj::None && g.soil[idx] & SOIL_TILLED == 0 {
+                        if terrain == Terrain::Dirt
+                            && obj == Obj::None
+                            && g.soil[idx] & SOIL_TILLED == 0
+                        {
                             return Some(ToolUse::Till);
                         }
                         None
@@ -241,7 +253,10 @@ impl GameState {
                         if terrain == Terrain::Water || obj == Obj::Well {
                             return Some(ToolUse::Refill);
                         }
-                        if g.soil[idx] & SOIL_TILLED != 0 && g.soil[idx] & SOIL_WATERED == 0 && self.player.can_water > 0 {
+                        if g.soil[idx] & SOIL_TILLED != 0
+                            && g.soil[idx] & SOIL_WATERED == 0
+                            && self.player.can_water > 0
+                        {
                             return Some(ToolUse::Water);
                         }
                         None
@@ -250,7 +265,9 @@ impl GameState {
                         Obj::Weeds => Some(ToolUse::ClearWeeds),
                         Obj::Twig => Some(ToolUse::Twig),
                         Obj::Tree => Some(ToolUse::Tree),
-                        Obj::Stump if self.player.tool_level[Tool::Axe as usize] >= 1 => Some(ToolUse::Stump),
+                        Obj::Stump if self.player.tool_level[Tool::Axe as usize] >= 1 => {
+                            Some(ToolUse::Stump)
+                        }
                         _ => None,
                     },
                     Tool::Pickaxe => match obj {
@@ -258,13 +275,17 @@ impl GameState {
                         Obj::StoneDebris => Some(ToolUse::StoneDebris),
                         Obj::Rock => {
                             let kind = (g.data[idx] & 0xff) as usize;
-                            if self.player.tool_level[Tool::Pickaxe as usize] >= c.rocks[kind].min_pick {
+                            if self.player.tool_level[Tool::Pickaxe as usize]
+                                >= c.rocks[kind].min_pick
+                            {
                                 Some(ToolUse::Rock)
                             } else {
                                 None
                             }
                         }
-                        Obj::Boulder if self.player.tool_level[Tool::Pickaxe as usize] >= 2 => Some(ToolUse::Boulder),
+                        Obj::Boulder if self.player.tool_level[Tool::Pickaxe as usize] >= 2 => {
+                            Some(ToolUse::Boulder)
+                        }
                         _ => None,
                     },
                     Tool::Rod => {
@@ -282,7 +303,11 @@ impl GameState {
                 match it.category {
                     Category::Seed => {
                         let crop = c.crop_by_seed[item as usize]?;
-                        if g.soil[idx] & SOIL_TILLED != 0 && g.crop[idx] == NO_CROP && obj == Obj::None && self.crop_plantable(crop) {
+                        if g.soil[idx] & SOIL_TILLED != 0
+                            && g.crop[idx] == NO_CROP
+                            && obj == Obj::None
+                            && self.crop_plantable(crop)
+                        {
                             Some(ToolUse::Plant)
                         } else {
                             None
@@ -314,7 +339,11 @@ impl GameState {
         let (fx, fy) = self.facing_tile();
         c.pois
             .iter()
-            .find(|p| p.kind == PoiKind::FishingSpot && p.location == self.player.loc && (p.tile.0 as i32, p.tile.1 as i32) == (fx, fy))
+            .find(|p| {
+                p.kind == PoiKind::FishingSpot
+                    && p.location == self.player.loc
+                    && (p.tile.0 as i32, p.tile.1 as i32) == (fx, fy)
+            })
             .map(|p| p.id)
     }
 
@@ -331,7 +360,10 @@ impl GameState {
         }
         match g.obj(x, y) {
             Obj::Forage => self.free_slots() > 0 || self.can_add(g.data[idx], 1),
-            Obj::Crate => self.selected_item().map(|(i, _)| self.shippable(i)).unwrap_or(false),
+            Obj::Crate => self
+                .selected_item()
+                .map(|(i, _)| self.shippable(i))
+                .unwrap_or(false),
             Obj::Counter => self.shop_open(g.data[idx] as u8),
             Obj::Stall => self.merchant_open(),
             Obj::MillBoard | Obj::Bed | Obj::Elevator | Obj::MineExit | Obj::Ladder => true,
@@ -370,7 +402,10 @@ impl GameState {
                 InputSel::Item(i) => i == item,
                 InputSel::Category(cat) => c.items[item as usize].category == cat,
             } && n >= r.input_count;
-            let fuel_ok = r.fuel.map(|(f, fc)| self.count(f) >= fc as u32).unwrap_or(true);
+            let fuel_ok = r
+                .fuel
+                .map(|(f, fc)| self.count(f) >= fc as u32)
+                .unwrap_or(true);
             input_ok && fuel_ok
         })
     }
@@ -415,7 +450,11 @@ impl GameState {
                 if self.facing_obj() == Obj::Bed {
                     self.end_day(false);
                     self.tick_machines();
-                    return PrimResult { ticks: 0, ok: true, day_ends: 0 };
+                    return PrimResult {
+                        ticks: 0,
+                        ok: true,
+                        day_ends: 0,
+                    };
                 }
                 r.ok = self.do_interact();
             }
@@ -425,7 +464,8 @@ impl GameState {
                 if let Some((item, _)) = self.selected_item() {
                     let e = self.c().items[item as usize].energy as i32;
                     self.remove_item(item, 1);
-                    self.player.energy = (self.player.energy + e).min(self.player.energy_max as i32);
+                    self.player.energy =
+                        (self.player.energy + e).min(self.player.energy_max as i32);
                 }
             }
             Primitive::OpenCraft => self.menu = Menu::Craft,
@@ -456,7 +496,9 @@ impl GameState {
         match g.obj(x, y) {
             Obj::Warp => {
                 let w = &c.warps[g.data[g.idx(x, y)] as usize];
-                if w.to == c.loc_id("greenhouse") && !self.has_feature(crate::content::Feature::Greenhouse) {
+                if w.to == c.loc_id("greenhouse")
+                    && !self.has_feature(crate::content::Feature::Greenhouse)
+                {
                     self.last.failed = true;
                     return;
                 }
@@ -479,7 +521,10 @@ impl GameState {
         let c = self.c();
         let floor = floor.clamp(1, c.mining.floors);
         let mines = c.loc_id("mines");
-        let mut g = std::mem::replace(self.world.grid_mut(mines), world::Grid::filled(1, 1, Terrain::Void));
+        let mut g = std::mem::replace(
+            self.world.grid_mut(mines),
+            world::Grid::filled(1, 1, Terrain::Void),
+        );
         world::generate_mine_floor(c, self.seed, self.day as u32, floor, &mut g);
         *self.world.grid_mut(mines) = g;
         self.mine.floor = floor;
@@ -640,8 +685,12 @@ impl GameState {
                 self.spend_energy(cost);
                 let lvl = self.level(Skill::Fishing) as u32;
                 let rod = self.player.tool_level[Tool::Rod as usize] as u32;
-                let minus = (c.fishing.cast_minus_per_level as u32 * lvl).min(c.fishing.cast_min as u32 - 3);
-                let dur = self.dyn_rng.range(c.fishing.cast_min as u32 - minus, c.fishing.cast_max as u32 - minus);
+                let minus = (c.fishing.cast_minus_per_level as u32 * lvl)
+                    .min(c.fishing.cast_min as u32 - 3);
+                let dur = self.dyn_rng.range(
+                    c.fishing.cast_min as u32 - minus,
+                    c.fishing.cast_max as u32 - minus,
+                );
                 let spot = self.fishing_spot_here().unwrap_or(0);
                 let season = self.season();
                 let is_rain = self.weather.is_rain();
@@ -671,9 +720,12 @@ impl GameState {
                 let weights: Vec<u32> = eligible.iter().map(|e| e.1).collect();
                 let pick = eligible[self.dyn_rng.weighted(&weights)].0;
                 let f = &c.fish[pick];
-                let p = (c.fishing.base_ppm as i64 + c.fishing.skill_ppm as i64 * lvl as i64 + c.fishing.rod_ppm as i64 * rod as i64
+                let p = (c.fishing.base_ppm as i64
+                    + c.fishing.skill_ppm as i64 * lvl as i64
+                    + c.fishing.rod_ppm as i64 * rod as i64
                     - c.fishing.diff_ppm as i64 * f.difficulty as i64)
-                    .clamp(c.fishing.min_ppm as i64, c.fishing.max_ppm as i64) as u32;
+                    .clamp(c.fishing.min_ppm as i64, c.fishing.max_ppm as i64)
+                    as u32;
                 if self.dyn_rng.chance_ppm(p) {
                     self.add_item(f.item, 1);
                     self.add_xp(Skill::Fishing, c.fishing.xp_per_catch);
@@ -730,10 +782,13 @@ impl GameState {
         if self.grid().crop[idx] != NO_CROP && self.crop_ready_at(idx) {
             let cr = self.grid().crop[idx];
             let crop = &c.crops[cr as usize];
-            let mut n = self.dyn_rng.range(crop.yield_min as u32, crop.yield_max as u32) as u16;
+            let mut n = self
+                .dyn_rng
+                .range(crop.yield_min as u32, crop.yield_max as u32) as u16;
             let lvl = self.level(Skill::Farming) as u32;
             let fert = self.grid().soil[idx] & SOIL_FERT != 0;
-            let extra = (crop.extra_yield_ppm_per_level * lvl + if fert { 150_000 } else { 0 }).min(900_000);
+            let extra = (crop.extra_yield_ppm_per_level * lvl + if fert { 150_000 } else { 0 })
+                .min(900_000);
             if self.dyn_rng.chance_ppm(extra) {
                 n += 1;
             }
@@ -756,7 +811,14 @@ impl GameState {
             Obj::Forage => {
                 let item = self.grid().data[idx];
                 let lvl = self.level(Skill::Foraging) as u32;
-                let n = if self.dyn_rng.chance_ppm((c.skills.foraging_double_ppm_per_level * lvl).min(900_000)) { 2 } else { 1 };
+                let n = if self
+                    .dyn_rng
+                    .chance_ppm((c.skills.foraging_double_ppm_per_level * lvl).min(900_000))
+                {
+                    2
+                } else {
+                    1
+                };
                 if self.add_item(item, n) == n {
                     return false;
                 }
@@ -765,7 +827,9 @@ impl GameState {
                 true
             }
             Obj::Crate => {
-                let Some((item, n)) = self.selected_item() else { return false };
+                let Some((item, n)) = self.selected_item() else {
+                    return false;
+                };
                 if !self.shippable(item) {
                     return false;
                 }
@@ -829,7 +893,9 @@ impl GameState {
                         false
                     }
                 } else if m.ready_at == 0 {
-                    let Some(ri) = self.machine_load_rule(m.kind) else { return false };
+                    let Some(ri) = self.machine_load_rule(m.kind) else {
+                        return false;
+                    };
                     let rule = c.machines[m.kind as usize].rules[ri].clone();
                     let (item, _) = self.selected_item().unwrap();
                     self.remove_item(item, rule.input_count);

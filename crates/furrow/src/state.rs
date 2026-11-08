@@ -2,12 +2,12 @@
 //! restoration progress and rewards (DESIGN.md §2).
 
 use crate::content::{
-    content, Category, Content, Dir, Feature, ItemId, LocId, LocKind, MachineId, RequestId, Reward, Season, ShopId,
-    Skill, Tool, Weather, WingId,
+    content, Category, Content, Dir, Feature, ItemId, LocId, LocKind, MachineId, RequestId, Reward,
+    Season, ShopId, Skill, Tool, Weather, WingId,
 };
 use crate::hash::StableHasher;
 use crate::rng::{stream, Domain, Pcg32};
-use crate::world::{self, Grid, Obj, PathScratch, Routes, World, SOIL_WATERED, NO_CROP};
+use crate::world::{self, Grid, Obj, PathScratch, Routes, World, NO_CROP, SOIL_WATERED};
 
 /// Backpack capacity (fixed by content; mirrored here as a const for array sizing).
 pub const BAG: usize = 24;
@@ -159,7 +159,10 @@ impl GameState {
         let slot_item = if remixed {
             world::remix_slots(c, seed, test_partition)
         } else {
-            c.requests.iter().flat_map(|r| r.slots.iter().map(|s| s.item)).collect()
+            c.requests
+                .iter()
+                .flat_map(|r| r.slots.iter().map(|s| s.item))
+                .collect()
         };
         let mut slot_offset = Vec::with_capacity(c.requests.len());
         let mut acc = 0u16;
@@ -268,7 +271,8 @@ impl GameState {
     }
     /// Is the merchant in town today?
     pub fn merchant_today(&self) -> bool {
-        self.has_feature(Feature::MerchantDaily) || self.c().merchant.weekdays.contains(&self.weekday())
+        self.has_feature(Feature::MerchantDaily)
+            || self.c().merchant.weekdays.contains(&self.weekday())
     }
     /// Shop open now? (hours and weekday)
     pub fn shop_open(&self, shop: ShopId) -> bool {
@@ -309,7 +313,13 @@ impl GameState {
         }
         // surface rocks
         let quarry = c.loc_id("quarry");
-        world::respawn_surface_rocks(c, self.seed, self.day as u32, self.world.grid_mut(quarry), quarry);
+        world::respawn_surface_rocks(
+            c,
+            self.seed,
+            self.day as u32,
+            self.world.grid_mut(quarry),
+            quarry,
+        );
         // merchant stock
         if self.merchant_today() {
             let mut r = stream(self.seed, Domain::Merchant, self.day as u32, 0);
@@ -322,10 +332,12 @@ impl GameState {
         // tool upgrade completion
         if let Some((t, ready)) = self.player.upgrading {
             if self.day >= ready {
-                self.player.tool_level[t as usize] = (self.player.tool_level[t as usize] + 1).min(3);
+                self.player.tool_level[t as usize] =
+                    (self.player.tool_level[t as usize] + 1).min(3);
                 self.player.upgrading = None;
                 if t == Tool::Can {
-                    self.player.can_water = c.tools.can_capacity[self.player.tool_level[Tool::Can as usize] as usize];
+                    self.player.can_water =
+                        c.tools.can_capacity[self.player.tool_level[Tool::Can as usize] as usize];
                 }
             }
         }
@@ -371,8 +383,10 @@ impl GameState {
         self.player.y = bed.stand.1;
         self.player.facing = Dir::S;
         if passed_out {
-            self.player.energy = (self.player.energy_max as u32 * c.world.passout_energy_ppm / 1_000_000) as i32;
-            let pen = ((self.player.money as u64 * c.world.passout_money_ppm as u64) / 1_000_000) as u32;
+            self.player.energy =
+                (self.player.energy_max as u32 * c.world.passout_energy_ppm / 1_000_000) as i32;
+            let pen =
+                ((self.player.money as u64 * c.world.passout_money_ppm as u64) / 1_000_000) as u32;
             self.player.money -= pen.min(c.world.passout_money_cap);
             self.last.passed_out = true;
         } else {
@@ -391,7 +405,8 @@ impl GameState {
             let g = self.world.grid_mut(farm);
             for i in 0..g.crop.len() {
                 let cr = g.crop[i];
-                if cr != NO_CROP && !crate::content::season_in(c.crops[cr as usize].seasons, season) {
+                if cr != NO_CROP && !crate::content::season_in(c.crops[cr as usize].seasons, season)
+                {
                     g.crop[i] = NO_CROP;
                     g.crop_days[i] = 0;
                 }
@@ -432,7 +447,12 @@ impl GameState {
 
     /// Count of an item in the bag.
     pub fn count(&self, item: ItemId) -> u32 {
-        self.player.bag.iter().filter(|(i, n)| *i == item && *n > 0).map(|(_, n)| *n as u32).sum()
+        self.player
+            .bag
+            .iter()
+            .filter(|(i, n)| *i == item && *n > 0)
+            .map(|(_, n)| *n as u32)
+            .sum()
     }
     /// Number of empty slots.
     pub fn free_slots(&self) -> u8 {
@@ -496,7 +516,11 @@ impl GameState {
     }
     /// Slot index holding an item (first), if any.
     pub fn slot_of(&self, item: ItemId) -> Option<u8> {
-        self.player.bag.iter().position(|(i, n)| *i == item && *n > 0).map(|p| p as u8)
+        self.player
+            .bag
+            .iter()
+            .position(|(i, n)| *i == item && *n > 0)
+            .map(|p| p as u8)
     }
     /// Item in the selected slot, if the selection is a non-empty slot.
     pub fn selected_item(&self) -> Option<(ItemId, u16)> {
@@ -518,7 +542,12 @@ impl GameState {
     /// Skill level from XP.
     pub fn level(&self, s: Skill) -> u8 {
         let xp = self.player.xp[s as usize];
-        self.c().skills.thresholds.iter().filter(|t| xp >= **t).count() as u8
+        self.c()
+            .skills
+            .thresholds
+            .iter()
+            .filter(|t| xp >= **t)
+            .count() as u8
     }
     /// Add XP.
     pub fn add_xp(&mut self, s: Skill, xp: u16) {
@@ -526,7 +555,9 @@ impl GameState {
     }
     /// Energy cost of a base amount for a skill (level reduction, floor 60%).
     pub fn energy_cost(&self, base: u16, s: Skill) -> i32 {
-        let red = (self.c().skills.energy_cost_reduction_ppm_per_level as u64 * self.level(s) as u64).min(400_000);
+        let red = (self.c().skills.energy_cost_reduction_ppm_per_level as u64
+            * self.level(s) as u64)
+            .min(400_000);
         let cost = base as u64 * (1_000_000 - red) / 1_000_000;
         (cost.max(1)) as i32
     }
@@ -558,7 +589,9 @@ impl GameState {
     }
     /// Number of filled slots in a request.
     pub fn filled_in(&self, r: RequestId) -> u8 {
-        self.slots_of(r).filter(|i| self.restoration.slot_filled[*i]).count() as u8
+        self.slots_of(r)
+            .filter(|i| self.restoration.slot_filled[*i])
+            .count() as u8
     }
     /// Is a request still open?
     pub fn request_open(&self, r: RequestId) -> bool {
@@ -639,7 +672,10 @@ impl GameState {
     pub fn pay_coins(&mut self, r: RequestId) -> bool {
         let c = self.c();
         let req = &c.requests[r as usize];
-        if req.coins == 0 || self.restoration.request_done[r as usize] || self.player.money < req.coins {
+        if req.coins == 0
+            || self.restoration.request_done[r as usize]
+            || self.player.money < req.coins
+        {
             return false;
         }
         self.player.money -= req.coins;
@@ -659,7 +695,11 @@ impl GameState {
             self.restoration.request_done[r as usize] = true;
             self.restoration.requests_done += 1;
             let w = req.wing;
-            if c.wings[w as usize].requests.iter().all(|q| self.restoration.request_done[*q as usize]) {
+            if c.wings[w as usize]
+                .requests
+                .iter()
+                .all(|q| self.restoration.request_done[*q as usize])
+            {
                 self.restoration.wing_done[w as usize] = true;
                 self.restoration.wings_done += 1;
                 self.grant_reward(w);
@@ -691,7 +731,9 @@ impl GameState {
 
     /// Machine at a tile.
     pub fn machine_at(&self, loc: LocId, x: u8, y: u8) -> Option<usize> {
-        self.machines.iter().position(|m| m.loc == loc && m.x == x && m.y == y)
+        self.machines
+            .iter()
+            .position(|m| m.loc == loc && m.x == x && m.y == y)
     }
     /// Update machine readiness from the clock.
     pub fn tick_machines(&mut self) {
@@ -736,7 +778,9 @@ impl GameState {
         let k = c.locations[self.player.loc as usize].kind;
         match k {
             LocKind::Greenhouse => true,
-            LocKind::Farm => crate::content::season_in(c.crops[crop as usize].seasons, self.season()),
+            LocKind::Farm => {
+                crate::content::season_in(c.crops[crop as usize].seasons, self.season())
+            }
             _ => false,
         }
     }
@@ -749,10 +793,19 @@ impl GameState {
     /// Stable hash of the whole state (DESIGN.md §2.5).
     pub fn stable_hash(&self) -> u64 {
         let mut h = StableHasher::new();
-        h.u64(self.seed).u16(self.day).u16(self.minute).u32(self.abs_minute);
+        h.u64(self.seed)
+            .u16(self.day)
+            .u16(self.minute)
+            .u32(self.abs_minute);
         h.u8(self.weather as u8).u8(self.forecast as u8);
         let p = &self.player;
-        h.u8(p.loc).u8(p.x).u8(p.y).u8(p.facing as u8).i32(p.energy).u16(p.energy_max).u32(p.money);
+        h.u8(p.loc)
+            .u8(p.x)
+            .u8(p.y)
+            .u8(p.facing as u8)
+            .i32(p.energy)
+            .u16(p.energy_max)
+            .u32(p.money);
         for (i, n) in p.bag {
             h.u16(i).u16(n);
         }
@@ -772,7 +825,14 @@ impl GameState {
         self.world.hash_into(&mut h);
         h.u32(self.machines.len() as u32);
         for m in &self.machines {
-            h.u8(m.kind).u8(m.loc).u8(m.x).u8(m.y).u16(m.output).u16(m.out_count).u32(m.ready_at).bool(m.has_output);
+            h.u8(m.kind)
+                .u8(m.loc)
+                .u8(m.x)
+                .u8(m.y)
+                .u16(m.output)
+                .u16(m.out_count)
+                .u32(m.ready_at)
+                .bool(m.has_output);
         }
         h.u32(self.crate_items.len() as u32);
         for (i, n) in &self.crate_items {
@@ -794,7 +854,9 @@ impl GameState {
         h.u8(self.mine.floor).u8(self.mine.deepest);
         let (a, b) = self.dyn_rng.state_words();
         h.u64(a).u64(b);
-        h.u32(self.steps).u16(self.decisions_today).bool(self.complete);
+        h.u32(self.steps)
+            .u16(self.decisions_today)
+            .bool(self.complete);
         h.finish()
     }
 }

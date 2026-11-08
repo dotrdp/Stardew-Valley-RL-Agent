@@ -9,8 +9,11 @@ use crate::world::{Grid, PathScratch, UNREACHABLE};
 #[derive(Clone, Debug, Default)]
 pub struct NavTables {
     /// `planes[loc]` = list of `(arrival_tile, dist plane)`.
-    planes: Vec<Vec<((u8, u8), Vec<u16>)>>,
+    planes: Vec<Vec<ArrivalPlane>>,
 }
+
+/// Distances from one arrival tile to every tile of a location.
+type ArrivalPlane = ((u8, u8), Vec<u16>);
 
 impl NavTables {
     /// Build from the current world grids.
@@ -20,7 +23,12 @@ impl NavTables {
         let mut planes = Vec::with_capacity(c.locations.len());
         for l in &c.locations {
             let g = st.world.grid(l.id);
-            let mut arrivals: Vec<(u8, u8)> = c.warps.iter().filter(|w| w.to == l.id).map(|w| w.to_tile).collect();
+            let mut arrivals: Vec<(u8, u8)> = c
+                .warps
+                .iter()
+                .filter(|w| w.to == l.id)
+                .map(|w| w.to_tile)
+                .collect();
             if l.kind == LocKind::Mines {
                 arrivals.clear();
             }
@@ -49,7 +57,7 @@ impl NavTables {
     }
 
     /// Distance within `loc` from an arrival tile to a target tile (UNREACHABLE if unknown).
-    fn from_arrival(&self, g: &Grid, loc: LocId, arrival: (u8, u8), target: (u8, u8)) -> u16 {
+    fn dist_from_arrival(&self, g: &Grid, loc: LocId, arrival: (u8, u8), target: (u8, u8)) -> u16 {
         for (a, plane) in &self.planes[loc as usize] {
             if *a == arrival {
                 return plane[g.idx(target.0, target.1)];
@@ -62,7 +70,11 @@ impl NavTables {
 /// Hub (default arrival tile) of a location: the first warp arriving there, else the start tile.
 pub fn hub(loc: LocId) -> (u8, u8) {
     let c = content();
-    c.warps.iter().find(|w| w.to == loc).map(|w| w.to_tile).unwrap_or(c.world.start_tile)
+    c.warps
+        .iter()
+        .find(|w| w.to == loc)
+        .map(|w| w.to_tile)
+        .unwrap_or(c.world.start_tile)
 }
 
 impl GameState {
@@ -99,7 +111,7 @@ impl GameState {
                 self.scratch.bfs(g, pos.0, pos.1);
                 self.scratch.dist(g, w.tile.0, w.tile.1)
             } else {
-                nav.from_arrival(g, at, pos, w.tile)
+                nav.dist_from_arrival(g, at, pos, w.tile)
             };
             if d == UNREACHABLE {
                 return u32::MAX;
@@ -110,7 +122,7 @@ impl GameState {
             first = false;
         }
         let g = self.world.grid(loc);
-        let d = nav.from_arrival(g, loc, pos, target);
+        let d = nav.dist_from_arrival(g, loc, pos, target);
         if d == UNREACHABLE {
             return u32::MAX;
         }
@@ -118,7 +130,7 @@ impl GameState {
         // minecart shortcut between outdoor locations
         if self.has_feature(Feature::Minecart) && outdoor(cur) && outdoor(loc) {
             let h = hub(loc);
-            let d2 = nav.from_arrival(g, loc, h, target);
+            let d2 = nav.dist_from_arrival(g, loc, h, target);
             if d2 != UNREACHABLE {
                 return walk.min(c.world.minecart_minutes as u32 + d2 as u32);
             }
@@ -128,7 +140,13 @@ impl GameState {
 
     /// ETA to every POI, computed at most once per state (cached by step/position/time).
     pub fn eta_cached(&mut self, nav: &NavTables) -> &[u32] {
-        let key = (self.steps, self.player.loc, self.player.x, self.player.y, self.abs_minute);
+        let key = (
+            self.steps,
+            self.player.loc,
+            self.player.x,
+            self.player.y,
+            self.abs_minute,
+        );
         if self.eta_key != key || self.eta_cache.len() != self.c().pois.len() {
             let mut v = std::mem::take(&mut self.eta_cache);
             v.resize(self.c().pois.len(), u32::MAX);
@@ -189,7 +207,11 @@ impl GameState {
                 }
                 let w = &c.warps[wid as usize];
                 let g = self.world.grid(at);
-                let d = if first { self.scratch.dist(g, w.tile.0, w.tile.1) } else { nav.from_arrival(g, at, pos, w.tile) };
+                let d = if first {
+                    self.scratch.dist(g, w.tile.0, w.tile.1)
+                } else {
+                    nav.dist_from_arrival(g, at, pos, w.tile)
+                };
                 if d == UNREACHABLE {
                     ok = false;
                     break;
@@ -204,7 +226,7 @@ impl GameState {
                 continue;
             }
             let g = self.world.grid(p.location);
-            let d = nav.from_arrival(g, p.location, pos, p.stand);
+            let d = nav.dist_from_arrival(g, p.location, pos, p.stand);
             if d == UNREACHABLE {
                 out[pi] = u32::MAX;
                 continue;
@@ -212,7 +234,7 @@ impl GameState {
             let mut walk = total + d as u32;
             if self.has_feature(Feature::Minecart) && outdoor(cur) && outdoor(p.location) {
                 let h = hub(p.location);
-                let d2 = nav.from_arrival(g, p.location, h, p.stand);
+                let d2 = nav.dist_from_arrival(g, p.location, h, p.stand);
                 if d2 != UNREACHABLE {
                     walk = walk.min(c.world.minecart_minutes as u32 + d2 as u32);
                 }
@@ -225,5 +247,8 @@ impl GameState {
 /// Outdoor location (minecart-reachable)?
 pub fn outdoor(loc: LocId) -> bool {
     let c = content();
-    matches!(c.locations[loc as usize].kind, LocKind::Farm | LocKind::Town | LocKind::Wild)
+    matches!(
+        c.locations[loc as usize].kind,
+        LocKind::Farm | LocKind::Town | LocKind::Wild
+    )
 }

@@ -4,7 +4,10 @@
 use std::sync::OnceLock;
 
 use crate::action::Primitive;
-use crate::content::{content, Category, CropId, Dir, Feature, ItemId, LocId, LocKind, PoiId, PoiKind, RecipeId, RequestId, Tool};
+use crate::content::{
+    content, Category, CropId, Dir, Feature, ItemId, LocId, LocKind, PoiId, PoiKind, RecipeId,
+    RequestId, Tool,
+};
 use crate::nav::{hub, outdoor, NavTables};
 use crate::state::{GameState, Menu, Sel};
 use crate::world::{Grid, Obj, Rect, Terrain, NO_CROP, SOIL_TILLED, SOIL_WATERED, UNREACHABLE};
@@ -51,8 +54,15 @@ impl Macro {
             Macro::WaterCrops => "WaterCrops".into(),
             Macro::Harvest => "Harvest".into(),
             Macro::ClearField => "ClearField".into(),
-            Macro::Plant(cr, gh) => format!("Plant({},{})", c.crops[*cr as usize].key, if *gh { "greenhouse" } else { "farm" }),
-            Macro::Forage(f) => format!("Forage({})", c.locations[c.forage[*f as usize].location as usize].key),
+            Macro::Plant(cr, gh) => format!(
+                "Plant({},{})",
+                c.crops[*cr as usize].key,
+                if *gh { "greenhouse" } else { "farm" }
+            ),
+            Macro::Forage(f) => format!(
+                "Forage({})",
+                c.locations[c.forage[*f as usize].location as usize].key
+            ),
             Macro::Fish(p) => format!("Fish({})", c.pois[*p as usize].key),
             Macro::ChopWood => "ChopWood".into(),
             Macro::ChopHardwood => "ChopHardwood".into(),
@@ -96,7 +106,12 @@ pub fn macro_actions() -> &'static [Macro] {
         for s in &c.fishing_spots {
             v.push(Macro::Fish(*s));
         }
-        v.extend([Macro::ChopWood, Macro::ChopHardwood, Macro::MineDescend, Macro::MineFloor]);
+        v.extend([
+            Macro::ChopWood,
+            Macro::ChopHardwood,
+            Macro::MineDescend,
+            Macro::MineFloor,
+        ]);
         for i in &c.buyable {
             v.push(Macro::Buy(*i, 1));
             v.push(Macro::Buy(*i, 5));
@@ -126,7 +141,10 @@ pub fn num_macros() -> usize {
 
 /// Id of a macro (linear search; tables are small).
 pub fn macro_id(m: Macro) -> Option<u32> {
-    macro_actions().iter().position(|x| *x == m).map(|p| p as u32)
+    macro_actions()
+        .iter()
+        .position(|x| *x == m)
+        .map(|p| p as u32)
 }
 
 /// Outcome of a macro.
@@ -177,7 +195,17 @@ impl Ctl<'_> {
     fn prim(&mut self, p: Primitive) -> bool {
         let r = self.st.step_primitive(p);
         self.sync();
-        if r.ok && !matches!(p, Primitive::Move(_) | Primitive::Face(_) | Primitive::SelectSlot(_) | Primitive::SelectTool(_) | Primitive::CloseMenu | Primitive::Wait) {
+        if r.ok
+            && !matches!(
+                p,
+                Primitive::Move(_)
+                    | Primitive::Face(_)
+                    | Primitive::SelectSlot(_)
+                    | Primitive::SelectTool(_)
+                    | Primitive::CloseMenu
+                    | Primitive::Wait
+            )
+        {
             self.progressed = true;
         }
         r.ok
@@ -203,7 +231,10 @@ impl Ctl<'_> {
     }
     fn select_item(&mut self, item: ItemId) -> bool {
         if let Sel::Slot(i) = self.st.player.sel {
-            if self.st.player.bag[i as usize] != (0, 0) && self.st.player.bag[i as usize].0 == item && self.st.player.bag[i as usize].1 > 0 {
+            if self.st.player.bag[i as usize] != (0, 0)
+                && self.st.player.bag[i as usize].0 == item
+                && self.st.player.bag[i as usize].1 > 0
+            {
                 return true;
             }
         }
@@ -319,7 +350,9 @@ impl Ctl<'_> {
                 let (dx, dy) = d.delta();
                 let (nx, ny) = (target.0 as i32 + dx, target.1 as i32 + dy);
                 let g = self.st.world.grid(self.st.player.loc);
-                if g.passable(nx, ny) && !matches!(g.obj(nx as u8, ny as u8), Obj::Warp | Obj::Ladder) {
+                if g.passable(nx, ny)
+                    && !matches!(g.obj(nx as u8, ny as u8), Obj::Warp | Obj::Ladder)
+                {
                     self.prim(Primitive::Move(d));
                     let back = Dir::ALL[(d as usize + 2) % 4];
                     self.prim(Primitive::Face(back));
@@ -397,15 +430,21 @@ impl GameState {
     /// Does any tile of the farm have an unwatered, planted, tilled soil?
     pub fn farm_needs_water(&self) -> bool {
         let g = self.world.grid(self.c().world.start_location);
-        (0..g.soil.len()).any(|i| g.crop[i] != NO_CROP && g.soil[i] & SOIL_TILLED != 0 && g.soil[i] & SOIL_WATERED == 0)
+        (0..g.soil.len()).any(|i| {
+            g.crop[i] != NO_CROP && g.soil[i] & SOIL_TILLED != 0 && g.soil[i] & SOIL_WATERED == 0
+        })
     }
     /// Any ready crop on farm or greenhouse?
     pub fn any_ready_crop(&self) -> bool {
         let c = self.c();
-        [c.world.start_location, c.loc_id("greenhouse")].iter().any(|l| {
-            let g = self.world.grid(*l);
-            (0..g.crop.len()).any(|i| g.crop[i] != NO_CROP && g.crop_days[i] >= c.crops[g.crop[i] as usize].grow_days)
-        })
+        [c.world.start_location, c.loc_id("greenhouse")]
+            .iter()
+            .any(|l| {
+                let g = self.world.grid(*l);
+                (0..g.crop.len()).any(|i| {
+                    g.crop[i] != NO_CROP && g.crop_days[i] >= c.crops[g.crop[i] as usize].grow_days
+                })
+            })
     }
     /// Count tiles in the field rects of a location satisfying a predicate.
     pub fn count_field<F: Fn(&Grid, usize) -> bool>(&self, loc: LocId, f: F) -> u32 {
@@ -426,11 +465,20 @@ impl GameState {
     /// Debris count on the farm field.
     pub fn field_debris(&self) -> u32 {
         let farm = self.c().world.start_location;
-        self.count_field(farm, |g, i| matches!(Obj::from_plane(g.obj_plane()[i]), Obj::Weeds | Obj::Twig | Obj::StoneDebris | Obj::Tree))
+        self.count_field(farm, |g, i| {
+            matches!(
+                Obj::from_plane(g.obj_plane()[i]),
+                Obj::Weeds | Obj::Twig | Obj::StoneDebris | Obj::Tree
+            )
+        })
     }
     /// Free tillable tiles (dirt, no object, no crop) in a location's fields.
     pub fn free_field_tiles(&self, loc: LocId) -> u32 {
-        self.count_field(loc, |g, i| g.terrain_plane()[i] == Terrain::Dirt as u8 && g.obj_plane()[i] == 0 && g.crop[i] == NO_CROP)
+        self.count_field(loc, |g, i| {
+            g.terrain_plane()[i] == Terrain::Dirt as u8
+                && g.obj_plane()[i] == 0
+                && g.crop[i] == NO_CROP
+        })
     }
     /// Objects of a kind in a location.
     pub fn count_kind(&self, loc: LocId, o: Obj) -> u32 {
@@ -459,7 +507,10 @@ impl GameState {
     }
     /// Any shippable stack with nothing reserved?
     pub fn any_surplus(&self) -> bool {
-        self.player.bag.iter().any(|(i, n)| *n > 0 && self.shippable(*i) && self.reserved(*i) == 0)
+        self.player
+            .bag
+            .iter()
+            .any(|(i, n)| *n > 0 && self.shippable(*i) && self.reserved(*i) == 0)
     }
     /// Best food slot to eat (unreserved edible with the most energy), if any.
     pub fn food_slot(&self) -> Option<u8> {
@@ -491,15 +542,31 @@ impl GameState {
         let in_mines = self.player.loc == c.loc_id("mines");
         match m {
             Macro::Wait30 | Macro::Sleep => true,
-            Macro::GoTo(l) => l != self.player.loc && !in_mines && (l != c.loc_id("greenhouse") || self.has_feature(Feature::Greenhouse)),
-            Macro::WaterCrops => !in_mines && self.tool_usable(Tool::Can) && self.farm_needs_water() && self.player.energy > 2,
+            Macro::GoTo(l) => {
+                l != self.player.loc
+                    && !in_mines
+                    && (l != c.loc_id("greenhouse") || self.has_feature(Feature::Greenhouse))
+            }
+            Macro::WaterCrops => {
+                !in_mines
+                    && self.tool_usable(Tool::Can)
+                    && self.farm_needs_water()
+                    && self.player.energy > 2
+            }
             Macro::Harvest => !in_mines && self.any_ready_crop() && self.free_slots() > 0,
             Macro::ClearField => {
-                !in_mines && self.field_debris() > 0 && self.player.energy > 4 && (self.tool_usable(Tool::Axe) || self.tool_usable(Tool::Pickaxe))
+                !in_mines
+                    && self.field_debris() > 0
+                    && self.player.energy > 4
+                    && (self.tool_usable(Tool::Axe) || self.tool_usable(Tool::Pickaxe))
             }
             Macro::Plant(cr, gh) => {
                 let crop = &c.crops[cr as usize];
-                let loc = if gh { c.loc_id("greenhouse") } else { c.world.start_location };
+                let loc = if gh {
+                    c.loc_id("greenhouse")
+                } else {
+                    c.world.start_location
+                };
                 !in_mines
                     && (!gh || self.has_feature(Feature::Greenhouse))
                     && (gh || crate::content::season_in(crop.seasons, self.season()))
@@ -522,7 +589,8 @@ impl GameState {
                 !in_mines
                     && self.tool_usable(Tool::Axe)
                     && self.player.energy > 3
-                    && (self.count_kind(c.loc_id("woods"), Obj::Tree) > 0 || self.count_kind(c.world.start_location, Obj::Tree) > 0)
+                    && (self.count_kind(c.loc_id("woods"), Obj::Tree) > 0
+                        || self.count_kind(c.world.start_location, Obj::Tree) > 0)
             }
             Macro::ChopHardwood => {
                 !in_mines
@@ -537,12 +605,18 @@ impl GameState {
                     && self.mine.deepest < c.mining.floors
                     && (!in_mines || self.mine_progress_possible())
             }
-            Macro::MineFloor => self.tool_usable(Tool::Pickaxe) && self.player.energy > 3 && (!in_mines || self.mine_progress_possible()),
+            Macro::MineFloor => {
+                self.tool_usable(Tool::Pickaxe)
+                    && self.player.energy > 3
+                    && (!in_mines || self.mine_progress_possible())
+            }
             Macro::Buy(item, q) => {
                 if in_mines {
                     return false;
                 }
-                let Some((price, seller)) = self.best_seller(item) else { return false };
+                let Some((price, seller)) = self.best_seller(item) else {
+                    return false;
+                };
                 if self.player.money < price * q as u32 || !self.can_add(item, q as u16) {
                     return false;
                 }
@@ -566,29 +640,48 @@ impl GameState {
             Macro::ShipSurplus => !in_mines && self.any_surplus(),
             Macro::Craft(r) => {
                 self.can_craft(r)
-                    && (c.items[c.recipes[r as usize].output as usize].category != Category::Machine
-                        || (!in_mines && self.count_kind(c.world.start_location, Obj::MachinePad) > 0))
+                    && (c.items[c.recipes[r as usize].output as usize].category
+                        != Category::Machine
+                        || (!in_mines
+                            && self.count_kind(c.world.start_location, Obj::MachinePad) > 0))
             }
             Macro::LoadMachines => {
                 !in_mines
-                    && (self.machines.iter().any(|m| m.ready_at == 0 && !m.has_output && self.any_input_for(m.kind))
-                        || (self.held_machine().is_some() && self.count_kind(c.world.start_location, Obj::MachinePad) > 0))
+                    && (self
+                        .machines
+                        .iter()
+                        .any(|m| m.ready_at == 0 && !m.has_output && self.any_input_for(m.kind))
+                        || (self.held_machine().is_some()
+                            && self.count_kind(c.world.start_location, Obj::MachinePad) > 0))
             }
-            Macro::CollectMachines => !in_mines && self.machines.iter().any(|m| m.has_output) && self.free_slots() > 0,
+            Macro::CollectMachines => {
+                !in_mines && self.machines.iter().any(|m| m.has_output) && self.free_slots() > 0
+            }
             Macro::UpgradeTool(t) => {
                 if in_mines || !self.can_upgrade(t) {
                     return false;
                 }
-                let s = c.shops.iter().find(|s| s.key == "smithy").map(|s| s.id).unwrap_or(1);
+                let s = c
+                    .shops
+                    .iter()
+                    .find(|s| s.key == "smithy")
+                    .map(|s| s.id)
+                    .unwrap_or(1);
                 if c.shops[s as usize].closed_weekday == self.weekday() as i8 {
                     return false;
                 }
                 let eta = self.eta_poi(nav, c.shops[s as usize].poi);
                 eta != u32::MAX && (self.minute as u32 + eta + 2) < c.shops[s as usize].close as u32
             }
-            Macro::Deliver => !in_mines && (0..c.requests.len() as u8).any(|r| c.requests[r as usize].coins == 0 && self.can_deliver_any(r)),
+            Macro::Deliver => {
+                !in_mines
+                    && (0..c.requests.len() as u8)
+                        .any(|r| c.requests[r as usize].coins == 0 && self.can_deliver_any(r))
+            }
             Macro::PayCoins(r) => !in_mines && self.can_deliver_any(r),
-            Macro::Eat => self.player.energy < self.player.energy_max as i32 && self.food_slot().is_some(),
+            Macro::Eat => {
+                self.player.energy < self.player.energy_max as i32 && self.food_slot().is_some()
+            }
         }
     }
     /// In the mines: is a breakable rock or a ladder reachable from the player?
@@ -617,7 +710,11 @@ impl GameState {
     /// A machine item held in the bag (to be placed), if any.
     pub fn held_machine(&self) -> Option<ItemId> {
         let c = self.c();
-        self.player.bag.iter().find(|(i, n)| *n > 0 && c.items[*i as usize].category == Category::Machine).map(|(i, _)| *i)
+        self.player
+            .bag
+            .iter()
+            .find(|(i, n)| *n > 0 && c.items[*i as usize].category == Category::Machine)
+            .map(|(i, _)| *i)
     }
     /// Any bag item satisfies some rule of a machine kind (with fuel)?
     pub fn any_input_for(&self, kind: crate::content::MachineId) -> bool {
@@ -628,10 +725,15 @@ impl GameState {
                 && m.rules.iter().any(|r| {
                     let input_ok = match r.input {
                         crate::content::InputSel::Item(i) => i == *item,
-                        crate::content::InputSel::Category(cat) => c.items[*item as usize].category == cat,
+                        crate::content::InputSel::Category(cat) => {
+                            c.items[*item as usize].category == cat
+                        }
                     } && *n >= r.input_count
                         && self.reserved(*item) + r.input_count as u32 <= *n as u32;
-                    input_ok && r.fuel.map(|(f, fc)| self.count(f) >= fc as u32).unwrap_or(true)
+                    input_ok
+                        && r.fuel
+                            .map(|(f, fc)| self.count(f) >= fc as u32)
+                            .unwrap_or(true)
                 })
         })
     }
@@ -680,7 +782,13 @@ impl Obj {
 // ------------------------------------------------------------------------------------ controllers
 
 /// Execute a macro with a time box of `budget` minutes.
-pub fn run_macro(st: &mut GameState, nav: &NavTables, m: Macro, budget: u32, max_decisions_per_day: u16) -> MacroResult {
+pub fn run_macro(
+    st: &mut GameState,
+    nav: &NavTables,
+    m: Macro,
+    budget: u32,
+    max_decisions_per_day: u16,
+) -> MacroResult {
     let abs0 = st.abs_minute;
     let day0 = st.day;
     if !st.macro_valid(nav, m, max_decisions_per_day) {
@@ -717,16 +825,20 @@ pub fn run_macro(st: &mut GameState, nav: &NavTables, m: Macro, budget: u32, max
     }
     let ticks = ctl.ticks;
     let day_ends = ctl.day_ends;
+    // a time-boxed macro that made progress is Partial (may be re-issued)
+    let _ = timeboxed;
     let outcome = if done {
         Outcome::Done
-    } else if timeboxed && progressed {
-        Outcome::Partial
     } else if progressed {
         Outcome::Partial
     } else {
         Outcome::Failed
     };
-    MacroResult { ticks, day_ends, outcome }
+    MacroResult {
+        ticks,
+        day_ends,
+        outcome,
+    }
 }
 
 impl Ctl<'_> {
@@ -795,7 +907,12 @@ impl Ctl<'_> {
             Macro::LoadMachines => self.load_machines(),
             Macro::CollectMachines => self.collect_machines(),
             Macro::UpgradeTool(t) => {
-                let s = c.shops.iter().find(|s| s.key == "smithy").map(|s| s.id).unwrap_or(1);
+                let s = c
+                    .shops
+                    .iter()
+                    .find(|s| s.key == "smithy")
+                    .map(|s| s.id)
+                    .unwrap_or(1);
                 if !self.goto_poi(c.shops[s as usize].poi) {
                     return false;
                 }
@@ -820,7 +937,9 @@ impl Ctl<'_> {
                 ok
             }
             Macro::Eat => {
-                let Some(slot) = self.st.food_slot() else { return false };
+                let Some(slot) = self.st.food_slot() else {
+                    return false;
+                };
                 self.prim(Primitive::SelectSlot(slot));
                 self.prim(Primitive::Eat)
             }
@@ -829,7 +948,9 @@ impl Ctl<'_> {
 
     fn refill_can(&mut self) -> bool {
         let loc = self.st.player.loc;
-        let Some(t) = self.nearest(|g, x, y| g.terrain(x, y) == Terrain::Water || g.obj(x, y) == Obj::Well) else {
+        let Some(t) =
+            self.nearest(|g, x, y| g.terrain(x, y) == Terrain::Water || g.obj(x, y) == Obj::Well)
+        else {
             return false;
         };
         if !self.goto_adjacent(loc, t) {
@@ -856,7 +977,9 @@ impl Ctl<'_> {
             }
             let Some(t) = self.nearest(|g, x, y| {
                 let i = g.idx(x, y);
-                g.crop[i] != NO_CROP && g.soil[i] & SOIL_TILLED != 0 && g.soil[i] & SOIL_WATERED == 0
+                g.crop[i] != NO_CROP
+                    && g.soil[i] & SOIL_TILLED != 0
+                    && g.soil[i] & SOIL_WATERED == 0
             }) else {
                 return true;
             };
@@ -879,7 +1002,9 @@ impl Ctl<'_> {
             }
             let has = {
                 let g = self.st.world.grid(loc);
-                (0..g.crop.len()).any(|i| g.crop[i] != NO_CROP && g.crop_days[i] >= c.crops[g.crop[i] as usize].grow_days)
+                (0..g.crop.len()).any(|i| {
+                    g.crop[i] != NO_CROP && g.crop_days[i] >= c.crops[g.crop[i] as usize].grow_days
+                })
             };
             if !has {
                 continue;
@@ -923,7 +1048,11 @@ impl Ctl<'_> {
             }
             let rr = rects.clone();
             let Some(t) = self.nearest(|g, x, y| {
-                rr.iter().any(|r| r.contains(x, y)) && matches!(g.obj(x, y), Obj::Weeds | Obj::Twig | Obj::StoneDebris | Obj::Tree)
+                rr.iter().any(|r| r.contains(x, y))
+                    && matches!(
+                        g.obj(x, y),
+                        Obj::Weeds | Obj::Twig | Obj::StoneDebris | Obj::Tree
+                    )
             }) else {
                 return true;
             };
@@ -956,7 +1085,11 @@ impl Ctl<'_> {
     fn plant(&mut self, cr: CropId, gh: bool) -> bool {
         let c = self.c();
         let crop = &c.crops[cr as usize];
-        let loc = if gh { c.loc_id("greenhouse") } else { c.world.start_location };
+        let loc = if gh {
+            c.loc_id("greenhouse")
+        } else {
+            c.world.start_location
+        };
         if !self.goto_loc(loc) {
             return false;
         }
@@ -972,7 +1105,10 @@ impl Ctl<'_> {
             let rr = rects.clone();
             let tilled = self.nearest(|g, x, y| {
                 let i = g.idx(x, y);
-                rr.iter().any(|r| r.contains(x, y)) && g.soil[i] & SOIL_TILLED != 0 && g.crop[i] == NO_CROP && g.obj(x, y) == Obj::None
+                rr.iter().any(|r| r.contains(x, y))
+                    && g.soil[i] & SOIL_TILLED != 0
+                    && g.crop[i] == NO_CROP
+                    && g.obj(x, y) == Obj::None
             });
             if let Some(t) = tilled {
                 if !self.goto_adjacent(loc, t) {
@@ -992,7 +1128,11 @@ impl Ctl<'_> {
             let rr2 = rects.clone();
             let Some(t) = self.nearest(|g, x, y| {
                 let i = g.idx(x, y);
-                rr2.iter().any(|r| r.contains(x, y)) && g.terrain(x, y) == Terrain::Dirt && g.soil[i] & SOIL_TILLED == 0 && g.crop[i] == NO_CROP && g.obj(x, y) == Obj::None
+                rr2.iter().any(|r| r.contains(x, y))
+                    && g.terrain(x, y) == Terrain::Dirt
+                    && g.soil[i] & SOIL_TILLED == 0
+                    && g.crop[i] == NO_CROP
+                    && g.obj(x, y) == Obj::None
             }) else {
                 return false;
             };
@@ -1038,7 +1178,11 @@ impl Ctl<'_> {
         self.start_activity();
         let limit = self.ticks + 60.min(self.box_minutes);
         let mut casts = 0;
-        while !self.over() && self.ticks < limit && self.energy_ok(c.fishing.energy_per_cast) && self.st.free_slots() > 0 {
+        while !self.over()
+            && self.ticks < limit
+            && self.energy_ok(c.fishing.energy_per_cast)
+            && self.st.free_slots() > 0
+        {
             if !self.prim(Primitive::UseTool) {
                 break;
             }
@@ -1053,7 +1197,10 @@ impl Ctl<'_> {
         let woods = c.loc_id("woods");
         let loc = if kind == Obj::Tree && self.st.count_kind(self.st.player.loc, Obj::Tree) > 0 {
             self.st.player.loc
-        } else if kind == Obj::Tree && self.st.count_kind(farm, Obj::Tree) > 0 && self.st.player.loc == farm {
+        } else if kind == Obj::Tree
+            && self.st.count_kind(farm, Obj::Tree) > 0
+            && self.st.player.loc == farm
+        {
             farm
         } else {
             woods
@@ -1140,7 +1287,8 @@ impl Ctl<'_> {
                 }
             }
             let Some(t) = self.nearest(|g, x, y| {
-                g.obj(x, y) == Obj::Rock && c.rocks[(g.data[g.idx(x, y)] & 0xff) as usize].min_pick <= pick
+                g.obj(x, y) == Obj::Rock
+                    && c.rocks[(g.data[g.idx(x, y)] & 0xff) as usize].min_pick <= pick
             }) else {
                 // floor exhausted: take a ladder if one is reachable
                 if let Some(l) = self.nearest(|g, x, y| g.obj(x, y) == Obj::Ladder) {
@@ -1172,7 +1320,9 @@ impl Ctl<'_> {
 
     fn buy(&mut self, item: ItemId, q: u8) -> bool {
         let c = self.c();
-        let Some((_, seller)) = self.st.best_seller(item) else { return false };
+        let Some((_, seller)) = self.st.best_seller(item) else {
+            return false;
+        };
         let poi = match seller {
             Some(s) => c.shops[s as usize].poi,
             None => c.merchant.poi,
@@ -1284,10 +1434,15 @@ impl Ctl<'_> {
                 let ok = c.machines[m.kind as usize].rules.iter().any(|r| {
                     let input_ok = match r.input {
                         crate::content::InputSel::Item(x) => x == *item,
-                        crate::content::InputSel::Category(cat) => c.items[*item as usize].category == cat,
+                        crate::content::InputSel::Category(cat) => {
+                            c.items[*item as usize].category == cat
+                        }
                     } && *cnt >= r.input_count
                         && self.st.reserved(*item) + r.input_count as u32 <= *cnt as u32;
-                    input_ok && r.fuel.map(|(f, fc)| self.st.count(f) >= fc as u32).unwrap_or(true)
+                    input_ok
+                        && r.fuel
+                            .map(|(f, fc)| self.st.count(f) >= fc as u32)
+                            .unwrap_or(true)
                 });
                 if ok {
                     slot = Some(i as u8);
@@ -1349,7 +1504,11 @@ impl Ctl<'_> {
             let range = self.st.slots_of(r);
             let fillable = range
                 .enumerate()
-                .filter(|(k, i)| !self.st.restoration.slot_filled[*i] && self.st.count(self.st.restoration.slot_item[*i]) >= req.slots[*k].count as u32)
+                .filter(|(k, i)| {
+                    !self.st.restoration.slot_filled[*i]
+                        && self.st.count(self.st.restoration.slot_item[*i])
+                            >= req.slots[*k].count as u32
+                })
                 .count() as u8;
             let completes = self.st.filled_in(r) + fillable >= req.need;
             order.push((!completes, r));
