@@ -13,6 +13,7 @@ furrow.workspace = true
 furrow-expert.workspace = true
 furrow-traj.workspace = true
 furrow-gen.workspace = true
-pyo3.workspace = true
+pyo3 = { workspace = true }
+serde_json.workspace = true
 numpy.workspace = true
 rayon.workspace = true

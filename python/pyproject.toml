@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "svrl"
+version = "0.1.0"
+description = "Learning to speedrun a farming-sim restoration objective from trajectories (training, evaluation, Gymnasium/NeMo Gym integrations)"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = ["numpy>=1.26", "gymnasium>=1.0", "pyyaml>=6", "tqdm>=4"]
+
+[project.optional-dependencies]
+train = ["torch>=2.4", "matplotlib>=3.8"]
+test = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+include = ["svrl*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
