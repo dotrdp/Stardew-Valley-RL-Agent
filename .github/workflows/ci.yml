@@ -1,0 +1,45 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: fmt
+        run: cargo fmt --all --check
+      - name: clippy
+        run: cargo clippy --workspace --all-targets --exclude furrow-py -- -D warnings
+      - name: test
+        run: cargo test --workspace --exclude furrow-py
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: astral-sh/setup-uv@v6
+      - name: venv + deps (CPU torch)
+        run: |
+          uv venv --python 3.12 .venv
+          uv pip install --python .venv/bin/python maturin pytest numpy pyyaml tqdm
+          uv pip install --python .venv/bin/python torch --index-url https://download.pytorch.org/whl/cpu
+      - name: build native module
+        run: .venv/bin/maturin develop --release -m crates/furrow-py/Cargo.toml --python .venv/bin/python
+      - name: install svrl
+        run: uv pip install --python .venv/bin/python -e python
+      - name: pytest
+        run: .venv/bin/python -m pytest -q python/tests
