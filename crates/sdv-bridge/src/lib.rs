@@ -144,7 +144,11 @@ impl Snapshot {
     }
     /// Number of completed bundles.
     pub fn bundles_complete(&self) -> usize {
-        self.community_center.bundles.iter().filter(|b| b.complete).count()
+        self.community_center
+            .bundles
+            .iter()
+            .filter(|b| b.complete)
+            .count()
     }
 }
 
@@ -166,16 +170,25 @@ pub struct SdvClient {
 
 impl SdvClient {
     /// Connect and handshake.
-    pub fn connect<A: ToSocketAddrs>(addr: A, timeout: Duration) -> Result<(Self, Value), BridgeError> {
+    pub fn connect<A: ToSocketAddrs>(
+        addr: A,
+        timeout: Duration,
+    ) -> Result<(Self, Value), BridgeError> {
         let stream = TcpStream::connect(addr)?;
         stream.set_read_timeout(Some(timeout))?;
         stream.set_nodelay(true)?;
         let reader = BufReader::new(stream.try_clone()?);
-        let mut c = SdvClient { stream, reader, next_id: 1 };
+        let mut c = SdvClient {
+            stream,
+            reader,
+            next_id: 1,
+        };
         let hello = c.request(json!({"cmd": "hello"}))?;
         let proto = hello.get("protocol").and_then(Value::as_u64).unwrap_or(0);
         if proto != PROTOCOL as u64 {
-            return Err(BridgeError::Protocol(format!("mod speaks protocol {proto}, client {PROTOCOL}")));
+            return Err(BridgeError::Protocol(format!(
+                "mod speaks protocol {proto}, client {PROTOCOL}"
+            )));
         }
         Ok((c, hello))
     }
@@ -197,7 +210,12 @@ impl SdvClient {
                 continue; // stale/unsolicited message
             }
             if v.get("ok").and_then(Value::as_bool) == Some(false) && v.get("obs").is_none() {
-                return Err(BridgeError::Remote(v.get("error").and_then(Value::as_str).unwrap_or("unknown").to_string()));
+                return Err(BridgeError::Remote(
+                    v.get("error")
+                        .and_then(Value::as_str)
+                        .unwrap_or("unknown")
+                        .to_string(),
+                ));
             }
             return Ok(v);
         }
@@ -206,8 +224,16 @@ impl SdvClient {
         Ok(StepResult {
             ok: v.get("ok").and_then(Value::as_bool).unwrap_or(false),
             obs: serde_json::from_value(v.get("obs").cloned().unwrap_or(Value::Null))?,
-            events: v.get("events").and_then(Value::as_array).cloned().unwrap_or_default(),
-            detail: v.get("detail").and_then(Value::as_str).unwrap_or("").to_string(),
+            events: v
+                .get("events")
+                .and_then(Value::as_array)
+                .cloned()
+                .unwrap_or_default(),
+            detail: v
+                .get("detail")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_string(),
         })
     }
     /// Current snapshot.
@@ -225,7 +251,8 @@ impl SdvClient {
     }
     /// Enable/disable lockstep.
     pub fn lockstep(&mut self, enabled: bool) -> Result<(), BridgeError> {
-        self.request(json!({"cmd": "lockstep", "enabled": enabled})).map(|_| ())
+        self.request(json!({"cmd": "lockstep", "enabled": enabled}))
+            .map(|_| ())
     }
     /// Load a save (episode reset).
     pub fn load_save(&mut self, name: &str) -> Result<Snapshot, BridgeError> {
@@ -250,7 +277,13 @@ impl SdvEnv {
         let (mut client, _) = SdvClient::connect(addr, Duration::from_secs(30))?;
         client.lockstep(true)?;
         let last = client.observe()?;
-        Ok(SdvEnv { start_day: last.day_index(), client, save: save.to_string(), last, ticks_per_step: 15 })
+        Ok(SdvEnv {
+            start_day: last.day_index(),
+            client,
+            save: save.to_string(),
+            last,
+            ticks_per_step: 15,
+        })
     }
     /// Reload the start save.
     pub fn reset(&mut self) -> Result<&Snapshot, BridgeError> {
@@ -263,14 +296,26 @@ impl SdvEnv {
         let before = self.last.clone();
         let r = self.client.step(self.ticks_per_step, input)?;
         self.last = r.obs;
-        Ok((self.reward(&before), self.last.community_center.complete, &self.last))
+        Ok((
+            self.reward(&before),
+            self.last.community_center.complete,
+            &self.last,
+        ))
     }
     /// Macro step.
-    pub fn step_macro(&mut self, name: &str, args: Value) -> Result<(f32, bool, &Snapshot), BridgeError> {
+    pub fn step_macro(
+        &mut self,
+        name: &str,
+        args: Value,
+    ) -> Result<(f32, bool, &Snapshot), BridgeError> {
         let before = self.last.clone();
         let r = self.client.run_macro(name, args)?;
         self.last = r.obs;
-        Ok((self.reward(&before), self.last.community_center.complete, &self.last))
+        Ok((
+            self.reward(&before),
+            self.last.community_center.complete,
+            &self.last,
+        ))
     }
     fn reward(&self, before: &Snapshot) -> f32 {
         let days = self.last.day_index() as f32 - before.day_index() as f32;
@@ -299,7 +344,9 @@ impl MockServer {
         let listener = TcpListener::bind("127.0.0.1:0")?;
         let addr = listener.local_addr()?.to_string();
         let handle = std::thread::spawn(move || {
-            let Ok((stream, _)) = listener.accept() else { return };
+            let Ok((stream, _)) = listener.accept() else {
+                return;
+            };
             let mut reader = BufReader::new(stream.try_clone().unwrap());
             let mut out = stream;
             let mut snap = mock_snapshot();
@@ -309,7 +356,9 @@ impl MockServer {
                 line.clear();
                 let id = req.get("id").cloned().unwrap_or(json!(0));
                 let resp = match req.get("cmd").and_then(Value::as_str).unwrap_or("") {
-                    "hello" => json!({"id": id, "ok": true, "protocol": PROTOCOL, "game_version": "mock", "smapi_version": "mock", "mod_version": "mock"}),
+                    "hello" => {
+                        json!({"id": id, "ok": true, "protocol": PROTOCOL, "game_version": "mock", "smapi_version": "mock", "mod_version": "mock"})
+                    }
                     "observe" => json!({"id": id, "ok": true, "obs": snap}),
                     "lockstep" | "record" => json!({"id": id, "ok": true}),
                     "load_save" => {
@@ -322,7 +371,12 @@ impl MockServer {
                         snap.time += 10 * (ticks / 7).max(1);
                         if req["input"]["move"] == "right" {
                             snap.player.tile[0] += 1;
-                            if let Some(b) = snap.community_center.bundles.iter_mut().find(|b| !b.complete) {
+                            if let Some(b) = snap
+                                .community_center
+                                .bundles
+                                .iter_mut()
+                                .find(|b| !b.complete)
+                            {
                                 b.complete = true;
                             }
                         }
@@ -330,7 +384,8 @@ impl MockServer {
                             snap.time = 600;
                             snap.day += 1;
                         }
-                        snap.community_center.complete = snap.community_center.bundles.iter().all(|b| b.complete);
+                        snap.community_center.complete =
+                            snap.community_center.bundles.iter().all(|b| b.complete);
                         json!({"id": id, "ok": true, "obs": snap, "events": []})
                     }
                     "macro" => {
@@ -340,7 +395,9 @@ impl MockServer {
                         }
                         json!({"id": id, "ok": true, "obs": snap, "events": [{"kind": "day_end"}], "detail": "mock"})
                     }
-                    other => json!({"id": id, "ok": false, "error": format!("unknown cmd {other}")}),
+                    other => {
+                        json!({"id": id, "ok": false, "error": format!("unknown cmd {other}")})
+                    }
                 };
                 let mut s = serde_json::to_string(&resp).unwrap();
                 s.push('\n');
@@ -349,7 +406,10 @@ impl MockServer {
                 }
             }
         });
-        Ok(MockServer { addr, handle: Some(handle) })
+        Ok(MockServer {
+            addr,
+            handle: Some(handle),
+        })
     }
 }
 
@@ -370,12 +430,34 @@ fn mock_snapshot() -> Snapshot {
         time: 600,
         weather: "sunny".into(),
         weather_tomorrow: "rain".into(),
-        player: PlayerState { location: "Farm".into(), tile: [64, 15], facing: 2, stamina: 270.0, max_stamina: 270, money: 500, ..Default::default() },
-        location: LocationWindow { name: "Farm".into(), width: 80, height: 65, radius: 1, passable: "111111111".into() },
+        player: PlayerState {
+            location: "Farm".into(),
+            tile: [64, 15],
+            facing: 2,
+            stamina: 270.0,
+            max_stamina: 270,
+            money: 500,
+            ..Default::default()
+        },
+        location: LocationWindow {
+            name: "Farm".into(),
+            width: 80,
+            height: 65,
+            radius: 1,
+            passable: "111111111".into(),
+        },
         community_center: CommunityCenter {
             complete: false,
             areas_complete: vec![false; 6],
-            bundles: (0..3).map(|i| Bundle { key: format!("Pantry/{i}"), name: format!("Mock {i}"), area: "Pantry".into(), need: 1, ..Default::default() }).collect(),
+            bundles: (0..3)
+                .map(|i| Bundle {
+                    key: format!("Pantry/{i}"),
+                    name: format!("Mock {i}"),
+                    area: "Pantry".into(),
+                    need: 1,
+                    ..Default::default()
+                })
+                .collect(),
         },
         menu: None,
         event_active: false,
@@ -391,7 +473,10 @@ mod tests {
         let srv = MockServer::start().unwrap();
         let mut env = SdvEnv::connect(&srv.addr, "mock_save").unwrap();
         assert_eq!(env.last().player.money, 500);
-        let right = InputFrame { r#move: Some("right".into()), ..Default::default() };
+        let right = InputFrame {
+            r#move: Some("right".into()),
+            ..Default::default()
+        };
         let mut done = false;
         for _ in 0..3 {
             let (_, d, s) = env.step(&right).unwrap();
