@@ -37,7 +37,7 @@ jobs:
           toolchain: 1.99.1
       - uses: Swatinem/rust-cache@v2
       - name: golden / determinism tests (release)
-        run: cargo test -p furrow --release -- golden determinism
+        run: cargo test --release -p furrow -p furrow-expert -p furrow-gen
 
   python:
     runs-on: ubuntu-latest
