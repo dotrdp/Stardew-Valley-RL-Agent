@@ -3,6 +3,7 @@ name = "furrow-cli"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "Command-line tools for the Furrow environment"
 
 [[bin]]
 name = "furrow"
@@ -11,6 +12,6 @@ path = "src/main.rs"
 [dependencies]
 furrow.workspace = true
 furrow-expert.workspace = true
-furrow-traj.workspace = true
+furrow-gen.workspace = true
 clap.workspace = true
 anyhow.workspace = true
