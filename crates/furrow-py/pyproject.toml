@@ -1,0 +1,16 @@
+[build-system]
+requires = ["maturin>=1.7,<2"]
+build-backend = "maturin"
+
+[project]
+name = "furrow"
+version = "0.1.0"
+description = "Furrow: an original farming-sim RL environment (native module)"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26"]
+license = { text = "MIT" }
+
+[tool.maturin]
+module-name = "furrow._furrow"
+python-source = "python"
+features = ["pyo3/abi3-py311"]

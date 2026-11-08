@@ -7,38 +7,57 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: -D warnings
 
 jobs:
   rust:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: 1.99.1
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
       - name: fmt
         run: cargo fmt --all --check
-      - name: clippy
-        run: cargo clippy --workspace --all-targets --exclude furrow-py -- -D warnings
+      - name: clippy (incl. furrow-py)
+        run: PYO3_PYTHON=$(which python3) cargo clippy --workspace --all-targets -- -D warnings
       - name: test
-        run: cargo test --workspace --exclude furrow-py
+        run: PYO3_PYTHON=$(which python3) cargo test --workspace
+
+  determinism-macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.99.1
+      - uses: Swatinem/rust-cache@v2
+      - name: golden / determinism tests (release)
+        run: cargo test -p furrow --release -- golden determinism
 
   python:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.11", "3.13"]
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.99.1
       - uses: Swatinem/rust-cache@v2
       - uses: astral-sh/setup-uv@v6
       - name: venv + deps (CPU torch)
         run: |
-          uv venv --python 3.12 .venv
-          uv pip install --python .venv/bin/python maturin pytest numpy pyyaml tqdm
+          uv venv --python ${{ matrix.python }} .venv
+          uv pip install --python .venv/bin/python maturin pytest numpy pyyaml tqdm gymnasium
           uv pip install --python .venv/bin/python torch --index-url https://download.pytorch.org/whl/cpu
       - name: build native module
-        run: .venv/bin/maturin develop --release -m crates/furrow-py/Cargo.toml --python .venv/bin/python
+        run: .venv/bin/maturin develop --release -m crates/furrow-py/Cargo.toml
       - name: install svrl
         run: uv pip install --python .venv/bin/python -e python
       - name: pytest

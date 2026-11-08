@@ -5,9 +5,14 @@ edition.workspace = true
 license.workspace = true
 
 [lib]
-name = "furrow"
+name = "_furrow"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 furrow.workspace = true
 furrow-expert.workspace = true
+furrow-traj.workspace = true
+furrow-gen.workspace = true
+pyo3.workspace = true
+numpy.workspace = true
+rayon.workspace = true
