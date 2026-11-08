@@ -21,8 +21,8 @@
 >   future work; determinism is covered by tests.
 > - The SMAPI bridge (`mod/RLBridge`, `crates/sdv-bridge`) is designed (§7) but not implemented.
 
-Status: **v2.1 contract** = v1 + the RL critique (`docs/reviews/2026-11-08-rl-critique.md`) +
-the Rust-systems critique (`docs/reviews/2026-11-08-systems-critique.md`). Every crate/package in
+Status: **v2.1 contract** = v1 + the RL critique (`research/reviews/2026-11-08-rl-critique.md`) +
+the Rust-systems critique (`research/reviews/2026-11-08-systems-critique.md`). Every crate/package in
 this repo is implemented against this document. If an implementation needs to deviate, update
 this file in the same change and say why.
 
