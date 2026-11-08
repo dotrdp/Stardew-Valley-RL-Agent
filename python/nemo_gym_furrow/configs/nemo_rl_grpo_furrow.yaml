@@ -1,0 +1,49 @@
+# UNVERIFIED: GRPO on Furrow segment tasks with NVIDIA NeMo RL. Never run here (no GPU run was made).
+# Written against NeMo RL main @ 61bc275 (2026-11-08): examples/nemo_gym/run_grpo_nemo_gym.py and the
+# inheritance pattern of examples/nemo_gym/gdpo_example_tool_call_multireward.yaml. Steps and caveats:
+# python/nemo_gym_furrow/README.md ("GRPO with NeMo RL").
+#
+# Usage: copy this file to <NeMo-RL>/examples/nemo_gym/grpo_furrow.yaml (`defaults:` resolves relative
+# to this file), replace /ABS/REPO with the absolute path of this repository, then from <NeMo-RL>:
+#   NEMO_GYM_EXTRA_ROOTS=/ABS/REPO/python/nemo_gym_furrow \
+#   uv run examples/nemo_gym/run_grpo_nemo_gym.py --config examples/nemo_gym/grpo_furrow.yaml
+defaults: grpo_workplace_assistant_nemotron_nano_v2_9b.yaml
+
+grpo:
+  num_prompts_per_step: 16
+  num_generations_per_prompt: 8  # GRPO group = 8 rollouts of the same segment
+  val_period: 10
+
+policy:
+  model_name: Qwen/Qwen3-4B-Instruct-2507  # any HF chat model with tool calling that vLLM serves
+  # A 60-tool-call segment is ~12-13k tokens of prompt + tool output (measured with the fake policy)
+  # plus the model's own turns; 32k leaves room for reasoning. Shorter tasks (--max-tool-calls 30) fit 16k.
+  max_total_sequence_length: 32768
+
+data:
+  # python -m nemo_gym_furrow.tasks --out /ABS/REPO/data/nemo_gym_furrow --train 2000 --val 100 --min-expert-days 0.25
+  train:
+    data_path: /ABS/REPO/data/nemo_gym_furrow/train.jsonl
+  validation:
+    data_path: /ABS/REPO/data/nemo_gym_furrow/val.jsonl
+
+env:
+  nemo_gym:
+    # vllm_model_for_training must come first; then the Furrow server + simple_agent + legacy_agent relay.
+    config_paths:
+      - responses_api_models/vllm_model/configs/vllm_model_for_training.yaml
+      - /ABS/REPO/python/nemo_gym_furrow/resources_servers/furrow/configs/furrow.yaml
+    # Drop the inherited workplace-assistant relay (its agent is no longer configured).
+    workplace_assistant_environment_server: null
+    # furrow is not on PyPI, so Gym cannot pip-install the server venv from requirements.txt. Prepare it
+    # (a venv with NeMo RL's Gym version + the furrow wheel) and link it in, as in the offline tests:
+    #   python -m nemo_gym_furrow.launch venvs --root /ABS/venvs --venv /ABS/furrow-gym-venv
+    skip_venv_if_present: true
+    uv_venv_dir: /ABS/venvs
+
+logger:
+  log_dir: logs/grpo-furrow
+  wandb_enabled: false
+  wandb:
+    project: grpo-furrow
+    name: grpo-furrow-qwen3-4b

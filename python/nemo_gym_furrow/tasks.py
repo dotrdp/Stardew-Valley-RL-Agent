@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import multiprocessing
 import random
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
@@ -156,7 +157,7 @@ def generate(
             for s in split_seeds(split, n_seeds, base_seed)
         ]
         if workers > 1 and len(jobs) > 1:
-            with ProcessPoolExecutor(max_workers=workers) as pool:
+            with ProcessPoolExecutor(max_workers=workers, mp_context=multiprocessing.get_context("spawn")) as pool:
                 per_seed = list(pool.map(_seed_rows, jobs, chunksize=4))
         else:
             per_seed = [_seed_rows(j) for j in jobs]

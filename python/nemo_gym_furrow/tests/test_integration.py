@@ -11,10 +11,12 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import signal
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.request
 from pathlib import Path
@@ -78,17 +80,31 @@ def stop(proc: subprocess.Popen, group: bool) -> None:
         proc.wait(timeout=10)
 
 
+# Both of Gym's OpenAI-compatible model adapters against the fake: `openai_model` via this package's
+# configs/policy_model.yaml (upstream POST /v1/responses) and the built-in `vllm_model` config
+# (upstream POST /v1/chat/completions, converted to Responses items by Gym).
+MODEL_SERVERS = {
+    "openai_model": ["--config", "configs/policy_model.yaml"],
+    "vllm_model": ["--model-type", "vllm_model"],
+}
+
+
 @pytest.mark.skipif(not GYM.exists(), reason=f"NeMo Gym CLI not found at {GYM}")
-def test_rollouts_through_the_nemo_gym_harness(tmp_path: Path) -> None:
+@pytest.mark.parametrize("model_server", sorted(MODEL_SERVERS))
+def test_rollouts_through_the_nemo_gym_harness(tmp_path: Path, model_server: str) -> None:
     tasks.generate(
         tmp_path / "tasks", {"val": N_TASKS}, days_per_seed=1, horizon_days=1, max_tool_calls=20, min_expert_days=0.25
     )
     overrides = prepare_shared_venvs(tmp_path / "venvs")
     fake_port, head_port = free_port(), free_port()
     env = {k: v for k, v in os.environ.items() if not k.startswith(("RAY_ADDRESS", "NEMO_GYM_"))}
+    # Ray (started by `gym env start`) logs to RAY_TMPDIR; keep the path short (AF_UNIX socket limit)
+    # and remove it afterwards.
+    ray_tmp = tempfile.mkdtemp(prefix="ngf-ray-")
     env.update(
         PYTHONPATH=os.pathsep.join([str(SEARCH_ROOT.parent), env.get("PYTHONPATH", "")]).rstrip(os.pathsep),
         CUDA_VISIBLE_DEVICES="",
+        RAY_TMPDIR=ray_tmp,
     )
     fake_log, gym_log, collect_log = tmp_path / "fake.log", tmp_path / "gym.log", tmp_path / "collect.log"
     fake = servers = None
@@ -106,7 +122,7 @@ def test_rollouts_through_the_nemo_gym_harness(tmp_path: Path) -> None:
                     str(GYM), "env", "start",
                     "--search-dir", str(SEARCH_ROOT),
                     "--config", CONFIG_PATH,
-                    "--model-type", "openai_model",
+                    *MODEL_SERVERS[model_server],
                     "--model-url", f"http://127.0.0.1:{fake_port}/v1",
                     "--model-api-key", "dummy",
                     "--model", "furrow-fake-random",
@@ -153,3 +169,4 @@ def test_rollouts_through_the_nemo_gym_harness(tmp_path: Path) -> None:
             stop(servers, group=True)
         if fake is not None:
             stop(fake, group=False)
+        shutil.rmtree(ray_tmp, ignore_errors=True)

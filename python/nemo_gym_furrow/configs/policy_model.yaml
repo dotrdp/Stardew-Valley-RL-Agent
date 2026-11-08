@@ -1,0 +1,16 @@
+# Model server for Furrow rollouts (NeMo Gym 0.7.0): the built-in `openai_model` adapter, which calls
+# POST {policy_base_url}/responses (OpenAI Responses API) upstream. Point it at OpenAI, at a server that
+# serves /v1/responses, or at `python -m nemo_gym_furrow.fake_openai` for offline runs, via
+# policy_base_url / policy_api_key / policy_model_name (CLI: --model-url / --model-api-key / --model,
+# or an env.yaml in the working directory; see configs/env.fake.yaml).
+# For endpoints that only serve /v1/chat/completions, use `--model-type vllm_model` instead of this file.
+policy_model:
+  responses_api_models:
+    openai_model:
+      entrypoint: app.py
+      openai_base_url: ${policy_base_url}
+      openai_api_key: ${policy_api_key}
+      openai_model: ${policy_model_name}
+      openai_default_headers: {}
+      # Cap in-flight upstream requests (rate-limited endpoints); null = unlimited.
+      max_concurrent_requests: null

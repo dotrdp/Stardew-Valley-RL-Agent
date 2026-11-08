@@ -38,8 +38,9 @@ SPEED_SMOOTHING_DAYS = 0.25
 
 @dataclass(frozen=True)
 class TaskSpec:
-    """What a dataset row asks for. ``start_day`` is Furrow's 0-based ``info["day"]``
-    (``describe()`` prints it as ``Day start_day + 1``)."""
+    """What a dataset row asks for. ``start_day`` is Furrow's 0-based ``info["day"]`` (``describe()``
+    prints ``Day start_day + 1``); the segment starts at the first expert state with ``day >= start_day``
+    (one Sleep can end two days, so a day can be skipped; ``tasks.py`` only emits days that occur)."""
 
     seed: int
     start_day: int
