@@ -1,0 +1,24 @@
+{
+  "furrow_version": "0.1.0",
+  "sim_version": 1,
+  "content_hash": 10556650668723150067,
+  "seed_ranges": {
+    "example": [
+      0,
+      4294967296
+    ]
+  },
+  "days_per_seed": 1,
+  "horizon_days": 7,
+  "max_tool_calls": 60,
+  "base_seed": 0,
+  "env_config": {},
+  "min_expert_days": 0.25,
+  "files": {
+    "example": {
+      "path": "example.jsonl",
+      "seeds": 5,
+      "rows": 5
+    }
+  }
+}

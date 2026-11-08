@@ -1,0 +1,7 @@
+# Gym installs this file into the server's own venv unless the venv already exists and
+# `skip_venv_if_present=true` (the tested path; see python/nemo_gym_furrow/README.md).
+# `furrow` is not on PyPI: build it with
+#   maturin build --release -m crates/furrow-py/Cargo.toml -o dist -i <venv>/bin/python
+# and install the wheel into that venv before starting Gym.
+nemo-gym==0.7.0
+furrow>=0.1.0

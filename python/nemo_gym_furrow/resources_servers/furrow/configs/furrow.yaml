@@ -1,0 +1,46 @@
+# NeMo Gym 0.7.0 config for Furrow segment tasks: resources server + simple_agent + the
+# legacy_agent environment server that rollout collection dispatches through.
+# Pair it with a model server named `policy_model`, e.g. `--model-type openai_model`
+# (any OpenAI Responses-API endpoint, incl. nemo_gym_furrow.fake_openai) or `--model-type vllm_model`
+# (chat-completions endpoints), and `--search-dir python/nemo_gym_furrow` so Gym finds this server.
+furrow:
+  resources_servers:
+    furrow:
+      entrypoint: app.py
+      domain: games
+      verified: false
+      description: Furrow farming-sim speedrun segments; complete the next restoration request as fast as possible.
+      value: Long-horizon planning with macro actions and day plans under a lexicographic speed reward.
+      allowed_agents: [simple_agent]
+      session_ttl_seconds: 3600
+      max_sessions: 4096
+      default_horizon_days: 7
+      default_max_tool_calls: 60
+      max_plan_length: 40
+
+furrow_simple_agent:
+  responses_api_agents:
+    simple_agent:
+      entrypoint: app.py
+      resources_server:
+        type: resources_servers
+        name: furrow
+      model_server:
+        type: responses_api_models
+        name: policy_model
+      # Model turns per rollout. Keep >= the tasks' max_tool_calls (+ a few) so the server's tool
+      # budget, not the agent, ends the segment.
+      max_steps: 70
+      datasets:
+        - name: example
+          type: example
+          jsonl_fpath: resources_servers/furrow/data/example.jsonl
+          license: MIT
+
+furrow_environment_server:
+  environment_servers:
+    legacy_agent:
+      entrypoint: app.py
+      agent_server:
+        type: responses_api_agents
+        name: furrow_simple_agent

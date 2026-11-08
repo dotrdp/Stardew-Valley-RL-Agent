@@ -124,6 +124,7 @@ def write_report(cfg: dict, repo: Path) -> None:
         ax2 = ax1.twinx()
         ax2.plot(xs, [s[1]["mean_C"] for s in sc], "s--", color="C1", label="mean C")
         ax2.axhline(res["expert"]["mean_C"], color="C1", lw=0.8, ls=":")
+        ax2.set_ylim(min(60, res["expert"]["mean_C"] - 10), max_days)
         ax2.set_ylabel("mean censored completion day", color="C1")
         ax1.grid(alpha=0.3)
         fig.tight_layout()
@@ -154,6 +155,23 @@ def write_report(cfg: dict, repo: Path) -> None:
             fig.savefig(p, dpi=160)
         plt.close(fig)
 
+    # ---------------- objective tiers (Fixed / Remixed train pools / Remixed held-out pools)
+    tiers_md = []
+    tiers_p = rd / "tiers.json"
+    if tiers_p.exists():
+        tiers = json.loads(tiers_p.read_text())
+        label = {"fixed": "Fixed", "remixed_train": "Remixed (train pools)", "remixed_test": "Remixed (held-out pools)"}
+        tty = ["#table(columns: 5, align: (left, left, right, right, right), stroke: none, table.hline(),",
+               "  [*Objective*], [*Policy*], [*Success*], [*Mean C*], [*IQM C*], table.hline(),"]
+        tiers_md = ["## Objective tiers (scripted expert vs. masked random)", "", "| Objective | Policy | Success | Mean C | IQM C |", "|---|---|---|---|---|"]
+        for k, v in tiers.items():
+            t, p = k.split("/")
+            tty.append(f"  [{label.get(t, t)}], [{p}], [{v['success_rate']:.3f}], [{v['mean_C']:.1f}], [{v['iqm_C']:.1f}],")
+            tiers_md.append(f"| {label.get(t, t)} | {p} | {v['success_rate']:.3f} | {v['mean_C']:.1f} | {v['iqm_C']:.1f} |")
+        tty.append("  table.hline())")
+        (gen["furrow"] / "tiers_table.typ").write_text("\n".join(tty) + "\n")
+        tiers_md.append("")
+
     # ---------------- throughput (furrow paper)
     tp = throughput()
     (rd / "throughput.json").write_text(json.dumps(tp, indent=1))
@@ -181,6 +199,22 @@ def write_report(cfg: dict, repo: Path) -> None:
             kv.append(f'  {k}: "{v}",')
         elif v is not None:
             kv.append(f"  {k}: {v:.4g},")
+    kv.append(")")
+    # per-method metrics for inline prose: #m.<method>.<metric>
+    kv.append("#let m = (")
+    for k, r in res.items():
+        key = k.replace("@", "_").replace("-", "_")
+        fields = {
+            "success": r["success_rate"], "success_lo": r["success_ci"][0], "success_hi": r["success_ci"][1],
+            "mean_C": r["mean_C"], "mean_C_lo": r["mean_C_ci"][0], "mean_C_hi": r["mean_C_ci"][1],
+            "iqm_C": r["iqm_C"], "median_C": r["median_C"], "speed": r.get("speed_score", float("nan")),
+            "diff": r.get("paired_diff_vs_expert", 0.0), "diff_lo": (r.get("paired_diff_ci") or (0, 0))[0],
+            "diff_hi": (r.get("paired_diff_ci") or (0, 0))[1], "faster": r.get("frac_faster_than_expert", 0.0),
+        }
+        kv.append(f"  {key}: (" + ", ".join(f"{fk}: {fv:.4g}" for fk, fv in fields.items()) + "),")
+    if dag:
+        kv.append(f"  dagger_rounds: {len(dag) - 1},")
+        kv.append(f"  dagger_samples: {dag[-1]['samples']},")
     kv.append(")")
     for g in gen.values():
         (g / "keys.typ").write_text("\n".join(kv) + "\n")
@@ -213,6 +247,7 @@ def write_report(cfg: dict, repo: Path) -> None:
         lines += ["## PPO finetuning (validation seeds)", "", "| Iter | Val. success | Val. mean C |", "|---|---|---|"]
         lines += [f"| {h['iter']} | {h['val_success']:.3f} | {h['val_mean_C']:.1f} |" for h in ppo_val]
         lines += [""]
+    lines += tiers_md
     lines += ["## Simulator throughput (Python → Rust VecEnv, macro actions, this machine)", "", "| Envs | Policy | Macro steps/s |", "|---|---|---|"]
     lines += [f"| {r['num_envs']} | {r['policy']} | {r['steps_per_s']:,.0f} |" for r in tp]
     lines += ["", f"Host: `{meta['host']}`, Python {meta['python']}."]

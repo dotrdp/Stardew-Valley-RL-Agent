@@ -50,10 +50,15 @@ Trajectories are stored as `furrow-traj/2` directories of memory-mappable `.npy`
 
 #figure(
   include "generated/throughput_table.typ",
-  caption: [Macro-step throughput of `furrow.VecEnv` driven from Python on one desktop CPU (AMD Ryzen 7 9700X, 8 cores/16 threads), including observation/mask copies into NumPy and, for "expert", expert labelling of every environment. Each macro step simulates on average about a hundred primitive steps.],
+  caption: [Macro-step throughput of `furrow.VecEnv` driven from Python on one desktop CPU (AMD Ryzen 7 9700X, 8 cores/16 threads), including observation/mask copies into NumPy and, for "expert", expert labelling of every environment. On expert trajectories a macro step advances the game by 48 game minutes on average within a day (each game minute is at least one simulated primitive step), with about 16 decisions per in-game day.],
 )
 
-The scripted expert finishes all 24 requests on #calc.round(results.expert_success * 100, digits: 1)% of #results.n_test held-out test seeds with a mean censored completion day of #calc.round(results.expert_mean_C, digits: 1); a masked uniform-random policy completes #calc.round(results.random_success * 100, digits: 1)% within the 192-day cap. Completion days are multimodal: a missed seasonal window delays completion by up to a year (§ companion paper, Fig. 1). Adding 10% random actions to the expert *shortens* average completion (66 vs. 79 days on disjoint training seeds), showing that the expert leaves headroom that learning can exploit.
+The scripted expert finishes all 24 requests on #calc.round(results.expert_success * 100, digits: 1)% of #results.n_test held-out test seeds with a mean censored completion day of #calc.round(results.expert_mean_C, digits: 1)\; a masked uniform-random policy completes #calc.round(results.random_success * 100, digits: 1)% within the 192-day cap. Completion days are multimodal: a missed seasonal window delays completion by up to a year (companion paper, Fig. 1). Adding 10% random actions to the expert *shortens* average completion (66 vs. 79 days on disjoint training seeds), showing that the expert leaves headroom that learning can exploit.
+
+#figure(
+  include "generated/tiers_table.typ",
+  caption: [Difficulty tiers on 200 held-out test seeds. *Remixed* resamples the item of every request slot from per-request pools; the held-out pools contain items never requested in the Fixed objective. The same expert, tuned on the Fixed objective, degrades sharply on held-out pools, which makes them a generalisation test for learned policies.],
+)
 
 = Related work
 

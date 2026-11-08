@@ -1,5 +1,9 @@
 #import "../common/template.typ": paper, note
-#import "generated/keys.typ": results
+#import "generated/keys.typ": results, m
+
+#let pct(x) = str(calc.round(x * 100, digits: 1)) + "%"
+#let d1(x) = str(calc.round(x, digits: 1))
+#let ci(lo, hi) = "[" + d1(lo) + ", " + d1(hi) + "]"
 
 #show: paper.with(
   title: [Learning to Speedrun a Long-Horizon Farming Objective from Trajectories],
@@ -44,7 +48,17 @@ An episode starts on day 1 of spring with 500 coins. The agent acts through 192 
 
 #figure(image("generated/bc_scaling.png", width: 62%), caption: [Behaviour cloning versus the number of expert episodes. The dotted line is the expert's mean completion day.]) <fig:scaling>
 
-RESULTS_DISCUSSION
+*Imitation scales but saturates below the demonstrator.* Behaviour cloning improves monotonically with data (@fig:scaling): success rises from #pct(m.bc_expert_25.success) with 25 expert episodes to #pct(m.bc_expert_1000.success) with 1,000, and the mean completion day falls from #d1(m.bc_expert_25.mean_C) to #d1(m.bc_expert_1000.mean_C). Yet even 1.28 M clean expert decisions leave a paired gap of #d1(m.bc_expert_1000.diff) days #ci(m.bc_expert_1000.diff_lo, m.bc_expert_1000.diff_hi) to the expert. Most of the gap comes from failed or very late runs — the median completion day is #d1(m.bc_expert_1000.median_C) versus #d1(m.expert.median_C) — which is the compounding-error signature of behaviour cloning on a long horizon: one off-distribution decision early in a season (a crop planted too late, a machine never built) costs a whole season.
+
+*Recovery data beats more of the same data.* Adding 400 episodes in which 10% of the executed actions were random but the labels stayed clean (DART) lifts success to #pct(m.bc_dart.success) and shrinks the paired gap to #d1(m.bc_dart.diff) days #ci(m.bc_dart.diff_lo, m.bc_dart.diff_hi)\; adding style-perturbed expert episodes as well reaches #pct(m.bc_mixed.success) and #d1(m.bc_mixed.diff) days #ci(m.bc_mixed.diff_lo, m.bc_mixed.diff_hi). These datasets are larger than the 1,000-episode set, but going from 400 to 1,000 clean episodes only moved success from #pct(m.bc_expert_400.success) to #pct(m.bc_expert_1000.success): states off the expert's path are what is missing.
+
+*DAgger is label-efficient.* Starting from BC on 100 episodes, #m.dagger_rounds rounds of on-policy labelling with the Rust expert (#m.dagger_samples labelled states in total, about half the 1,000-episode set) reach #pct(m.dagger.success) test success, versus #pct(m.bc_expert_100.success) for its starting point and #pct(m.bc_expert_1000.success) for BC on 1,000 episodes; validation success rose almost monotonically over the rounds (@fig:dagger).
+
+*Filtering and time conditioning do not help here.* Cloning only the fastest 25% of episodes gives #pct(m.bc_filtered25.success) success, worse than cloning everything: the filter mostly selects lucky seeds (favourable weather and merchant stock) rather than better decisions, and discards data. Conditioning on days-to-go @chen2021dt produces policies indistinguishable from unconditioned BC on the same data (#pct(m.bc_cond_55.success)–#pct(m.bc_cond_65.success) success, mean $C$ #d1(m.bc_cond_65.mean_C)–#d1(m.bc_cond_75.mean_C)), and the requested target barely changes behaviour — consistent with the observation that return conditioning rarely extrapolates beyond the returns present in the data.
+
+*RL finetuning closes the gap.* PPO finetuning of the BC+DART policy for 60 iterations (128 environments × 128 decisions each, under a minute of wall-clock time on one machine) raises success from #pct(m.bc_dart.success) to #pct(m.ppo_from_bc.success) and lowers the mean completion day from #d1(m.bc_dart.mean_C) to #d1(m.ppo_from_bc.mean_C). The finetuned policy is statistically indistinguishable from the scripted expert (paired Δ = #d1(m.ppo_from_bc.diff) days, 95% CI #ci(m.ppo_from_bc.diff_lo, m.ppo_from_bc.diff_hi)) and faster than it on #pct(m.ppo_from_bc.faster) of the seeds. With a frozen observation normaliser, a critic warmed up on rollouts of the frozen prior, masked log-probabilities and a KL anchor, validation performance did not drop at the start of finetuning (@fig:dagger, right); we did not ablate these components.
+
+#figure(image("generated/dagger_ppo.png", width: 88%), caption: [Validation mean completion day over DAgger rounds (left) and PPO finetuning iterations (right).]) <fig:dagger>
 
 = Toward the commercial game and LLM agents
 
