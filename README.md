@@ -1,137 +1,146 @@
-### Outline
+# Stardew Valley RL Agent — speedrunning the Community Center from trajectories
+
+> **Goal.** Teach a model to *speedrun* a long-horizon farming-sim objective — finish every
+> restoration request of a multi-wing community building (the "Community Center" objective) in
+> as few in-game days as possible — learned **primarily from trajectories** (demonstrations),
+> then improved with reinforcement learning, and evaluated both in a fast original simulator and
+> in the real game through a mod.
+
+This repository was rebuilt in November 2026 around that objective. The first iteration (an
+HTTP/`curl` reflection bridge driven from Python) is kept under [`legacy/`](legacy/) for
+reference; everything else is new. `master` is the main branch.
+
+## Why two environments
+
+Training a speedrunner needs millions of episodes; the real game runs in real time and cannot be
+redistributed. So the project has two environments that share one agent interface:
+
+| | **Furrow** — original Rust farming-sim | **RLBridge** — SMAPI mod + Rust client |
+|---|---|---|
+| What it is | A from-scratch, *original* farming/life-sim in the same genre (seasons, crops, foraging, fishing, mining, shops, crafting, a multi-wing restoration objective). No Stardew code, data, names or maps. | A C# SMAPI mod that turns the player's **own installed copy** of Stardew Valley into a lockstep RL environment, plus a Rust client. Uses only the public modding API at runtime; ships no game code or data. |
+| Speed | 10⁴–10⁶ steps/s, vectorised, deterministic, headless | real-time bound (~10²–10³ ticks/s) |
+| Objective | Restore the *Old Mill* (original content, fixed or *remixed* request lists) | Complete the Community Center bundles (read from the live game) |
+| Used for | Large-scale demonstration generation, imitation + RL training, benchmarking, LLM agents | Recording human play, evaluating/finetuning in the real game |
+
+The game is re-implemented as an **original** environment on purpose: decompiled game source is
+not used anywhere in this repository, and the real-game bridge only observes and acts through
+SMAPI on a licensed copy.
+
+## Architecture
+
 ```
-███████╗████████╗ █████╗ ██████╗ ██████╗ ███████╗██╗    ██╗    ██╗   ██╗ █████╗ ██╗     ██╗     ███████╗██╗   ██╗    ██████╗ ██╗          █████╗  ██████╗ ███████╗███╗   ██╗████████╗
-██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██╔══██╗██╔════╝██║    ██║    ██║   ██║██╔══██╗██║     ██║     ██╔════╝╚██╗ ██╔╝    ██╔══██╗██║         ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝
-███████╗   ██║   ███████║██████╔╝██║  ██║█████╗  ██║ █╗ ██║    ██║   ██║███████║██║     ██║     █████╗   ╚████╔╝     ██████╔╝██║         ███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║   
-╚════██║   ██║   ██╔══██║██╔══██╗██║  ██║██╔══╝  ██║███╗██║    ╚██╗ ██╔╝██╔══██║██║     ██║     ██╔══╝    ╚██╔╝      ██╔══██╗██║         ██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║   
-███████║   ██║   ██║  ██║██║  ██║██████╔╝███████╗╚███╔███╔╝     ╚████╔╝ ██║  ██║███████╗███████╗███████╗   ██║       ██║  ██║███████╗    ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║   
-╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝ ╚══╝╚══╝       ╚═══╝  ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝   ╚═╝       ╚═╝  ╚═╝╚══════╝    ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   
+                 ┌──────────────────────────── Python: svrl ─────────────────────────────┐
+                 │  data (mmap'd trajectories) → BC / time-conditioned transformer / DAgger │
+                 │  / IQL / PPO-finetune (KL to the imitation prior) → evaluate → report    │
+                 └───────────────▲──────────────────────────────────────▲─────────────────┘
+      furrow-traj v2 datasets    │ furrow (PyO3, abi3 wheel)             │ Gymnasium / NeMo Gym
+   (.npy shards, action logs)    │                                      │  (python/svrl/envs, python/nemo_gym_furrow)
+┌────────────────────────────────┴───────────┐        ┌─────────────────┴──────────────────────┐
+│ Rust workspace                              │        │ Real game                               │
+│  furrow        sim core, Env, VecEnv        │        │  mod/RLBridge   C# SMAPI mod: lockstep  │
+│  furrow-expert scripted speedrun planner    │        │                 stepping, JSON snapshots,│
+│  furrow-gen    episode-parallel runner      │        │                 input + macro actions,   │
+│  furrow-traj   dataset format (no deps)     │◀──────▶│                 human-play recorder      │
+│  furrow-cli    play / bench / demos / replay│        │  sdv-bridge     Rust client, SdvEnv,     │
+│  furrow-py     Python bindings              │        │                 recorder → furrow-traj   │
+└─────────────────────────────────────────────┘        └─────────────────────────────────────────┘
 ```
-This is a project with the focus to train a RL agent for stardew valley.
-# MOD
-The built mod exposes a reverse proxy through http with RPC capabilities through a set of methods, namely the reflection api available under api/exec <- {json with Target, Method, Parameters}, api/map, for usage refer to a decompiled version of the game, and go through your desired object properties, methods and such.
-the reflection api cant really do string to objects, so instead a set of commonly used objects are aliased.
-those objects are.
+
+**Learning pipeline** (`python -m svrl.pipeline`): collect expert demonstrations at several noise
+levels (clean labels kept, DART-style) → behaviour cloning (entity-centric action head) →
+time-conditioned sequence policy (conditions on *days-to-go*, Decision-Transformer style) →
+DAgger with the Rust expert → offline RL (IQL) → PPO finetuning from the imitation prior with a
+frozen normaliser, critic warm-up and KL/kickstarting → evaluation on held-out seeds (censored
+completion day, IQM + bootstrap CIs, paired differences vs. the expert) → figures and paper
+tables.
+
+**Key design decisions** (all in [`docs/DESIGN.md`](docs/DESIGN.md), the contract every crate
+is built against):
+- **Macro actions** (`Plant(seed)`, `Fish(spot)`, `Buy(shop,item,q)`, `Deliver`, `Sleep`, …)
+  executed by deterministic controllers — 15–40 decisions per in-game day instead of ~10⁵
+  primitive inputs per episode. Primitive mode exists as a secondary track.
+- **Reward = speed only.** A per-day cost with potential-based progress shaping, discounted *per
+  in-game day* (never per decision), so the optimum is provably the fastest completion.
+- **Item-centric observations** (what is still needed, how much is held, how far away every
+  point of interest is) whose meaning is identical across fixed and remixed objectives.
+- **Bit-identical determinism**: in-crate RNG, exogenous randomness keyed by `(seed, day,
+  purpose)` so every policy faces the same world on a seed (paired evaluation), stable state
+  hashing, golden trajectories, zero allocations on the hot path.
+- **Trajectory format** `furrow-traj/2`: memory-mappable `.npy` shard directories with clean
+  expert labels next to executed actions; for Furrow the action log is the source of truth and
+  observations are a regenerable cache.
+- A **state-feedback expert** that reads only the observation (so DAgger labels are learnable)
+  and recovers from off-plan states.
+- **LLM agents** via NVIDIA NeMo Gym (segment tasks, lexicographic speed reward) and standard
+  **Gymnasium** wrappers.
+
+## Repository layout
+
 ```
-player
-game1
-helper	
-data
-input	
-reflection	
+Cargo.toml, rust-toolchain.toml   Rust workspace (pinned stable)
+crates/
+  furrow/            simulation core + RL env; content tables in crates/furrow/data/*.toml
+  furrow-expert/     scripted speedrun planner (expert policy, DAgger oracle)
+  furrow-gen/        episode-parallel runner: generate / relabel / materialize / evaluate
+  furrow-traj/       trajectory dataset format (writer, memmap reader)
+  furrow-py/         PyO3 extension `furrow._furrow` + python shim (`import furrow`)
+  furrow-cli/        `furrow` binary
+  sdv-bridge/        Rust client for the RLBridge mod (+ mock server)
+mod/RLBridge/        C# SMAPI mod for the real game
+python/
+  svrl/              training package (data, models, bc, dt, dagger, iql, ppo, evaluate, pipeline, envs)
+  furrow_mock/       pure-Python stand-in with the native module's surface (tests, offline dev)
+  nemo_gym_furrow/   NeMo Gym resources server + recipes
+  configs/, tests/
+papers/              Typst sources: the Furrow benchmark paper and the speedrun-learning paper
+docs/                DESIGN.md (contract), CONTENT.md, TRAJECTORY_FORMAT.md, BRIDGE_PROTOCOL.md,
+                     SMAPI_NOTES.md, NEMO_GYM_*.md, BASELINES.md, RESULTS.md, reviews/
+legacy/              the previous HTTP/curl agent (superseded)
 ```
-the reflection api allows to call, set, get, and invoke anything within those mentioned objects. Therefore a lot of stuff can be done with those objects.
-```
-getproperty	Get object property value	target, property_name, [required]
-setproperty	Set object property value	target, property_name, value, [required]
-getfield	Get object field value	target, field_name, [required]
-setfield	Set object field value	target, field_name, value, [required]
-getmethod	Get method information	target, method_name, [required]
-invokemethod	Invoke object method	target, method_name, [parameters...]
-```
-The exposed api also allows for keybind simulation through api/keyboard/hold <- {json with Key, and DurationMs}
-some example of commands to interact with the api using curl are;
+
+## Status
+
+| Component | State |
+|---|---|
+| Design contract (`docs/DESIGN.md` v2.1, two independent critiques folded in) | done |
+| Original content tables (`crates/furrow/data`, `docs/CONTENT.md`) | in progress |
+| Foundations: RNG/hash/grid/pathfinding, `furrow-traj` v2, `svrl.data` | in progress |
+| Simulation core, macro controllers, observations, `VecEnv` | next |
+| Expert planner | next |
+| Python bindings, Gymnasium wrappers, NeMo Gym server | in progress (mock backend first) |
+| RLBridge SMAPI mod + `sdv-bridge` client | research → build |
+| Training pipeline (BC → DT → DAgger → IQL → PPO), evaluation, results | after the sim |
+| Papers (Typst) | scaffolding |
+
+Results will be reported in `docs/RESULTS.md` only from the pipeline's `results.json`.
+
+## Quickstart (development)
+
 ```bash
-curl -X POST http://localhost:8080/api/execute \
-  -H "Content-Type: application/json" \
-  -d '{"Target": "reflection", "Method": "getproperty", "Parameters": ["player", "Name"]}'
+# Rust (toolchain pinned by rust-toolchain.toml)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+cargo build --workspace && cargo test --workspace
 
-curl -X POST http://localhost:8080/api/execute \
-  -H "Content-Type: application/json" \
-  -d '{"Target": "reflection", "Method": "getproperty", "Parameters": ["player", "Money"]}'
+# Python
+uv venv --python 3.13 .venv
+uv pip install --python .venv/bin/python maturin pytest numpy torch gymnasium pyyaml tqdm
+.venv/bin/maturin develop --release -m crates/furrow-py/Cargo.toml   # builds `furrow`
+uv pip install --python .venv/bin/python -e python                     # installs `svrl`
+.venv/bin/python -m pytest -q python/tests
 
-curl -X POST http://localhost:8080/api/execute \
-  -H "Content-Type: application/json" \
-  -d '{"Target": "reflection", "Method": "getproperty", "Parameters": ["player", "Position"]}'
-
-curl -X POST http://localhost:8080/api/execute \
-  -H "Content-Type: application/json" \
-  -d '{"Target": "reflection", "Method": "getfield", "Parameters": ["player", "health"]}'
-
-curl -X POST http://localhost:8080/api/execute \
-  -H "Content-Type: application/json" \
-  -d '{"Target": "reflection", "Method": "getfield", "Parameters": ["player", "maxHealth"]}'
-
-
-curl -X POST http://localhost:8080/api/execute \
-  -H "Content-Type: application/json" \
-  -d '{"Target": "reflection", "Method": "getproperty", "Parameters": ["game1", "currentSeason"]}'
-
-curl -X POST http://localhost:8080/api/execute \
-  -H "Content-Type: application/json" \
-  -d '{"Target": "reflection", "Method": "getproperty", "Parameters": ["game1", "timeOfDay"]}'
+# Papers
+typst compile papers/furrow/main.typ
 ```
-For further reference please read a decompiled version of the game(they're sometimes available through github... AI can easily figure stuff out, just inquire it into anything providing this docs!)
-# NOTE
-Binary MSGPACKS over base 64 are also given in the callback
-```
-██████╗ ██████╗  ██████╗    ██████╗ ██████╗  ██████╗ ██╗  ██╗██╗   ██╗
-██╔══██╗██╔══██╗██╔════╝    ██╔══██╗██╔══██╗██╔═══██╗╚██╗██╔╝╚██╗ ██╔╝
-██████╔╝██████╔╝██║         ██████╔╝██████╔╝██║   ██║ ╚███╔╝  ╚████╔╝ 
-██╔══██╗██╔═══╝ ██║         ██╔═══╝ ██╔══██╗██║   ██║ ██╔██╗   ╚██╔╝  
-██║  ██║██║     ╚██████╗    ██║     ██║  ██║╚██████╔╝██╔╝ ██╗   ██║   
-╚═╝  ╚═╝╚═╝      ╚═════╝    ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝   
-```
-### Installation
-Required mods available in the releases tab for this repo.
-# Docker
-- git clone https://github.com/dotrdp/sv-GUI-less-server
-- cd sv-GUI-less-server
-- (open the .env.example, configure it, and rename it to .env)
-- docker compose up -d
-- if steamguard is enabled, run docker exec -it sdvd-server bash ; after that run the steamcmd login by steamcmd +login yourusername , and go through the steamcmd login, afterwards reload the container.
-- open the docker desktop app, go into the container, click the 3 dots. Then delete junimoserver mod and upload the unzipped modfolder provided in these paths:
-- data/mods, data/StardewValley/Mods.
-- reload the container!, the API should automatically detect it.
-# TTY
-- install the game
-- install SMAPI
-- upload the unzipped modfolder provided in your StardewValley/Mods dir, it will exist after installing SMAPI, for more info refer to SMAPI installation guide. https://smapi.io
-- ready to go!
-# SSH + TTY
-- set up a basic ssh server on the server machine (sshd for windows, open-ssh for MacOS and Linux, note macos already has it out of the box).
-- generate RSA/ed_2519 keys on the machine running the API(you can use your existing keys if you have already generated keys before).
-- set up the client(machine running the API) to use a ssh-agent to provide the keys on the ssh connection
-- clone your client public key into the server machine directory called .ssh/authorized_keys you may make the authorized_keys dir if it doesnt exist.
-- configure your machine hostname in the API ssh_wrap variable.
-- Do the installation for TTY on the host machine.
-# Python dev env
-```
-██████╗ ██╗   ██╗████████╗██╗  ██╗ ██████╗ ███╗   ██╗    ████████╗ ██████╗  ██████╗ ██╗     ███████╗
-██╔══██╗╚██╗ ██╔╝╚══██╔══╝██║  ██║██╔═══██╗████╗  ██║    ╚══██╔══╝██╔═══██╗██╔═══██╗██║     ██╔════╝
-██████╔╝ ╚████╔╝    ██║   ███████║██║   ██║██╔██╗ ██║       ██║   ██║   ██║██║   ██║██║     ███████╗
-██╔═══╝   ╚██╔╝     ██║   ██╔══██║██║   ██║██║╚██╗██║       ██║   ██║   ██║██║   ██║██║     ╚════██║
-██║        ██║      ██║   ██║  ██║╚██████╔╝██║ ╚████║       ██║   ╚██████╔╝╚██████╔╝███████╗███████║
-╚═╝        ╚═╝      ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝       ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝╚══════╝
-```
-An api for interaction with the http proxy is provided, along with an environment class, player class, map class, allowing for a seamless integration with python. You instantiate the API telling it where and how to communicate with the http proxy.
-currently TTY(http proxy in local host), ssh+tty(http proxy in a ssh server, note you must have keys or use sshpass in the API ssh_wrap declaration), and docker(http proxy inside a docker container). For the docker container we forked a popular stardew valley server solution. Note it also provides a x11 VNC server 8090 to serve a display with nginx.
-Note, binary messagepacks over base 64 are also returned on the api.
-Furthermore utilities like pathfinder are added. Besides networkx integration for a much broader and useful world model
 
-git clone https://github.com/dotrdp/Stardew-Valley-RL-Agent/
-cd Stardew-Valley-RL-Agent
-git checkout master
-you're free to go!
+The real-game bridge requires your own copy of Stardew Valley 1.6 with SMAPI 4; see
+`mod/RLBridge/README.md` once it lands.
 
-#Extras
-```
-██████╗ ███████╗██████╗ ██╗   ██╗ ██████╗  ██████╗ ██╗███╗   ██╗ ██████╗     ████████╗ ██████╗  ██████╗ ██╗     ███████╗
-██╔══██╗██╔════╝██╔══██╗██║   ██║██╔════╝ ██╔════╝ ██║████╗  ██║██╔════╝     ╚══██╔══╝██╔═══██╗██╔═══██╗██║     ██╔════╝
-██║  ██║█████╗  ██████╔╝██║   ██║██║  ███╗██║  ███╗██║██╔██╗ ██║██║  ███╗       ██║   ██║   ██║██║   ██║██║     ███████╗
-██║  ██║██╔══╝  ██╔══██╗██║   ██║██║   ██║██║   ██║██║██║╚██╗██║██║   ██║       ██║   ██║   ██║██║   ██║██║     ╚════██║
-██████╔╝███████╗██████╔╝╚██████╔╝╚██████╔╝╚██████╔╝██║██║ ╚████║╚██████╔╝       ██║   ╚██████╔╝╚██████╔╝███████╗███████║
-╚═════╝ ╚══════╝╚═════╝  ╚═════╝  ╚═════╝  ╚═════╝ ╚═╝╚═╝  ╚═══╝ ╚═════╝        ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝╚══════╝
-```
-A python cli, along with manual controls over TUI are found in this repo.
-<img width="1704" height="1594" alt="image" src="https://github.com/user-attachments/assets/31b1ade9-55e5-4af2-bfe2-4426740d14db" />
-python cli tool, cli.py
-and Stardew Valley TUI with vim motions for tp, manual_controls.py
-<img width="1064" height="1712" alt="image" src="https://github.com/user-attachments/assets/a5d3ee05-4df0-41a3-9809-3a25c77015f5" />
-#credits and acknowledgements
-https://github.com/Pathoschild/SMAPI
-https://www.junimohost.com
+## Acknowledgements
 
+[SMAPI](https://smapi.io) (modding API), [Gymnasium](https://gymnasium.farama.org),
+[NVIDIA NeMo Gym](https://github.com/NVIDIA-NeMo/Gym). Stardew Valley is © ConcernedApe; this
+project is not affiliated with or endorsed by ConcernedApe, and redistributes none of the game.
 
+## License
 
-
+MIT — see [LICENSE](LICENSE).
