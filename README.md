@@ -136,7 +136,7 @@ against. Two independent critiques shaped it; see [`research/`](research/).
 - **Macro actions.** 192 actions such as `Plant(crop,field)`, `Fish(spot)`,
   `Buy(item,1|5|25)`, `Deliver` and `Sleep`. Deterministic controllers with BFS path finding
   execute them, time-boxed and masked by cheap preconditions. That gives 15–40 decisions per
-  in-game day instead of about 10⁵ keyboard inputs per episode. A primitive interface (63 actions
+  in-game day instead of about 10⁵ keyboard inputs per episode. A primitive interface (67 actions
   plus an egocentric grid) also exists.
 - **The reward is speed only.** It is −1 per in-game day plus potential-based progress shaping,
   discounted per *day* (never per decision), so the return-optimal policy is the fastest one.
