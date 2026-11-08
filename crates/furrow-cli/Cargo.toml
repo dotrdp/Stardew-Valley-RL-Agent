@@ -1,0 +1,16 @@
+[package]
+name = "furrow-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "furrow"
+path = "src/main.rs"
+
+[dependencies]
+furrow.workspace = true
+furrow-expert.workspace = true
+furrow-traj.workspace = true
+clap.workspace = true
+anyhow.workspace = true

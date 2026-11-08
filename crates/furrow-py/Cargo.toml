@@ -1,0 +1,13 @@
+[package]
+name = "furrow-py"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "furrow"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+furrow.workspace = true
+furrow-expert.workspace = true

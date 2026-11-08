@@ -4,3 +4,14 @@
 default.nix
 a.graphml
 __pycache__/
+/target/
+**/target/
+*.so
+*.pyd
+.pytest_cache/
+*.egg-info/
+/data/
+/runs/
+/checkpoints/
+mod/RLBridge/bin/
+mod/RLBridge/obj/
