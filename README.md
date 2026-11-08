@@ -184,8 +184,8 @@ legacy/              the previous HTTP/curl agent (superseded)
 | Python bindings, Gymnasium envs, CLI | done, tested |
 | Trajectory format + parallel demo generation | done, tested (thread-count independent) |
 | BC / time-conditioned BC / DAgger / PPO finetune + evaluation + report | done; results in `docs/RESULTS.md` |
-| NeMo Gym resources server | see `python/nemo_gym_furrow/README.md` |
-| SMAPI mod (C#) | written against the documented API; **not compiled here** (needs .NET + the game) |
+| NeMo Gym resources server | done: 38 tests, including end-to-end rollouts through the real NeMo Gym 0.7.0 harness with an offline fake model; real-LLM runs and the NeMo RL GRPO recipe are untested |
+| SMAPI mod (C#) | written; compiles against API stubs and passes a simulated-game harness driven by the real Rust client; **never run against the real game** (no game install here); unverified game members are called via reflection (see `mod/RLBridge/README.md`) |
 | `sdv-bridge` Rust client | done, tested against the mock server |
 | Papers (Typst → PDF) | `papers/furrow/main.pdf`, `papers/speedrun/main.pdf` |
 | Not yet built | entity-centric action head, sequence-model policies, IQL, golden-trajectory files, lints from DESIGN §2.5, rollout-improved expert |

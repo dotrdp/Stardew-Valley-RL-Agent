@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    RLBridge: SMAPI mod that exposes a running Stardew Valley 1.6.x game as an RL environment
+    over newline-delimited JSON on TCP (see docs/BRIDGE_PROTOCOL.md).
+
+    Build with `dotnet build` (needs the .NET 6+ SDK and an installed copy of Stardew Valley + SMAPI;
+    the package below auto-detects the game folder, or set <GamePath> here / in a
+    Directory.Build.props). The build copies the mod into the game's Mods folder.
+  -->
+  <PropertyGroup>
+    <AssemblyName>RLBridge</AssemblyName>
+    <RootNamespace>RLBridge</RootNamespace>
+    <Version>0.1.0</Version>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>10</LangVersion>
+    <Nullable>enable</Nullable>
+    <!-- Harmony is not used. -->
+    <EnableHarmony>false</EnableHarmony>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Verified on nuget.org: 4.4.0 (13 Apr 2025) is the latest stable release. -->
+    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.4.0" />
+  </ItemGroup>
+
+</Project>

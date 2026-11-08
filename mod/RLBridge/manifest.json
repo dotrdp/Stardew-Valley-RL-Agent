@@ -1,0 +1,10 @@
+{
+  "Name": "RLBridge",
+  "Author": "dotrdp",
+  "Version": "0.1.0",
+  "Description": "Exposes the running game as a reinforcement-learning environment over a local TCP socket (newline-delimited JSON, protocol v1).",
+  "UniqueID": "dotrdp.RLBridge",
+  "EntryDll": "RLBridge.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": []
+}
