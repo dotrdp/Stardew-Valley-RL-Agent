@@ -13,6 +13,17 @@ from .models import Policy
 from .utils import JsonlLogger, device as pick_device, seed_all
 
 
+def masked_ce(logits: torch.Tensor, mask: torch.Tensor, label: torch.Tensor, smoothing: float = 0.0) -> torch.Tensor:
+    """Cross-entropy with label smoothing spread over *valid* actions only."""
+    logp = torch.log_softmax(logits, -1)
+    nll = -logp.gather(-1, label.unsqueeze(-1)).squeeze(-1)
+    if smoothing <= 0:
+        return nll.mean()
+    m = mask.float()
+    smooth = -(logp.masked_fill(~mask, 0.0) * m).sum(-1) / m.sum(-1).clamp_min(1.0)
+    return ((1 - smoothing) * nll + smoothing * smooth).mean()
+
+
 def load_tensors(datasets: list[str], dev: str, success_only: bool = False, fastest_frac: float | None = None,
                  max_episodes: int | None = None, label: str = "expert_action") -> dict:
     ds = Dataset(*datasets)
@@ -61,7 +72,7 @@ def train_bc(datasets: list[str], out: str, steps: int = 20000, batch: int = 409
     for step in range(steps):
         idx = torch.multinomial(w, batch, replacement=True)
         lg = pol.logits(t["obs"][idx], t["mask"][idx], t["dtg"][idx] if cond else None)
-        loss = F.cross_entropy(lg, t["label"][idx], label_smoothing=label_smoothing)
+        loss = masked_ce(lg, t["mask"][idx], t["label"][idx], label_smoothing)
         opt.zero_grad(set_to_none=True)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(pol.actor.parameters(), 1.0)

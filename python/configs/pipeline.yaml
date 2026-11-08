@@ -1,0 +1,19 @@
+# Full experiment pipeline:  python -m svrl.pipeline --config python/configs/pipeline.yaml
+name: v1
+run_dir: runs/v1
+data_dir: data
+max_vram_gb: 6.0
+seed: 0
+datasets:
+  expert:   {episodes: 1000, noise: 0.0,  styles: [0], seed: 1}
+  dart:     {episodes: 400,  noise: 0.10, styles: [0], seed: 2}
+  styles:   {episodes: 400,  noise: 0.0,  styles: [1, 2, 3, 4, 5, 6, 7], seed: 3}
+bc:
+  steps: 20000
+  batch: 4096
+  scaling: [25, 100, 400, 1000]      # data-scaling curve (episodes of `expert`)
+dagger: {rounds: 6, num_envs: 64, steps_per_round: 1500, bc_steps: 8000, init_episodes: 100}
+ppo: {iters: 60, num_envs: 128, horizon: 128, warmup_iters: 10, lr: 1.0e-5, kl_coef: 0.2, kl_final: 0.02}
+eval:
+  test_seeds: 200
+  conditioned_targets: [55, 65, 75]
