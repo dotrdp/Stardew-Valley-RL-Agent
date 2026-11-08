@@ -212,6 +212,8 @@ pub enum Dir {
 }
 
 impl Dir {
+    /// All directions in id order.
+    pub const ALL: [Dir; 4] = [Dir::N, Dir::E, Dir::S, Dir::W];
     /// Unit offset.
     pub fn delta(self) -> (i32, i32) {
         match self {
